@@ -34,9 +34,10 @@ export function useCalendar() {
   const [settings, setSettings] = useState<CalendarSettings>(defaultSettings);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [vacations, setVacations] = useState<Vacation[]>(initialVacations);
-  const [holidays] = useState<Holiday[]>(initialHolidays);
+  const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
   const [arrets, setArrets] = useState<Arret[]>(initialArrets);
   const [cancelledAstreinteIds, setCancelledAstreinteIds] = useState<string[]>([]);
+  const [cancelledAstreinteNames, setCancelledAstreinteNames] = useState<Record<string, string>>({});
   const [ponctualAstreintes, setPonctualAstreintes] = useState<Astreinte[]>([]);
 
   // Generate recurring astreintes
@@ -136,20 +137,34 @@ export function useCalendar() {
     return newEvent;
   }, []);
 
-  // Cancel an astreinte
-  const cancelAstreinte = useCallback((astreinteId: string) => {
+  // Cancel an astreinte with a name
+  const cancelAstreinte = useCallback((astreinteId: string, name?: string) => {
     setCancelledAstreinteIds(prev => [...prev, astreinteId]);
+    if (name) {
+      setCancelledAstreinteNames(prev => ({ ...prev, [astreinteId]: name }));
+    }
   }, []);
 
   // Restore an astreinte
   const restoreAstreinte = useCallback((astreinteId: string) => {
     setCancelledAstreinteIds(prev => prev.filter(id => id !== astreinteId));
+    setCancelledAstreinteNames(prev => {
+      const newNames = { ...prev };
+      delete newNames[astreinteId];
+      return newNames;
+    });
   }, []);
+  
+  // Get cancelled astreinte name
+  const getCancelledAstreinteName = useCallback((astreinteId: string) => {
+    return cancelledAstreinteNames[astreinteId] || '';
+  }, [cancelledAstreinteNames]);
 
   // Add ponctual astreinte
-  const addPonctualAstreinte = useCallback((startDate: Date, endDate: Date) => {
+  const addPonctualAstreinte = useCallback((startDate: Date, endDate: Date, name?: string) => {
     const newAstreinte: Astreinte = {
       id: `ponctual-${Date.now()}`,
+      name: name || 'Astreinte ponctuelle',
       startDate,
       endDate,
       isCancelled: false,
@@ -172,9 +187,60 @@ export function useCalendar() {
     setArrets(prev => [...prev, newArret]);
   }, []);
 
+  // Update arret
+  const updateArret = useCallback((id: string, updates: Partial<Arret>) => {
+    setArrets(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+  }, []);
+
+  // Delete arret
+  const deleteArret = useCallback((id: string) => {
+    setArrets(prev => prev.filter(a => a.id !== id));
+  }, []);
+
   // Remove event
   const removeEvent = useCallback((eventId: string) => {
     setEvents(prev => prev.filter(e => e.id !== eventId));
+  }, []);
+
+  // Update event
+  const updateEvent = useCallback((id: string, updates: Partial<CalendarEvent>) => {
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+  }, []);
+
+  // Add vacation
+  const addVacation = useCallback((vacation: Omit<Vacation, 'id'>) => {
+    const newVacation: Vacation = {
+      ...vacation,
+      id: `vac-${Date.now()}`,
+    };
+    setVacations(prev => [...prev, newVacation]);
+  }, []);
+
+  // Update vacation
+  const updateVacation = useCallback((id: string, updates: Partial<Vacation>) => {
+    setVacations(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
+  }, []);
+
+  // Delete vacation
+  const deleteVacation = useCallback((id: string) => {
+    setVacations(prev => prev.filter(v => v.id !== id));
+  }, []);
+
+  // Add holiday
+  const addHoliday = useCallback((holiday: Holiday) => {
+    setHolidays(prev => [...prev, holiday]);
+  }, []);
+
+  // Update holiday
+  const updateHoliday = useCallback((originalDate: Date, updates: Partial<Holiday>) => {
+    setHolidays(prev => prev.map(h => 
+      h.date.getTime() === originalDate.getTime() ? { ...h, ...updates } : h
+    ));
+  }, []);
+
+  // Delete holiday
+  const deleteHoliday = useCallback((date: Date) => {
+    setHolidays(prev => prev.filter(h => h.date.getTime() !== date.getTime()));
   }, []);
 
   // Update settings
@@ -213,6 +279,13 @@ export function useCalendar() {
     return generateAstreintes(start, end);
   }, [currentDate, generateAstreintes]);
 
+  // Generate astreintes for year
+  const getAstreintesForYear = useCallback((year: number) => {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31);
+    return generateAstreintes(start, end);
+  }, [generateAstreintes]);
+
   return {
     currentDate,
     settings,
@@ -222,23 +295,37 @@ export function useCalendar() {
     arrets,
     monthDays,
     currentAstreintes,
+    ponctualAstreintes,
+    cancelledAstreinteIds,
+    cancelledAstreinteNames,
     goToNextMonth,
     goToPrevMonth,
     goToToday,
     goToDate,
     updateSettings,
     addEvent,
+    updateEvent,
     removeEvent,
     cancelAstreinte,
     restoreAstreinte,
     addPonctualAstreinte,
     removePonctualAstreinte,
     addArret,
+    updateArret,
+    deleteArret,
+    addVacation,
+    updateVacation,
+    deleteVacation,
+    addHoliday,
+    updateHoliday,
+    deleteHoliday,
     isAstreinteDay,
     hasConflict,
     isHoliday,
     isVacationDay,
     getEventsForDate,
     getArretsForPeriod,
+    getAstreintesForYear,
+    getCancelledAstreinteName,
   };
 }

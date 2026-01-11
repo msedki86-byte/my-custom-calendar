@@ -29,6 +29,7 @@ export interface CalendarEvent {
 
 export interface Astreinte {
   id: string;
+  name?: string; // Name for display (for cancellation or ponctuelle)
   startDate: Date; // Thursday
   endDate: Date; // Following Thursday
   isCancelled: boolean;

@@ -3,12 +3,16 @@ import { useCalendar } from '@/hooks/useCalendar';
 import { CalendarHeader } from '@/components/Calendar/CalendarHeader';
 import { CalendarGrid } from '@/components/Calendar/CalendarGrid';
 import { VacationBar } from '@/components/Calendar/VacationBar';
-import { ArretRow } from '@/components/Calendar/ArretRow';
+import { ArretBar } from '@/components/Calendar/ArretBar';
+import { YearView } from '@/components/Calendar/YearView';
 import { Legend } from '@/components/Calendar/Legend';
 import { SettingsPanel } from '@/components/Settings/SettingsPanel';
 import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { AddEventDialog } from '@/components/Dialogs/AddEventDialog';
-import { startOfMonth, endOfMonth, addDays } from 'date-fns';
+import { EventsManager } from '@/components/Events/EventsManager';
+import { startOfMonth, endOfMonth } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar as CalendarIcon, List } from 'lucide-react';
 
 const Index = () => {
   const {
@@ -16,37 +20,64 @@ const Index = () => {
     settings,
     events,
     vacations,
+    holidays,
     arrets,
     currentAstreintes,
+    ponctualAstreintes,
+    cancelledAstreinteIds,
+    cancelledAstreinteNames,
     goToNextMonth,
     goToPrevMonth,
     goToToday,
     goToDate,
     updateSettings,
     addEvent,
+    updateEvent,
+    removeEvent,
     cancelAstreinte,
+    restoreAstreinte,
     addPonctualAstreinte,
+    removePonctualAstreinte,
+    addArret,
+    updateArret,
+    deleteArret,
+    addVacation,
+    updateVacation,
+    deleteVacation,
+    addHoliday,
+    updateHoliday,
+    deleteHoliday,
     isAstreinteDay,
     hasConflict,
     isHoliday,
     isVacationDay,
     getEventsForDate,
     getArretsForPeriod,
+    getAstreintesForYear,
+    getCancelledAstreinteName,
   } = useCalendar();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [viewMode, setViewMode] = useState<'year' | 'month'>('year');
 
   const currentMonthArrets = getArretsForPeriod(
     startOfMonth(currentDate),
     endOfMonth(currentDate)
   );
 
+  const yearAstreintes = getAstreintesForYear(currentDate.getFullYear());
+
   const handleDayClick = useCallback((date: Date) => {
     setSelectedDate(date);
     setAddEventOpen(true);
   }, []);
+
+  const handleMonthClick = useCallback((date: Date) => {
+    goToDate(date);
+    setViewMode('month');
+  }, [goToDate]);
 
   const handleAddEvent = useCallback((eventData: {
     type: 'event' | 'astreinte-ponctuelle' | 'astreinte-cancelled';
@@ -64,12 +95,12 @@ const Index = () => {
         color: eventData.color,
       });
     } else if (eventData.type === 'astreinte-ponctuelle') {
-      addPonctualAstreinte(eventData.startDate, eventData.endDate);
+      addPonctualAstreinte(eventData.startDate, eventData.endDate, eventData.name);
     } else if (eventData.type === 'astreinte-cancelled') {
       // Find the astreinte that covers this date and cancel it
       const astreinte = isAstreinteDay(eventData.startDate, currentAstreintes);
       if (astreinte) {
-        cancelAstreinte(astreinte.id);
+        cancelAstreinte(astreinte.id, eventData.name);
       }
     }
   }, [addEvent, addPonctualAstreinte, cancelAstreinte, isAstreinteDay, currentAstreintes]);
@@ -78,59 +109,124 @@ const Index = () => {
     goToDate(new Date(year, currentDate.getMonth(), 1));
   }, [currentDate, goToDate]);
 
+  // Prepare astreintes with names for cancelled ones
+  const astreintesWithNames = currentAstreintes.map(a => ({
+    ...a,
+    name: a.isCancelled ? getCancelledAstreinteName(a.id) : a.name,
+  }));
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container py-6 max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <CalendarHeader
-          currentDate={currentDate}
-          onPrevMonth={goToPrevMonth}
-          onNextMonth={goToNextMonth}
-          onToday={goToToday}
-        />
+        <Tabs defaultValue="calendar" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="calendar" className="gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              Calendrier
+            </TabsTrigger>
+            <TabsTrigger value="events" className="gap-2">
+              <List className="h-4 w-4" />
+              Gestion des événements
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Toolbar */}
-        <Toolbar
-          currentYear={currentDate.getFullYear()}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onAddEvent={() => {
-            setSelectedDate(new Date());
-            setAddEventOpen(true);
-          }}
-          onYearChange={handleYearChange}
-        />
+          <TabsContent value="calendar">
+            {/* Header */}
+            <CalendarHeader
+              currentDate={currentDate}
+              onPrevMonth={goToPrevMonth}
+              onNextMonth={goToNextMonth}
+              onToday={goToToday}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+            />
 
-        {/* Vacation Bar */}
-        <VacationBar
-          vacations={vacations}
-          currentDate={currentDate}
-          settings={settings}
-        />
+            {/* Toolbar */}
+            <Toolbar
+              currentYear={currentDate.getFullYear()}
+              onOpenSettings={() => setSettingsOpen(true)}
+              onAddEvent={() => {
+                setSelectedDate(new Date());
+                setAddEventOpen(true);
+              }}
+              onYearChange={handleYearChange}
+            />
 
-        {/* Calendar Grid */}
-        <CalendarGrid
-          currentDate={currentDate}
-          settings={settings}
-          astreintes={currentAstreintes}
-          isAstreinteDay={isAstreinteDay}
-          hasConflict={hasConflict}
-          isHoliday={isHoliday}
-          isVacationDay={isVacationDay}
-          getEventsForDate={getEventsForDate}
-          onDayClick={handleDayClick}
-        />
+            {viewMode === 'year' ? (
+              /* Year View */
+              <YearView
+                year={currentDate.getFullYear()}
+                settings={settings}
+                astreintes={yearAstreintes}
+                holidays={holidays}
+                vacations={vacations}
+                arrets={arrets}
+                onMonthClick={handleMonthClick}
+                isAstreinteDay={isAstreinteDay}
+                isHoliday={isHoliday}
+                isVacationDay={isVacationDay}
+              />
+            ) : (
+              <>
+                {/* Vacation Bar */}
+                <VacationBar
+                  vacations={vacations}
+                  currentDate={currentDate}
+                  settings={settings}
+                />
 
-        {/* Arret Row */}
-        <ArretRow
-          arrets={currentMonthArrets}
-          currentDate={currentDate}
-          settings={settings}
-        />
+                {/* Arret Bar - like vacations */}
+                <ArretBar
+                  arrets={arrets}
+                  currentDate={currentDate}
+                  settings={settings}
+                />
 
-        {/* Legend */}
-        <div className="mt-6">
-          <Legend settings={settings} />
-        </div>
+                {/* Calendar Grid */}
+                <CalendarGrid
+                  currentDate={currentDate}
+                  settings={settings}
+                  astreintes={astreintesWithNames}
+                  isAstreinteDay={isAstreinteDay}
+                  hasConflict={hasConflict}
+                  isHoliday={isHoliday}
+                  isVacationDay={isVacationDay}
+                  getEventsForDate={getEventsForDate}
+                  onDayClick={handleDayClick}
+                />
+              </>
+            )}
+
+            {/* Legend */}
+            <div className="mt-6">
+              <Legend settings={settings} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="events">
+            <EventsManager
+              events={events}
+              vacations={vacations}
+              arrets={arrets}
+              holidays={holidays}
+              ponctualAstreintes={ponctualAstreintes}
+              cancelledAstreinteIds={cancelledAstreinteIds}
+              onUpdateEvent={updateEvent}
+              onDeleteEvent={removeEvent}
+              onUpdateVacation={updateVacation}
+              onDeleteVacation={deleteVacation}
+              onUpdateArret={updateArret}
+              onDeleteArret={deleteArret}
+              onUpdateHoliday={updateHoliday}
+              onDeleteHoliday={deleteHoliday}
+              onRemovePonctualAstreinte={removePonctualAstreinte}
+              onRestoreAstreinte={restoreAstreinte}
+              onAddVacation={addVacation}
+              onAddArret={addArret}
+              onAddHoliday={addHoliday}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Settings Panel */}
