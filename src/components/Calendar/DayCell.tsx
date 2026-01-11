@@ -155,13 +155,18 @@ export function DayCell({
           'absolute bottom-1 right-1 text-[10px] font-semibold px-1 rounded',
           astreinte.isPonctuelle ? 'bg-white/20' : 'bg-white/20'
         )}>
-          {astreinte.isPonctuelle ? 'AST.' : 'Astreinte'}
+          {astreinte.isPonctuelle 
+            ? (astreinte.name || 'AST.') 
+            : 'Astreinte'}
         </div>
       )}
 
       {astreinte?.isCancelled && (
-        <div className="absolute bottom-1 right-1 text-[10px] font-semibold px-1 rounded bg-white/20 line-through">
-          Annulée
+        <div className="absolute bottom-1 left-1 right-1 text-[9px] font-semibold px-1 rounded bg-white/20">
+          <span className="line-through">Annulée</span>
+          {astreinte.name && (
+            <span className="block truncate opacity-80">{astreinte.name}</span>
+          )}
         </div>
       )}
     </div>
