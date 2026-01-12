@@ -36,6 +36,14 @@ export interface Astreinte {
   isPonctuelle: boolean;
 }
 
+// Cancelled dates for specific days (not entire astreinte periods)
+export interface CancelledAstreinteDate {
+  id: string;
+  date: Date;
+  name: string;
+  astreinteId: string; // Reference to the parent astreinte
+}
+
 export interface Vacation {
   id: string;
   name: string;

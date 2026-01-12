@@ -67,11 +67,11 @@ export function ArretBar({ arrets, currentDate, settings }: ArretBarProps) {
             {arretBars.map(arret => (
               <div
                 key={arret.id}
-                className="relative h-6"
+                className="relative h-7"
               >
                 <div
                   className={cn(
-                    "absolute h-full rounded-full flex items-center justify-center px-3 text-xs font-medium text-white shadow-sm",
+                    "absolute h-full rounded-full flex items-center justify-center px-3 text-xs font-medium text-white shadow-sm overflow-hidden",
                     arret.type === 'prepa' && 'pattern-dots'
                   )}
                   style={{
@@ -81,7 +81,9 @@ export function ArretBar({ arrets, currentDate, settings }: ArretBarProps) {
                   }}
                   title={`${arret.name} (${arret.tranche})`}
                 >
-                  <span className="truncate">{arret.type === 'prepa' ? '⚙️ ' : ''}{arret.name}</span>
+                  <span className="truncate text-[11px]">
+                    {arret.type === 'prepa' ? '⚙️ ' : ''}{arret.name} ({arret.tranche})
+                  </span>
                 </div>
               </div>
             ))}

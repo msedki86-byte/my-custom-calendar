@@ -24,8 +24,7 @@ const Index = () => {
     arrets,
     currentAstreintes,
     ponctualAstreintes,
-    cancelledAstreinteIds,
-    cancelledAstreinteNames,
+    cancelledAstreinteDates,
     goToNextMonth,
     goToPrevMonth,
     goToToday,
@@ -34,9 +33,10 @@ const Index = () => {
     addEvent,
     updateEvent,
     removeEvent,
-    cancelAstreinte,
-    restoreAstreinte,
+    cancelAstreinteDates,
+    restoreCancelledDate,
     addPonctualAstreinte,
+    updatePonctualAstreinte,
     removePonctualAstreinte,
     addArret,
     updateArret,
@@ -48,13 +48,13 @@ const Index = () => {
     updateHoliday,
     deleteHoliday,
     isAstreinteDay,
+    isDateCancelled,
     hasConflict,
     isHoliday,
     isVacationDay,
     getEventsForDate,
     getArretsForPeriod,
     getAstreintesForYear,
-    getCancelledAstreinteName,
   } = useCalendar();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -97,23 +97,14 @@ const Index = () => {
     } else if (eventData.type === 'astreinte-ponctuelle') {
       addPonctualAstreinte(eventData.startDate, eventData.endDate, eventData.name);
     } else if (eventData.type === 'astreinte-cancelled') {
-      // Find the astreinte that covers this date and cancel it
-      const astreinte = isAstreinteDay(eventData.startDate, currentAstreintes);
-      if (astreinte) {
-        cancelAstreinte(astreinte.id, eventData.name);
-      }
+      // Cancel only the specific dates selected
+      cancelAstreinteDates(eventData.startDate, eventData.endDate, eventData.name);
     }
-  }, [addEvent, addPonctualAstreinte, cancelAstreinte, isAstreinteDay, currentAstreintes]);
+  }, [addEvent, addPonctualAstreinte, cancelAstreinteDates]);
 
   const handleYearChange = useCallback((year: number) => {
     goToDate(new Date(year, currentDate.getMonth(), 1));
   }, [currentDate, goToDate]);
-
-  // Prepare astreintes with names for cancelled ones
-  const astreintesWithNames = currentAstreintes.map(a => ({
-    ...a,
-    name: a.isCancelled ? getCancelledAstreinteName(a.id) : a.name,
-  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -186,8 +177,9 @@ const Index = () => {
                 <CalendarGrid
                   currentDate={currentDate}
                   settings={settings}
-                  astreintes={astreintesWithNames}
+                  astreintes={currentAstreintes}
                   isAstreinteDay={isAstreinteDay}
+                  isDateCancelled={isDateCancelled}
                   hasConflict={hasConflict}
                   isHoliday={isHoliday}
                   isVacationDay={isVacationDay}
@@ -210,7 +202,7 @@ const Index = () => {
               arrets={arrets}
               holidays={holidays}
               ponctualAstreintes={ponctualAstreintes}
-              cancelledAstreinteIds={cancelledAstreinteIds}
+              cancelledAstreinteDates={cancelledAstreinteDates}
               onUpdateEvent={updateEvent}
               onDeleteEvent={removeEvent}
               onUpdateVacation={updateVacation}
@@ -220,10 +212,13 @@ const Index = () => {
               onUpdateHoliday={updateHoliday}
               onDeleteHoliday={deleteHoliday}
               onRemovePonctualAstreinte={removePonctualAstreinte}
-              onRestoreAstreinte={restoreAstreinte}
+              onUpdatePonctualAstreinte={updatePonctualAstreinte}
+              onRestoreCancelledDate={restoreCancelledDate}
               onAddVacation={addVacation}
               onAddArret={addArret}
               onAddHoliday={addHoliday}
+              onAddPonctualAstreinte={addPonctualAstreinte}
+              onCancelAstreinteDates={cancelAstreinteDates}
             />
           </TabsContent>
         </Tabs>

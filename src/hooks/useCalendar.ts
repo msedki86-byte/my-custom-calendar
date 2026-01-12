@@ -6,7 +6,8 @@ import {
   Arret, 
   CalendarSettings,
   defaultSettings,
-  Astreinte
+  Astreinte,
+  CancelledAstreinteDate
 } from '@/types/calendar';
 import {
   initialVacations,
@@ -25,7 +26,6 @@ import {
   isSameDay,
   isWithinInterval,
   differenceInWeeks,
-  getDay,
   format,
 } from 'date-fns';
 
@@ -36,9 +36,10 @@ export function useCalendar() {
   const [vacations, setVacations] = useState<Vacation[]>(initialVacations);
   const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
   const [arrets, setArrets] = useState<Arret[]>(initialArrets);
-  const [cancelledAstreinteIds, setCancelledAstreinteIds] = useState<string[]>([]);
-  const [cancelledAstreinteNames, setCancelledAstreinteNames] = useState<Record<string, string>>({});
   const [ponctualAstreintes, setPonctualAstreintes] = useState<Astreinte[]>([]);
+  
+  // Store cancelled dates instead of entire astreinte periods
+  const [cancelledAstreinteDates, setCancelledAstreinteDates] = useState<CancelledAstreinteDate[]>([]);
 
   // Generate recurring astreintes
   const generateAstreintes = useCallback((startDate: Date, endDate: Date): Astreinte[] => {
@@ -63,7 +64,7 @@ export function useCalendar() {
         id,
         startDate: new Date(currentStart),
         endDate: astreinteEnd,
-        isCancelled: cancelledAstreinteIds.includes(id),
+        isCancelled: false, // We check per-date now
         isPonctuelle: false,
       });
       
@@ -78,7 +79,7 @@ export function useCalendar() {
     });
 
     return astreintes;
-  }, [cancelledAstreinteIds, ponctualAstreintes]);
+  }, [ponctualAstreintes]);
 
   // Check if a date is during an astreinte period
   const isAstreinteDay = useCallback((date: Date, astreintes: Astreinte[]): Astreinte | null => {
@@ -89,17 +90,25 @@ export function useCalendar() {
     }
     return null;
   }, []);
+  
+  // Check if a specific date is cancelled
+  const isDateCancelled = useCallback((date: Date): CancelledAstreinteDate | null => {
+    return cancelledAstreinteDates.find(c => isSameDay(c.date, date)) || null;
+  }, [cancelledAstreinteDates]);
 
   // Check for conflicts
   const hasConflict = useCallback((date: Date, astreintes: Astreinte[]): boolean => {
     const astreinte = isAstreinteDay(date, astreintes);
-    if (!astreinte || astreinte.isCancelled) return false;
+    if (!astreinte) return false;
+    
+    // Check if this specific date is cancelled
+    if (isDateCancelled(date)) return false;
     
     // Check if there's an event on this day
     return events.some(event => 
       isWithinInterval(date, { start: event.startDate, end: event.endDate })
     );
-  }, [events, isAstreinteDay]);
+  }, [events, isAstreinteDay, isDateCancelled]);
 
   // Check if date is a holiday
   const isHoliday = useCallback((date: Date): Holiday | null => {
@@ -137,28 +146,28 @@ export function useCalendar() {
     return newEvent;
   }, []);
 
-  // Cancel an astreinte with a name
-  const cancelAstreinte = useCallback((astreinteId: string, name?: string) => {
-    setCancelledAstreinteIds(prev => [...prev, astreinteId]);
-    if (name) {
-      setCancelledAstreinteNames(prev => ({ ...prev, [astreinteId]: name }));
-    }
+  // Cancel specific dates within an astreinte period
+  const cancelAstreinteDates = useCallback((startDate: Date, endDate: Date, name: string) => {
+    const dates = eachDayOfInterval({ start: startDate, end: endDate });
+    const newCancellations: CancelledAstreinteDate[] = dates.map(date => ({
+      id: `cancel-${format(date, 'yyyy-MM-dd')}-${Date.now()}`,
+      date,
+      name,
+      astreinteId: `astreinte-${format(date, 'yyyy-MM-dd')}`,
+    }));
+    
+    setCancelledAstreinteDates(prev => [...prev, ...newCancellations]);
   }, []);
 
-  // Restore an astreinte
-  const restoreAstreinte = useCallback((astreinteId: string) => {
-    setCancelledAstreinteIds(prev => prev.filter(id => id !== astreinteId));
-    setCancelledAstreinteNames(prev => {
-      const newNames = { ...prev };
-      delete newNames[astreinteId];
-      return newNames;
-    });
+  // Remove a cancelled date (restore)
+  const restoreCancelledDate = useCallback((id: string) => {
+    setCancelledAstreinteDates(prev => prev.filter(c => c.id !== id));
   }, []);
   
-  // Get cancelled astreinte name
-  const getCancelledAstreinteName = useCallback((astreinteId: string) => {
-    return cancelledAstreinteNames[astreinteId] || '';
-  }, [cancelledAstreinteNames]);
+  // Get cancelled date info
+  const getCancelledDateInfo = useCallback((date: Date) => {
+    return cancelledAstreinteDates.find(c => isSameDay(c.date, date));
+  }, [cancelledAstreinteDates]);
 
   // Add ponctual astreinte
   const addPonctualAstreinte = useCallback((startDate: Date, endDate: Date, name?: string) => {
@@ -171,6 +180,11 @@ export function useCalendar() {
       isPonctuelle: true,
     };
     setPonctualAstreintes(prev => [...prev, newAstreinte]);
+  }, []);
+
+  // Update ponctual astreinte
+  const updatePonctualAstreinte = useCallback((id: string, updates: Partial<Astreinte>) => {
+    setPonctualAstreintes(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
   }, []);
 
   // Remove ponctual astreinte
@@ -296,8 +310,7 @@ export function useCalendar() {
     monthDays,
     currentAstreintes,
     ponctualAstreintes,
-    cancelledAstreinteIds,
-    cancelledAstreinteNames,
+    cancelledAstreinteDates,
     goToNextMonth,
     goToPrevMonth,
     goToToday,
@@ -306,9 +319,10 @@ export function useCalendar() {
     addEvent,
     updateEvent,
     removeEvent,
-    cancelAstreinte,
-    restoreAstreinte,
+    cancelAstreinteDates,
+    restoreCancelledDate,
     addPonctualAstreinte,
+    updatePonctualAstreinte,
     removePonctualAstreinte,
     addArret,
     updateArret,
@@ -320,12 +334,13 @@ export function useCalendar() {
     updateHoliday,
     deleteHoliday,
     isAstreinteDay,
+    isDateCancelled,
+    getCancelledDateInfo,
     hasConflict,
     isHoliday,
     isVacationDay,
     getEventsForDate,
     getArretsForPeriod,
     getAstreintesForYear,
-    getCancelledAstreinteName,
   };
 }

@@ -58,13 +58,24 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
     onClose();
   };
 
+  const getTypeDescription = () => {
+    switch (type) {
+      case 'event':
+        return 'Créez un nouvel événement sur le calendrier.';
+      case 'astreinte-ponctuelle':
+        return 'Ajoutez une astreinte supplémentaire pour les dates sélectionnées.';
+      case 'astreinte-cancelled':
+        return 'Annulez votre astreinte UNIQUEMENT pour les jours sélectionnés (le remplaçant prend ces jours).';
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Ajouter un événement</DialogTitle>
           <DialogDescription>
-            Créez un nouvel événement sur le calendrier.
+            {getTypeDescription()}
           </DialogDescription>
         </DialogHeader>
         
@@ -78,18 +89,20 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
               <SelectContent>
                 <SelectItem value="event">Événement</SelectItem>
                 <SelectItem value="astreinte-ponctuelle">Astreinte ponctuelle</SelectItem>
-                <SelectItem value="astreinte-cancelled">Annulation d'astreinte</SelectItem>
+                <SelectItem value="astreinte-cancelled">Annulation d'astreinte (jours spécifiques)</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="grid gap-2">
-            <Label htmlFor="name">Nom</Label>
+            <Label htmlFor="name">
+              {type === 'astreinte-cancelled' ? 'Nom du remplaçant' : 'Nom'}
+            </Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nom de l'événement"
+              placeholder={type === 'astreinte-cancelled' ? 'Nom du remplaçant' : "Nom de l'événement"}
             />
           </div>
           

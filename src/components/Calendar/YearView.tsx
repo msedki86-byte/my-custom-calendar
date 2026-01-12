@@ -9,6 +9,7 @@ import {
   isToday,
   isWeekend,
   format,
+  differenceInDays,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, Arret } from '@/types/calendar';
@@ -56,12 +57,16 @@ export function YearView({
         arret => arret.startDate <= monthEnd && arret.endDate >= monthStart
       );
       
-      return { date, days, monthArrets };
+      // Get vacations for this month
+      const monthVacations = vacations.filter(
+        vac => vac.startDate <= monthEnd && vac.endDate >= monthStart
+      );
+      
+      return { date, days, monthArrets, monthVacations, monthStart, monthEnd };
     });
-  }, [year, arrets]);
+  }, [year, arrets, vacations]);
 
   const getAstreinteForDate = (date: Date) => {
-    const monthDate = new Date(date.getFullYear(), date.getMonth(), 1);
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31);
     
@@ -75,89 +80,146 @@ export function YearView({
 
   return (
     <div className="grid grid-cols-4 gap-4">
-      {monthsData.map(({ date, days, monthArrets }) => (
-        <div
-          key={date.getMonth()}
-          className="bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
-          onClick={() => onMonthClick(date)}
-        >
-          {/* Month header */}
-          <div 
-            className="px-3 py-2 text-center font-semibold text-white text-sm"
-            style={{ backgroundColor: settings.titleWeekColor }}
-          >
-            {format(date, 'MMMM', { locale: fr })}
-          </div>
+      {monthsData.map(({ date, days, monthArrets, monthVacations, monthStart, monthEnd }) => {
+        // Calculate vacation bars for mini display
+        const vacationBars = monthVacations.map(vac => {
+          const displayStart = vac.startDate < monthStart ? monthStart : vac.startDate;
+          const displayEnd = vac.endDate > monthEnd ? monthEnd : vac.endDate;
+          const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
+          const startDayIndex = differenceInDays(displayStart, monthStart);
+          const width = differenceInDays(displayEnd, displayStart) + 1;
           
-          {/* Arret indicator bar */}
-          {monthArrets.length > 0 && (
-            <div className="flex gap-0.5 px-1 py-0.5 bg-muted/50">
-              {monthArrets.slice(0, 3).map(arret => (
-                <div
-                  key={arret.id}
-                  className="flex-1 h-1 rounded-full"
-                  style={{ backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor }}
-                  title={arret.name}
-                />
+          return {
+            ...vac,
+            left: (startDayIndex / daysInMonth) * 100,
+            width: (width / daysInMonth) * 100,
+          };
+        });
+        
+        // Calculate arret bars for mini display
+        const arretBars = monthArrets.map(arret => {
+          const displayStart = arret.startDate < monthStart ? monthStart : arret.startDate;
+          const displayEnd = arret.endDate > monthEnd ? monthEnd : arret.endDate;
+          const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
+          const startDayIndex = differenceInDays(displayStart, monthStart);
+          const width = differenceInDays(displayEnd, displayStart) + 1;
+          
+          return {
+            ...arret,
+            left: (startDayIndex / daysInMonth) * 100,
+            width: (width / daysInMonth) * 100,
+          };
+        });
+        
+        return (
+          <div
+            key={date.getMonth()}
+            className="bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+            onClick={() => onMonthClick(date)}
+          >
+            {/* Month header */}
+            <div 
+              className="px-3 py-2 text-center font-semibold text-white text-sm"
+              style={{ backgroundColor: settings.titleWeekColor }}
+            >
+              {format(date, 'MMMM', { locale: fr })}
+            </div>
+            
+            {/* Vacation indicator bar */}
+            {vacationBars.length > 0 && (
+              <div className="relative h-2 bg-muted/30">
+                {vacationBars.map(vac => (
+                  <div
+                    key={vac.id}
+                    className="absolute h-full"
+                    style={{ 
+                      left: `${vac.left}%`,
+                      width: `${vac.width}%`,
+                      backgroundColor: settings.vacationColor,
+                    }}
+                    title={vac.name}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* Arret indicator bar */}
+            {arretBars.length > 0 && (
+              <div className="relative h-2 bg-muted/30">
+                {arretBars.map(arret => (
+                  <div
+                    key={arret.id}
+                    className={cn(
+                      "absolute h-full",
+                      arret.type === 'prepa' && 'opacity-70'
+                    )}
+                    style={{ 
+                      left: `${arret.left}%`,
+                      width: `${arret.width}%`,
+                      backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor,
+                    }}
+                    title={`${arret.name} (${arret.tranche})`}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* Weekday headers */}
+            <div className="grid grid-cols-7 bg-muted/30">
+              {WEEKDAYS.map((day, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "text-[10px] text-center py-0.5 font-medium",
+                    i >= 5 ? "text-muted-foreground" : "text-foreground/70"
+                  )}
+                >
+                  {day}
+                </div>
               ))}
             </div>
-          )}
-          
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 bg-muted/30">
-            {WEEKDAYS.map((day, i) => (
-              <div 
-                key={i} 
-                className={cn(
-                  "text-[10px] text-center py-0.5 font-medium",
-                  i >= 5 ? "text-muted-foreground" : "text-foreground/70"
-                )}
-              >
-                {day}
-              </div>
-            ))}
+            
+            {/* Days grid */}
+            <div className="grid grid-cols-7 gap-px p-1">
+              {days.map((day, index) => {
+                const inMonth = isSameMonth(day, date);
+                const todayDate = isToday(day);
+                const weekend = isWeekend(day);
+                const astreinte = inMonth ? getAstreinteForDate(day) : null;
+                const holiday = inMonth ? isHoliday(day) : null;
+                const vacation = inMonth ? isVacationDay(day) : null;
+                
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "text-[9px] h-5 flex items-center justify-center rounded-sm",
+                      !inMonth && "text-muted-foreground/30",
+                      inMonth && weekend && "text-muted-foreground",
+                      inMonth && todayDate && "bg-primary text-primary-foreground font-bold",
+                      inMonth && holiday && !todayDate && "text-holiday font-bold",
+                    )}
+                    style={
+                      inMonth && astreinte && !astreinte.isCancelled && !todayDate
+                        ? { 
+                            backgroundColor: astreinte.isPonctuelle 
+                              ? settings.astreintePonctuelleColor 
+                              : settings.astreinteColor,
+                            color: '#fff',
+                          }
+                        : inMonth && vacation && !todayDate && !astreinte
+                          ? { backgroundColor: `${settings.vacationColor}30` }
+                          : undefined
+                    }
+                  >
+                    {inMonth ? format(day, 'd') : ''}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          
-          {/* Days grid */}
-          <div className="grid grid-cols-7 gap-px p-1">
-            {days.map((day, index) => {
-              const inMonth = isSameMonth(day, date);
-              const todayDate = isToday(day);
-              const weekend = isWeekend(day);
-              const astreinte = inMonth ? getAstreinteForDate(day) : null;
-              const holiday = inMonth ? isHoliday(day) : null;
-              const vacation = inMonth ? isVacationDay(day) : null;
-              
-              return (
-                <div
-                  key={index}
-                  className={cn(
-                    "text-[9px] h-5 flex items-center justify-center rounded-sm",
-                    !inMonth && "text-muted-foreground/30",
-                    inMonth && weekend && "text-muted-foreground",
-                    inMonth && todayDate && "bg-primary text-primary-foreground font-bold",
-                    inMonth && holiday && !todayDate && "text-holiday font-bold",
-                  )}
-                  style={
-                    inMonth && astreinte && !astreinte.isCancelled && !todayDate
-                      ? { 
-                          backgroundColor: astreinte.isPonctuelle 
-                            ? settings.astreintePonctuelleColor 
-                            : settings.astreinteColor,
-                          color: '#fff',
-                        }
-                      : inMonth && vacation && !todayDate && !astreinte
-                        ? { backgroundColor: `${settings.vacationColor}30` }
-                        : undefined
-                  }
-                >
-                  {inMonth ? format(day, 'd') : ''}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
