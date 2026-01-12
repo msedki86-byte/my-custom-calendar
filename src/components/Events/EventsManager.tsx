@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarEvent, Vacation, Arret, Holiday, Astreinte } from '@/types/calendar';
+import { CalendarEvent, Vacation, Arret, Holiday, Astreinte, CancelledAstreinteDate } from '@/types/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, Pencil, Trash2, X, Check, Plus } from 'lucide-react';
+import { CalendarIcon, Trash2, X, Check, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EventsManagerProps {
@@ -18,7 +18,7 @@ interface EventsManagerProps {
   arrets: Arret[];
   holidays: Holiday[];
   ponctualAstreintes: Astreinte[];
-  cancelledAstreinteIds: string[];
+  cancelledAstreinteDates: CancelledAstreinteDate[];
   onUpdateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   onDeleteEvent: (id: string) => void;
   onUpdateVacation: (id: string, updates: Partial<Vacation>) => void;
@@ -28,10 +28,13 @@ interface EventsManagerProps {
   onUpdateHoliday: (date: Date, updates: Partial<Holiday>) => void;
   onDeleteHoliday: (date: Date) => void;
   onRemovePonctualAstreinte: (id: string) => void;
-  onRestoreAstreinte: (id: string) => void;
+  onUpdatePonctualAstreinte: (id: string, updates: Partial<Astreinte>) => void;
+  onRestoreCancelledDate: (id: string) => void;
   onAddVacation: (vacation: Omit<Vacation, 'id'>) => void;
   onAddArret: (arret: Omit<Arret, 'id'>) => void;
   onAddHoliday: (holiday: Holiday) => void;
+  onAddPonctualAstreinte: (startDate: Date, endDate: Date, name?: string) => void;
+  onCancelAstreinteDates: (startDate: Date, endDate: Date, name: string) => void;
 }
 
 interface EditingState {
@@ -46,7 +49,7 @@ export function EventsManager({
   arrets,
   holidays,
   ponctualAstreintes,
-  cancelledAstreinteIds,
+  cancelledAstreinteDates,
   onUpdateEvent,
   onDeleteEvent,
   onUpdateVacation,
@@ -56,21 +59,19 @@ export function EventsManager({
   onUpdateHoliday,
   onDeleteHoliday,
   onRemovePonctualAstreinte,
-  onRestoreAstreinte,
+  onUpdatePonctualAstreinte,
+  onRestoreCancelledDate,
   onAddVacation,
   onAddArret,
   onAddHoliday,
+  onAddPonctualAstreinte,
+  onCancelAstreinteDates,
 }: EventsManagerProps) {
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [addingNew, setAddingNew] = useState<string | null>(null);
   const [newItem, setNewItem] = useState<any>({});
 
   const formatDate = (date: Date) => format(date, 'dd/MM/yyyy', { locale: fr });
-
-  const handleSaveEdit = () => {
-    if (!editing) return;
-    setEditing(null);
-  };
 
   const handleAddNew = (type: string) => {
     if (type === 'vacation') {
@@ -94,10 +95,30 @@ export function EventsManager({
         date: newItem.date || new Date(),
         name: newItem.name || 'Nouveau férié',
       });
+    } else if (type === 'ponctual') {
+      onAddPonctualAstreinte(
+        newItem.startDate || new Date(),
+        newItem.endDate || new Date(),
+        newItem.name || 'Astreinte ponctuelle'
+      );
+    } else if (type === 'cancelled') {
+      if (newItem.startDate && newItem.endDate && newItem.name) {
+        onCancelAstreinteDates(newItem.startDate, newItem.endDate, newItem.name);
+      }
     }
     setAddingNew(null);
     setNewItem({});
   };
+
+  // Group cancelled dates by name for display
+  const groupedCancelledDates = cancelledAstreinteDates.reduce((acc, item) => {
+    const key = item.name;
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(item);
+    return acc;
+  }, {} as Record<string, CancelledAstreinteDate[]>);
 
   return (
     <div className="space-y-6">
@@ -128,31 +149,10 @@ export function EventsManager({
               {events.map(event => (
                 <TableRow key={event.id}>
                   <TableCell>
-                    {editing?.id === event.id && editing.field === 'name' ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={editing.value}
-                          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                          className="h-8"
-                        />
-                        <Button size="sm" variant="ghost" onClick={() => {
-                          onUpdateEvent(event.id, { name: editing.value });
-                          setEditing(null);
-                        }}>
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <span 
-                        className="cursor-pointer hover:underline"
-                        onClick={() => setEditing({ id: event.id, field: 'name', value: event.name })}
-                      >
-                        {event.name}
-                      </span>
-                    )}
+                    <EditableText
+                      value={event.name}
+                      onSave={(name) => onUpdateEvent(event.id, { name })}
+                    />
                   </TableCell>
                   <TableCell>
                     <DateEditor
@@ -196,66 +196,210 @@ export function EventsManager({
 
         {/* Astreintes Tab */}
         <TabsContent value="astreintes" className="mt-4">
-          <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground">Astreintes ponctuelles</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Début</TableHead>
-                  <TableHead>Fin</TableHead>
-                  <TableHead className="w-20">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ponctualAstreintes.map(astreinte => (
-                  <TableRow key={astreinte.id}>
-                    <TableCell>{formatDate(astreinte.startDate)}</TableCell>
-                    <TableCell>{formatDate(astreinte.endDate)}</TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => onRemovePonctualAstreinte(astreinte.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {ponctualAstreintes.length === 0 && (
+          <div className="space-y-6">
+            {/* Ponctual Astreintes */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-sm text-muted-foreground">Astreintes ponctuelles</h3>
+                <Button size="sm" onClick={() => setAddingNew('ponctual')}>
+                  <Plus className="h-4 w-4 mr-2" /> Ajouter
+                </Button>
+              </div>
+              
+              {addingNew === 'ponctual' && (
+                <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
+                  <Input
+                    placeholder="Nom (ex: Remplacement Jean)"
+                    value={newItem.name || ''}
+                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                  />
+                  <div className="flex gap-4">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <CalendarIcon className="h-4 w-4 mr-2" />
+                          {newItem.startDate ? formatDate(newItem.startDate) : 'Début'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={newItem.startDate}
+                          onSelect={(date) => setNewItem({ ...newItem, startDate: date })}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <CalendarIcon className="h-4 w-4 mr-2" />
+                          {newItem.endDate ? formatDate(newItem.endDate) : 'Fin'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={newItem.endDate}
+                          onSelect={(date) => setNewItem({ ...newItem, endDate: date })}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleAddNew('ponctual')}>Ajouter</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>Annuler</Button>
+                  </div>
+                </div>
+              )}
+              
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
-                      Aucune astreinte ponctuelle
-                    </TableCell>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Début</TableHead>
+                    <TableHead>Fin</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {ponctualAstreintes.map(astreinte => (
+                    <TableRow key={astreinte.id}>
+                      <TableCell>
+                        <EditableText
+                          value={astreinte.name || 'Astreinte ponctuelle'}
+                          onSave={(name) => onUpdatePonctualAstreinte(astreinte.id, { name })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <DateEditor
+                          date={astreinte.startDate}
+                          onSave={(date) => onUpdatePonctualAstreinte(astreinte.id, { startDate: date })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <DateEditor
+                          date={astreinte.endDate}
+                          onSave={(date) => onUpdatePonctualAstreinte(astreinte.id, { endDate: date })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="ghost" onClick={() => onRemovePonctualAstreinte(astreinte.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {ponctualAstreintes.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        Aucune astreinte ponctuelle
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
 
-            <h3 className="font-semibold text-sm text-muted-foreground mt-6">Astreintes annulées</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead className="w-20">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {cancelledAstreinteIds.map(id => (
-                  <TableRow key={id}>
-                    <TableCell>{id}</TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => onRestoreAstreinte(id)}>
-                        <Check className="h-4 w-4 text-green-600" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {cancelledAstreinteIds.length === 0 && (
+            {/* Cancelled Dates */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-sm text-muted-foreground">Jours d'astreinte annulés</h3>
+                <Button size="sm" onClick={() => setAddingNew('cancelled')}>
+                  <Plus className="h-4 w-4 mr-2" /> Annuler des jours
+                </Button>
+              </div>
+              
+              {addingNew === 'cancelled' && (
+                <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
+                  <Input
+                    placeholder="Nom du remplaçant"
+                    value={newItem.name || ''}
+                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                  />
+                  <div className="flex gap-4">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <CalendarIcon className="h-4 w-4 mr-2" />
+                          {newItem.startDate ? formatDate(newItem.startDate) : 'Début'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={newItem.startDate}
+                          onSelect={(date) => setNewItem({ ...newItem, startDate: date })}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <CalendarIcon className="h-4 w-4 mr-2" />
+                          {newItem.endDate ? formatDate(newItem.endDate) : 'Fin'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={newItem.endDate}
+                          onSelect={(date) => setNewItem({ ...newItem, endDate: date })}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleAddNew('cancelled')}>Annuler ces jours</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>Annuler</Button>
+                  </div>
+                </div>
+              )}
+              
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={2} className="text-center text-muted-foreground">
-                      Aucune astreinte annulée
-                    </TableCell>
+                    <TableHead>Remplaçant</TableHead>
+                    <TableHead>Date(s)</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(groupedCancelledDates).map(([name, dates]) => (
+                    <TableRow key={name}>
+                      <TableCell>
+                        <Badge variant="secondary">{name}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {dates.map(d => (
+                            <span key={d.id} className="text-sm bg-muted px-2 py-0.5 rounded">
+                              {formatDate(d.date)}
+                            </span>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => dates.forEach(d => onRestoreCancelledDate(d.id))}
+                          title="Restaurer ces jours"
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {cancelledAstreinteDates.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center text-muted-foreground">
+                        Aucun jour annulé
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </TabsContent>
 

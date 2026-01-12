@@ -66,10 +66,10 @@ export function VacationBar({ vacations, currentDate, settings }: VacationBarPro
             {vacationBars.map(vac => (
               <div
                 key={vac.id}
-                className="relative h-6"
+                className="relative h-7"
               >
                 <div
-                  className="absolute h-full rounded-full flex items-center justify-center px-3 text-xs font-medium text-white shadow-sm"
+                  className="absolute h-full rounded-full flex items-center justify-center px-3 text-xs font-medium text-white shadow-sm overflow-hidden"
                   style={{
                     left: `${(vac.startIndex / daysInMonth.length) * 100}%`,
                     width: `${(vac.width / daysInMonth.length) * 100}%`,
@@ -77,7 +77,7 @@ export function VacationBar({ vacations, currentDate, settings }: VacationBarPro
                   }}
                   title={vac.name}
                 >
-                  <span className="truncate">{vac.name}</span>
+                  <span className="truncate text-[11px]">{vac.name}</span>
                 </div>
               </div>
             ))}
