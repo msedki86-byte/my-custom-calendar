@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { format, isToday, isWeekend, getDay } from 'date-fns';
-import { CalendarEvent, Holiday, Vacation, Astreinte, CalendarSettings, PatternType, CancelledAstreinteDate } from '@/types/calendar';
+import { CalendarEvent, Holiday, Vacation, Astreinte, CalendarSettings, PatternType, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 import { AlertTriangle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface DayCellProps {
   date: Date;
@@ -11,8 +11,10 @@ interface DayCellProps {
   astreinte: Astreinte | null;
   holiday: Holiday | null;
   vacation: Vacation | null;
+  arret: Arret | null;
   hasConflict: boolean;
   cancelledInfo: CancelledAstreinteDate | null;
+  conflictDetails: string[];
   settings: CalendarSettings;
   onClick?: () => void;
 }
@@ -31,8 +33,10 @@ export function DayCell({
   astreinte,
   holiday,
   vacation,
+  arret,
   hasConflict,
   cancelledInfo,
+  conflictDetails,
   settings,
   onClick,
 }: DayCellProps) {
@@ -96,10 +100,26 @@ export function DayCell({
         />
       )}
 
+      {/* Arret indicator - second top banner */}
+      {arret && (
+        <div 
+          className={cn(
+            "absolute left-0 right-0 h-1.5 rounded-b-sm",
+            arret.type === 'prepa' && 'opacity-70'
+          )}
+          style={{ 
+            top: vacation ? '6px' : '0px',
+            backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor 
+          }}
+          title={`${arret.name} (${arret.tranche})`}
+        />
+      )}
+
       {/* Day number */}
       <div className={cn(
         'flex items-center justify-between mb-1',
-        holiday && 'font-bold'
+        holiday && 'font-bold',
+        (vacation || arret) && 'mt-2'
       )}>
         <span className={cn(
           'text-sm font-medium',
@@ -111,18 +131,35 @@ export function DayCell({
           {dayNumber}
         </span>
         
-        {/* Conflict warning */}
+        {/* Conflict warning with popover */}
         {hasConflict && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="animate-pulse-soft">
-                <AlertTriangle className="w-4 h-4 text-destructive" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="animate-pulse-soft hover:scale-110 transition-transform">
+                <AlertTriangle className="w-4 h-4 text-destructive drop-shadow-md" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3 bg-destructive/10 border-destructive/30">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-destructive flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Conflit détecté !
+                </h4>
+                <div className="text-sm text-foreground space-y-1">
+                  {conflictDetails.length > 0 ? (
+                    conflictDetails.map((detail, idx) => (
+                      <p key={idx} className="flex items-start gap-2">
+                        <span className="text-destructive">•</span>
+                        {detail}
+                      </p>
+                    ))
+                  ) : (
+                    <p>Un événement est en conflit avec l'astreinte.</p>
+                  )}
+                </div>
               </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="font-medium">⚠️ Conflit avec l'astreinte !</p>
-            </TooltipContent>
-          </Tooltip>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 

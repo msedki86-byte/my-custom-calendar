@@ -122,12 +122,51 @@ export function useCalendar() {
     ) || null;
   }, [vacations]);
 
+  // Check if date is during an arret
+  const isArretDay = useCallback((date: Date): Arret | null => {
+    return arrets.find(a => 
+      isWithinInterval(date, { start: a.startDate, end: a.endDate })
+    ) || null;
+  }, [arrets]);
+
   // Get events for a specific date
   const getEventsForDate = useCallback((date: Date): CalendarEvent[] => {
     return events.filter(event => 
       isWithinInterval(date, { start: event.startDate, end: event.endDate })
     );
   }, [events]);
+
+  // Get conflict details for a date
+  const getConflictDetails = useCallback((date: Date, astreintes: Astreinte[]): string[] => {
+    const details: string[] = [];
+    const astreinte = isAstreinteDay(date, astreintes);
+    if (!astreinte) return details;
+    
+    // Check if this specific date is cancelled
+    if (isDateCancelled(date)) return details;
+    
+    // Check for events
+    const dateEvents = events.filter(event => 
+      isWithinInterval(date, { start: event.startDate, end: event.endDate })
+    );
+    dateEvents.forEach(event => {
+      details.push(`Événement "${event.name}" en conflit avec astreinte`);
+    });
+    
+    // Check for vacations
+    const vacation = isVacationDay(date);
+    if (vacation) {
+      details.push(`Vacances "${vacation.name}" pendant l'astreinte`);
+    }
+    
+    // Check for holidays
+    const holiday = isHoliday(date);
+    if (holiday) {
+      details.push(`Jour férié "${holiday.name}" pendant l'astreinte`);
+    }
+    
+    return details;
+  }, [events, isAstreinteDay, isDateCancelled, isVacationDay, isHoliday]);
 
   // Get arrets for display (for a month view)
   const getArretsForPeriod = useCallback((start: Date, end: Date): Arret[] => {
@@ -337,8 +376,10 @@ export function useCalendar() {
     isDateCancelled,
     getCancelledDateInfo,
     hasConflict,
+    getConflictDetails,
     isHoliday,
     isVacationDay,
+    isArretDay,
     getEventsForDate,
     getArretsForPeriod,
     getAstreintesForYear,
