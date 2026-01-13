@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { format, isToday, isWeekend, getDay } from 'date-fns';
-import { CalendarEvent, Holiday, Vacation, Astreinte, CalendarSettings, PatternType } from '@/types/calendar';
+import { CalendarEvent, Holiday, Vacation, Astreinte, CalendarSettings, PatternType, CancelledAstreinteDate } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 import { AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -12,6 +12,7 @@ interface DayCellProps {
   holiday: Holiday | null;
   vacation: Vacation | null;
   hasConflict: boolean;
+  cancelledInfo: CancelledAstreinteDate | null;
   settings: CalendarSettings;
   onClick?: () => void;
 }
@@ -31,6 +32,7 @@ export function DayCell({
   holiday,
   vacation,
   hasConflict,
+  cancelledInfo,
   settings,
   onClick,
 }: DayCellProps) {
@@ -39,6 +41,13 @@ export function DayCell({
   const dayNumber = format(date, 'd');
 
   const cellStyle = useMemo(() => {
+    // Si la date est annulée spécifiquement
+    if (cancelledInfo) {
+      return {
+        backgroundColor: settings.astreinteCancelledColor,
+        color: '#fff',
+      };
+    }
     if (astreinte && !astreinte.isCancelled) {
       return {
         backgroundColor: astreinte.isPonctuelle 
@@ -54,17 +63,17 @@ export function DayCell({
       };
     }
     return {};
-  }, [astreinte, settings]);
+  }, [astreinte, cancelledInfo, settings]);
 
   const patternClass = useMemo(() => {
-    if (astreinte?.isCancelled) {
+    if (cancelledInfo || astreinte?.isCancelled) {
       return patternClasses[settings.astreinteCancelledPattern];
     }
     if (holiday) {
       return patternClasses[settings.holidayPattern];
     }
     return '';
-  }, [astreinte, holiday, settings]);
+  }, [astreinte, cancelledInfo, holiday, settings]);
 
   return (
     <div
@@ -161,7 +170,17 @@ export function DayCell({
         </div>
       )}
 
-      {astreinte?.isCancelled && (
+      {/* Cancelled date info */}
+      {cancelledInfo && (
+        <div className="absolute bottom-1 left-1 right-1 text-[9px] font-semibold px-1 rounded bg-white/20">
+          <span className="line-through">Annulée</span>
+          {cancelledInfo.name && (
+            <span className="block truncate opacity-80">{cancelledInfo.name}</span>
+          )}
+        </div>
+      )}
+
+      {astreinte?.isCancelled && !cancelledInfo && (
         <div className="absolute bottom-1 left-1 right-1 text-[9px] font-semibold px-1 rounded bg-white/20">
           <span className="line-through">Annulée</span>
           {astreinte.name && (
