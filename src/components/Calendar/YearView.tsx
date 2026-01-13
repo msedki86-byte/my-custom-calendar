@@ -12,8 +12,17 @@ import {
   differenceInDays,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarSettings, Astreinte, Holiday, Vacation, Arret } from '@/types/calendar';
+import { CalendarSettings, Astreinte, Holiday, Vacation, Arret, CancelledAstreinteDate, PatternType } from '@/types/calendar';
 import { cn } from '@/lib/utils';
+import { AlertTriangle } from 'lucide-react';
+
+const patternClasses: Record<PatternType, string> = {
+  none: '',
+  stripes: 'pattern-stripes-mini',
+  dots: 'pattern-dots-mini',
+  crosshatch: 'pattern-crosshatch-mini',
+  waves: 'pattern-waves-mini',
+};
 
 interface YearViewProps {
   year: number;
@@ -23,9 +32,13 @@ interface YearViewProps {
   vacations: Vacation[];
   arrets: Arret[];
   onMonthClick: (date: Date) => void;
+  onDayClick: (date: Date) => void;
   isAstreinteDay: (date: Date, astreintes: Astreinte[]) => Astreinte | null;
+  isDateCancelled: (date: Date) => CancelledAstreinteDate | null;
   isHoliday: (date: Date) => Holiday | null;
   isVacationDay: (date: Date) => Vacation | null;
+  isArretDay: (date: Date) => Arret | null;
+  hasConflict: (date: Date, astreintes: Astreinte[]) => boolean;
 }
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i);
@@ -39,9 +52,13 @@ export function YearView({
   vacations,
   arrets,
   onMonthClick,
+  onDayClick,
   isAstreinteDay,
+  isDateCancelled,
   isHoliday,
   isVacationDay,
+  isArretDay,
+  hasConflict,
 }: YearViewProps) {
   const monthsData = useMemo(() => {
     return MONTHS.map(month => {
@@ -186,33 +203,83 @@ export function YearView({
                 const todayDate = isToday(day);
                 const weekend = isWeekend(day);
                 const astreinte = inMonth ? getAstreinteForDate(day) : null;
+                const cancelledInfo = inMonth ? isDateCancelled(day) : null;
                 const holiday = inMonth ? isHoliday(day) : null;
                 const vacation = inMonth ? isVacationDay(day) : null;
+                const arret = inMonth ? isArretDay(day) : null;
+                const conflict = inMonth && astreinte ? hasConflict(day, astreintes) : false;
+                
+                // Determine background color and pattern
+                let bgColor: string | undefined;
+                let patternClass = '';
+                
+                if (cancelledInfo) {
+                  bgColor = settings.astreinteCancelledColor;
+                  patternClass = patternClasses[settings.astreinteCancelledPattern];
+                } else if (astreinte && !astreinte.isCancelled) {
+                  bgColor = astreinte.isPonctuelle 
+                    ? settings.astreintePonctuelleColor 
+                    : settings.astreinteColor;
+                }
                 
                 return (
                   <div
                     key={index}
                     className={cn(
-                      "text-[9px] h-5 flex items-center justify-center rounded-sm",
-                      !inMonth && "text-muted-foreground/30",
-                      inMonth && weekend && "text-muted-foreground",
-                      inMonth && todayDate && "bg-primary text-primary-foreground font-bold",
+                      "relative text-[9px] h-6 flex flex-col items-center justify-end rounded-sm cursor-pointer hover:ring-1 hover:ring-primary/50 overflow-hidden",
+                      !inMonth && "text-muted-foreground/30 pointer-events-none",
+                      inMonth && weekend && "text-muted-foreground bg-muted/30",
+                      inMonth && todayDate && "ring-1 ring-primary font-bold",
                       inMonth && holiday && !todayDate && "text-holiday font-bold",
+                      patternClass
                     )}
                     style={
-                      inMonth && astreinte && !astreinte.isCancelled && !todayDate
-                        ? { 
-                            backgroundColor: astreinte.isPonctuelle 
-                              ? settings.astreintePonctuelleColor 
-                              : settings.astreinteColor,
-                            color: '#fff',
-                          }
-                        : inMonth && vacation && !todayDate && !astreinte
-                          ? { backgroundColor: `${settings.vacationColor}30` }
-                          : undefined
+                      inMonth && bgColor && !todayDate
+                        ? { backgroundColor: bgColor, color: '#fff' }
+                        : undefined
                     }
+                    onClick={(e) => {
+                      if (inMonth) {
+                        e.stopPropagation();
+                        onDayClick(day);
+                      }
+                    }}
                   >
-                    {inMonth ? format(day, 'd') : ''}
+                    {/* Vacation bar - top */}
+                    {vacation && inMonth && (
+                      <div 
+                        className="absolute top-0 left-0 right-0 h-[2px]"
+                        style={{ backgroundColor: settings.vacationColor }}
+                      />
+                    )}
+                    
+                    {/* Arret bar - below vacation */}
+                    {arret && inMonth && (
+                      <div 
+                        className={cn(
+                          "absolute left-0 right-0 h-[2px]",
+                          arret.type === 'prepa' && 'opacity-70'
+                        )}
+                        style={{ 
+                          top: vacation ? '2px' : '0px',
+                          backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor 
+                        }}
+                      />
+                    )}
+                    
+                    {/* Conflict indicator */}
+                    {conflict && inMonth && (
+                      <div className="absolute top-0 right-0">
+                        <AlertTriangle className="w-2 h-2 text-destructive" />
+                      </div>
+                    )}
+                    
+                    {/* Day number */}
+                    <span className={cn(
+                      (vacation || arret) && "mt-1"
+                    )}>
+                      {inMonth ? format(day, 'd') : ''}
+                    </span>
                   </div>
                 );
               })}
