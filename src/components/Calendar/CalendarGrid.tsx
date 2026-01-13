@@ -11,7 +11,7 @@ import {
 import { fr } from 'date-fns/locale';
 import { DayCell } from './DayCell';
 import { WeekHeader } from './WeekHeader';
-import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent } from '@/types/calendar';
+import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 
 interface CalendarGridProps {
@@ -23,6 +23,7 @@ interface CalendarGridProps {
   isHoliday: (date: Date) => Holiday | null;
   isVacationDay: (date: Date) => Vacation | null;
   getEventsForDate: (date: Date) => CalendarEvent[];
+  isDateCancelled: (date: Date) => CancelledAstreinteDate | null;
   onDayClick?: (date: Date) => void;
 }
 
@@ -35,6 +36,7 @@ export function CalendarGrid({
   isHoliday,
   isVacationDay,
   getEventsForDate,
+  isDateCancelled,
   onDayClick,
 }: CalendarGridProps) {
   const calendarDays = useMemo(() => {
@@ -94,6 +96,7 @@ export function CalendarGrid({
                     holiday={isHoliday(day)}
                     vacation={isVacationDay(day)}
                     hasConflict={hasConflict(day, astreintes)}
+                    cancelledInfo={isDateCancelled(day)}
                     settings={settings}
                     onClick={() => onDayClick?.(day)}
                   />
