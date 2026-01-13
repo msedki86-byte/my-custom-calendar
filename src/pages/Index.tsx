@@ -155,9 +155,13 @@ const Index = () => {
                 vacations={vacations}
                 arrets={arrets}
                 onMonthClick={handleMonthClick}
+                onDayClick={handleDayClick}
                 isAstreinteDay={isAstreinteDay}
+                isDateCancelled={isDateCancelled}
                 isHoliday={isHoliday}
                 isVacationDay={isVacationDay}
+                isArretDay={isArretDay}
+                hasConflict={hasConflict}
               />
             ) : (
               <>

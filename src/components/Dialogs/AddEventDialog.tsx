@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -39,6 +39,14 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
   const [startDate, setStartDate] = useState<Date | undefined>(initialDate || new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(initialDate || new Date());
   const [color, setColor] = useState('#0ea5e9');
+
+  // Synchronize dates when initialDate changes or dialog opens
+  React.useEffect(() => {
+    if (isOpen && initialDate) {
+      setStartDate(initialDate);
+      setEndDate(initialDate);
+    }
+  }, [isOpen, initialDate]);
 
   const handleSubmit = () => {
     if (!startDate || !endDate || !name.trim()) return;

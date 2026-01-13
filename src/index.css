@@ -2,6 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mini pattern classes for year view */
+.pattern-stripes-mini {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.15) 2px,
+    rgba(255, 255, 255, 0.15) 4px
+  );
+}
+
+.pattern-dots-mini {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+.pattern-crosshatch-mini {
+  background-image:
+    repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255, 255, 255, 0.15) 2px, rgba(255, 255, 255, 0.15) 4px),
+    repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(255, 255, 255, 0.15) 2px, rgba(255, 255, 255, 0.15) 4px);
+}
+
+.pattern-waves-mini {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.1) 2px,
+    rgba(255, 255, 255, 0.1) 4px
+  );
+}
+@tailwind components;
+@tailwind utilities;
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @layer base {
