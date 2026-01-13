@@ -50,8 +50,10 @@ const Index = () => {
     isAstreinteDay,
     isDateCancelled,
     hasConflict,
+    getConflictDetails,
     isHoliday,
     isVacationDay,
+    isArretDay,
     getEventsForDate,
     getArretsForPeriod,
     getAstreintesForYear,
@@ -178,11 +180,14 @@ const Index = () => {
                   currentDate={currentDate}
                   settings={settings}
                   astreintes={currentAstreintes}
+                  arrets={arrets}
                   isAstreinteDay={isAstreinteDay}
                   isDateCancelled={isDateCancelled}
                   hasConflict={hasConflict}
+                  getConflictDetails={getConflictDetails}
                   isHoliday={isHoliday}
                   isVacationDay={isVacationDay}
+                  isArretDay={isArretDay}
                   getEventsForDate={getEventsForDate}
                   onDayClick={handleDayClick}
                 />

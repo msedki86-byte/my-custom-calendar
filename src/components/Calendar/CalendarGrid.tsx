@@ -11,17 +11,20 @@ import {
 import { fr } from 'date-fns/locale';
 import { DayCell } from './DayCell';
 import { WeekHeader } from './WeekHeader';
-import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate } from '@/types/calendar';
+import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 
 interface CalendarGridProps {
   currentDate: Date;
   settings: CalendarSettings;
   astreintes: Astreinte[];
+  arrets: Arret[];
   isAstreinteDay: (date: Date, astreintes: Astreinte[]) => Astreinte | null;
   hasConflict: (date: Date, astreintes: Astreinte[]) => boolean;
+  getConflictDetails: (date: Date, astreintes: Astreinte[]) => string[];
   isHoliday: (date: Date) => Holiday | null;
   isVacationDay: (date: Date) => Vacation | null;
+  isArretDay: (date: Date) => Arret | null;
   getEventsForDate: (date: Date) => CalendarEvent[];
   isDateCancelled: (date: Date) => CancelledAstreinteDate | null;
   onDayClick?: (date: Date) => void;
@@ -31,10 +34,13 @@ export function CalendarGrid({
   currentDate,
   settings,
   astreintes,
+  arrets,
   isAstreinteDay,
   hasConflict,
+  getConflictDetails,
   isHoliday,
   isVacationDay,
+  isArretDay,
   getEventsForDate,
   isDateCancelled,
   onDayClick,
@@ -95,8 +101,10 @@ export function CalendarGrid({
                     astreinte={isAstreinteDay(day, astreintes)}
                     holiday={isHoliday(day)}
                     vacation={isVacationDay(day)}
+                    arret={isArretDay(day)}
                     hasConflict={hasConflict(day, astreintes)}
                     cancelledInfo={isDateCancelled(day)}
+                    conflictDetails={getConflictDetails(day, astreintes)}
                     settings={settings}
                     onClick={() => onDayClick?.(day)}
                   />
