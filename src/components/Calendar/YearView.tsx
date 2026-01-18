@@ -147,32 +147,45 @@ export function YearView({
               {format(date, 'MMMM', { locale: fr })}
             </div>
             
-            {/* Vacation indicator bar */}
-            {vacationBars.length > 0 && (
-              <div className="relative h-2 bg-muted/30">
-                {vacationBars.map(vac => (
-                  <div
-                    key={vac.id}
-                    className="absolute h-full"
-                    style={{ 
-                      left: `${vac.left}%`,
-                      width: `${vac.width}%`,
-                      backgroundColor: settings.vacationColor,
-                    }}
-                    title={vac.name}
-                  />
+            {/* Vacation indicator bar with day numbers */}
+            <div className="relative h-5 bg-muted/20">
+              {/* Day numbers grid overlay */}
+              <div className="absolute inset-0 grid grid-cols-31 pointer-events-none">
+                {Array.from({ length: differenceInDays(monthEnd, monthStart) + 1 }, (_, i) => (
+                  <div 
+                    key={i} 
+                    className="text-[7px] text-center text-muted-foreground/60 leading-5 font-medium"
+                    style={{ width: `${100 / (differenceInDays(monthEnd, monthStart) + 1)}%` }}
+                  >
+                    {i + 1}
+                  </div>
                 ))}
               </div>
-            )}
+              {/* Vacation bars */}
+              {vacationBars.map(vac => (
+                <div
+                  key={vac.id}
+                  className="absolute h-full flex items-center justify-center"
+                  style={{ 
+                    left: `${vac.left}%`,
+                    width: `${vac.width}%`,
+                    backgroundColor: settings.vacationColor,
+                  }}
+                  title={vac.name}
+                >
+                  <span className="text-[7px] text-white font-medium truncate px-1">{vac.name}</span>
+                </div>
+              ))}
+            </div>
             
             {/* Arret indicator bar */}
             {arretBars.length > 0 && (
-              <div className="relative h-2 bg-muted/30">
+              <div className="relative h-4 bg-muted/20">
                 {arretBars.map(arret => (
                   <div
                     key={arret.id}
                     className={cn(
-                      "absolute h-full",
+                      "absolute h-full flex items-center justify-center",
                       arret.type === 'prepa' && 'opacity-70'
                     )}
                     style={{ 
@@ -181,7 +194,9 @@ export function YearView({
                       backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor,
                     }}
                     title={`${arret.name} (${arret.tranche})`}
-                  />
+                  >
+                    <span className="text-[7px] text-white font-medium truncate px-1">{arret.name}</span>
+                  </div>
                 ))}
               </div>
             )}
@@ -252,23 +267,23 @@ export function YearView({
                       }
                     }}
                   >
-                    {/* Vacation bar - top */}
+                    {/* Vacation bar - top (larger) */}
                     {vacation && inMonth && (
-                      <div
-                        className="absolute top-0 left-0 right-0 h-[2px]"
+                      <div 
+                        className="absolute top-0 left-0 right-0 h-[3px]"
                         style={{ backgroundColor: settings.vacationColor }}
                       />
                     )}
 
-                    {/* Arret bar - below vacation */}
+                    {/* Arret bar - below vacation (larger) */}
                     {arret && inMonth && (
-                      <div
+                      <div 
                         className={cn(
-                          "absolute left-0 right-0 h-[2px]",
+                          "absolute left-0 right-0 h-[3px]",
                           arret.type === 'prepa' && 'opacity-70'
                         )}
-                        style={{
-                          top: vacation ? '2px' : '0px',
+                        style={{ 
+                          top: vacation ? '3px' : '0px',
                           backgroundColor:
                             arret.type === 'prepa'
                               ? settings.arretPrepaColor
