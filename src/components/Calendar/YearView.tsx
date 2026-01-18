@@ -285,21 +285,13 @@ export function YearView({
                       {inMonth ? format(day, 'd') : ''}
                     </span>
 
-                    {/* Event markers (no names in year view) */}
+                    {/* Event band (middle of cell) */}
                     {inMonth && dayEvents.length > 0 && (
-                      <div className="absolute bottom-[2px] left-[2px] right-[2px] flex items-center justify-center gap-[2px] z-10">
-                        {dayEvents.slice(0, 4).map((ev) => (
-                          <span
-                            key={ev.id}
-                            className="h-1 w-1 rounded-full"
-                            style={{ backgroundColor: ev.color }}
-                            title={ev.name}
-                          />
-                        ))}
-                        {dayEvents.length > 4 && (
-                          <span className="text-[8px] leading-none text-foreground/80">+{dayEvents.length - 4}</span>
-                        )}
-                      </div>
+                      <div 
+                        className="absolute left-0 right-0 h-[3px] top-1/2 -translate-y-1/2 z-10"
+                        style={{ backgroundColor: dayEvents[0].color }}
+                        title={dayEvents.map(ev => ev.name).join(', ')}
+                      />
                     )}
 
                     {/* Conflict indicator + message box */}
