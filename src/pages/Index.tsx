@@ -161,7 +161,9 @@ const Index = () => {
                 isHoliday={isHoliday}
                 isVacationDay={isVacationDay}
                 isArretDay={isArretDay}
+                getEventsForDate={getEventsForDate}
                 hasConflict={hasConflict}
+                getConflictDetails={getConflictDetails}
               />
             ) : (
               <>

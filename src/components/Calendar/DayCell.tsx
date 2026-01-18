@@ -135,7 +135,23 @@ export function DayCell({
         {hasConflict && (
           <Popover>
             <PopoverTrigger asChild>
-              <button className="animate-pulse-soft hover:scale-110 transition-transform">
+              <button
+                type="button"
+                aria-label="Voir les détails du conflit"
+                onPointerDownCapture={(e) => {
+                  e.stopPropagation();
+                }}
+                onClickCapture={(e) => {
+                  e.stopPropagation();
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+                className="animate-pulse-soft hover:scale-110 transition-transform"
+              >
                 <AlertTriangle className="w-4 h-4 text-destructive drop-shadow-md" />
               </button>
             </PopoverTrigger>
