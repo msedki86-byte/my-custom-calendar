@@ -12,9 +12,10 @@ import {
   differenceInDays,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarSettings, Astreinte, Holiday, Vacation, Arret, CancelledAstreinteDate, PatternType } from '@/types/calendar';
+import { CalendarSettings, Astreinte, Holiday, Vacation, Arret, CancelledAstreinteDate, PatternType, CalendarEvent } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 import { AlertTriangle } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const patternClasses: Record<PatternType, string> = {
   none: '',
@@ -38,7 +39,9 @@ interface YearViewProps {
   isHoliday: (date: Date) => Holiday | null;
   isVacationDay: (date: Date) => Vacation | null;
   isArretDay: (date: Date) => Arret | null;
+  getEventsForDate: (date: Date) => CalendarEvent[];
   hasConflict: (date: Date, astreintes: Astreinte[]) => boolean;
+  getConflictDetails: (date: Date, astreintes: Astreinte[]) => string[];
 }
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i);
@@ -58,7 +61,9 @@ export function YearView({
   isHoliday,
   isVacationDay,
   isArretDay,
+  getEventsForDate,
   hasConflict,
+  getConflictDetails,
 }: YearViewProps) {
   const monthsData = useMemo(() => {
     return MONTHS.map(month => {
@@ -207,26 +212,28 @@ export function YearView({
                 const holiday = inMonth ? isHoliday(day) : null;
                 const vacation = inMonth ? isVacationDay(day) : null;
                 const arret = inMonth ? isArretDay(day) : null;
-                const conflict = inMonth && astreinte ? hasConflict(day, astreintes) : false;
-                
+                const dayEvents = inMonth ? getEventsForDate(day) : [];
+                const conflict = inMonth ? hasConflict(day, astreintes) : false;
+                const conflictDetails = conflict ? getConflictDetails(day, astreintes) : [];
+
                 // Determine background color and pattern
                 let bgColor: string | undefined;
                 let patternClass = '';
-                
+
                 if (cancelledInfo) {
                   bgColor = settings.astreinteCancelledColor;
                   patternClass = patternClasses[settings.astreinteCancelledPattern];
                 } else if (astreinte && !astreinte.isCancelled) {
-                  bgColor = astreinte.isPonctuelle 
-                    ? settings.astreintePonctuelleColor 
+                  bgColor = astreinte.isPonctuelle
+                    ? settings.astreintePonctuelleColor
                     : settings.astreinteColor;
                 }
-                
+
                 return (
                   <div
                     key={index}
                     className={cn(
-                      "relative text-[9px] h-6 flex flex-col items-center justify-end rounded-sm cursor-pointer hover:ring-1 hover:ring-primary/50 overflow-hidden",
+                      "relative text-[9px] h-7 rounded-sm cursor-pointer hover:ring-1 hover:ring-primary/50 overflow-hidden",
                       !inMonth && "text-muted-foreground/30 pointer-events-none",
                       inMonth && weekend && "text-muted-foreground bg-muted/30",
                       inMonth && todayDate && "ring-1 ring-primary font-bold",
@@ -247,39 +254,103 @@ export function YearView({
                   >
                     {/* Vacation bar - top */}
                     {vacation && inMonth && (
-                      <div 
+                      <div
                         className="absolute top-0 left-0 right-0 h-[2px]"
                         style={{ backgroundColor: settings.vacationColor }}
                       />
                     )}
-                    
+
                     {/* Arret bar - below vacation */}
                     {arret && inMonth && (
-                      <div 
+                      <div
                         className={cn(
                           "absolute left-0 right-0 h-[2px]",
                           arret.type === 'prepa' && 'opacity-70'
                         )}
-                        style={{ 
+                        style={{
                           top: vacation ? '2px' : '0px',
-                          backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor 
+                          backgroundColor:
+                            arret.type === 'prepa'
+                              ? settings.arretPrepaColor
+                              : settings.arretColor,
                         }}
                       />
                     )}
-                    
-                    {/* Conflict indicator */}
-                    {conflict && inMonth && (
-                      <div className="absolute top-0 right-0">
-                        <AlertTriangle className="w-2 h-2 text-destructive" />
-                      </div>
-                    )}
-                    
-                    {/* Day number */}
+
+                    {/* Day number (top-left like month view) */}
                     <span className={cn(
-                      (vacation || arret) && "mt-1"
+                      "absolute left-[3px] top-[3px] leading-none",
+                      (vacation || arret) && "top-[5px]"
                     )}>
                       {inMonth ? format(day, 'd') : ''}
                     </span>
+
+                    {/* Event markers (no names in year view) */}
+                    {inMonth && dayEvents.length > 0 && (
+                      <div className="absolute bottom-[2px] left-[2px] right-[2px] flex items-center justify-center gap-[2px] z-10">
+                        {dayEvents.slice(0, 4).map((ev) => (
+                          <span
+                            key={ev.id}
+                            className="h-1 w-1 rounded-full"
+                            style={{ backgroundColor: ev.color }}
+                            title={ev.name}
+                          />
+                        ))}
+                        {dayEvents.length > 4 && (
+                          <span className="text-[8px] leading-none text-foreground/80">+{dayEvents.length - 4}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Conflict indicator + message box */}
+                    {conflict && inMonth && (
+                      <div className="absolute top-0 right-0 z-20">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Voir les détails du conflit"
+                              onPointerDownCapture={(e) => {
+                                e.stopPropagation();
+                              }}
+                              onClickCapture={(e) => {
+                                e.stopPropagation();
+                              }}
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              className="hover:scale-110 transition-transform"
+                            >
+                              <AlertTriangle className="w-2.5 h-2.5 text-destructive" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 p-3">
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-destructive flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4" />
+                                Conflit détecté !
+                              </h4>
+                              <div className="text-sm text-foreground space-y-1">
+                                {conflictDetails.length > 0 ? (
+                                  conflictDetails.map((detail, idx) => (
+                                    <p key={idx} className="flex items-start gap-2">
+                                      <span className="text-destructive">•</span>
+                                      {detail}
+                                    </p>
+                                  ))
+                                ) : (
+                                  <p>Un événement est en conflit.</p>
+                                )}
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )}
                   </div>
                 );
               })}
