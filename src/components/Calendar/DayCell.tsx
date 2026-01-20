@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { format, isToday, isWeekend, getDay } from 'date-fns';
 import { CalendarEvent, Holiday, Vacation, Astreinte, CalendarSettings, PatternType, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
+import { getArretColor } from '@/lib/trancheColors';
 import { AlertTriangle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -109,7 +110,7 @@ export function DayCell({
           )}
           style={{ 
             top: vacation ? '6px' : '0px',
-            backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor 
+            backgroundColor: arret.color || getArretColor(arret, settings) 
           }}
           title={`${arret.name} (${arret.tranche})`}
         />

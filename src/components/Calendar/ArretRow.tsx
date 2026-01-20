@@ -10,6 +10,7 @@ import {
   format,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { getArretColor } from '@/lib/trancheColors';
 
 interface ArretRowProps {
   arrets: Arret[];
@@ -79,7 +80,7 @@ export function ArretRow({ arrets, currentDate, settings }: ArretRowProps) {
                   style={{
                     left: `${(arret.startIndex / daysInMonth.length) * 100}%`,
                     width: `${(arret.width / daysInMonth.length) * 100}%`,
-                    backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor,
+                    backgroundColor: arret.color || getArretColor(arret, settings),
                   }}
                   title={`${arret.name} (${arret.tranche})`}
                 >
