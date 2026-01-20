@@ -78,6 +78,7 @@ export const initialArrets: Arret[] = [
     startDate: new Date(2026, 4, 2),
     endDate: new Date(2026, 6, 14),
     color: '#22c55e',
+    pattern: 'none',
     tranche: 'Tr2',
   },
   {
@@ -87,6 +88,7 @@ export const initialArrets: Arret[] = [
     startDate: new Date(2025, 11, 1),
     endDate: new Date(2026, 10, 6),
     color: '#86efac',
+    pattern: 'dots',
     tranche: 'Tr3',
   },
   {
@@ -95,7 +97,8 @@ export const initialArrets: Arret[] = [
     name: '3P35',
     startDate: new Date(2026, 10, 7),
     endDate: new Date(2027, 0, 28),
-    color: '#22c55e',
+    color: '#3b82f6',
+    pattern: 'none',
     tranche: 'Tr3',
   },
   {
@@ -104,7 +107,8 @@ export const initialArrets: Arret[] = [
     name: '5R34',
     startDate: new Date(2026, 1, 28),
     endDate: new Date(2026, 3, 11),
-    color: '#22c55e',
+    color: '#f59e0b',
+    pattern: 'stripes',
     tranche: 'Tr5',
   },
   {
@@ -113,7 +117,8 @@ export const initialArrets: Arret[] = [
     name: '4P37',
     startDate: new Date(2027, 1, 20),
     endDate: new Date(2027, 4, 4),
-    color: '#22c55e',
+    color: '#ef4444',
+    pattern: 'none',
     tranche: 'Tr4',
   },
 ];

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarEvent, Vacation, Arret, Holiday, Astreinte, CancelledAstreinteDate } from '@/types/calendar';
+import { CalendarEvent, Vacation, Arret, Holiday, Astreinte, CancelledAstreinteDate, PatternType } from '@/types/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
@@ -9,8 +9,25 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon, Trash2, X, Check, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const patterns: { value: PatternType; label: string }[] = [
+  { value: 'none', label: 'Aucun' },
+  { value: 'stripes', label: 'Rayures' },
+  { value: 'dots', label: 'Points' },
+  { value: 'crosshatch', label: 'Croisillons' },
+  { value: 'waves', label: 'Lignes' },
+];
+
+const patternClasses: Record<PatternType, string> = {
+  none: '',
+  stripes: 'pattern-stripes',
+  dots: 'pattern-dots',
+  crosshatch: 'pattern-crosshatch',
+  waves: 'pattern-waves',
+};
 
 interface EventsManagerProps {
   events: CalendarEvent[];
@@ -88,6 +105,7 @@ export function EventsManager({
         startDate: newItem.startDate || new Date(),
         endDate: newItem.endDate || new Date(),
         color: newItem.color || '#22c55e',
+        pattern: newItem.pattern || 'none',
         tranche: newItem.tranche || 'Tr1',
       });
     } else if (type === 'holiday') {
@@ -519,7 +537,7 @@ export function EventsManager({
                   className="w-32"
                 />
               </div>
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <select 
                   className="px-3 py-2 border rounded-md bg-background"
                   value={newItem.arretType || 'arret'}
@@ -528,6 +546,40 @@ export function EventsManager({
                   <option value="arret">Arrêt</option>
                   <option value="prepa">Préparation</option>
                 </select>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Couleur:</span>
+                  <Input
+                    type="color"
+                    value={newItem.color || '#22c55e'}
+                    onChange={(e) => setNewItem({ ...newItem, color: e.target.value })}
+                    className="w-10 h-8 p-1 cursor-pointer"
+                  />
+                </div>
+                <Select 
+                  value={newItem.pattern || 'none'} 
+                  onValueChange={(v) => setNewItem({ ...newItem, pattern: v })}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Motif" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patterns.map(pattern => (
+                      <SelectItem key={pattern.value} value={pattern.value}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className={cn(
+                              'w-4 h-4 rounded bg-muted-foreground/60',
+                              patternClasses[pattern.value]
+                            )}
+                          />
+                          <span>{pattern.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-4">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm">
@@ -573,6 +625,8 @@ export function EventsManager({
                 <TableHead>Tranche</TableHead>
                 <TableHead>Début</TableHead>
                 <TableHead>Fin</TableHead>
+                <TableHead>Couleur</TableHead>
+                <TableHead>Motif</TableHead>
                 <TableHead className="w-20">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -607,6 +661,41 @@ export function EventsManager({
                       date={arret.endDate}
                       onSave={(date) => onUpdateArret(arret.id, { endDate: date })}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <div 
+                      className="w-6 h-6 rounded-full border cursor-pointer"
+                      style={{ backgroundColor: arret.color }}
+                      onClick={() => {
+                        const color = prompt('Nouvelle couleur (hex):', arret.color);
+                        if (color) onUpdateArret(arret.id, { color });
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Select 
+                      value={arret.pattern || 'none'} 
+                      onValueChange={(v) => onUpdateArret(arret.id, { pattern: v as PatternType })}
+                    >
+                      <SelectTrigger className="w-28 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {patterns.map(pattern => (
+                          <SelectItem key={pattern.value} value={pattern.value}>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className={cn(
+                                  'w-3 h-3 rounded bg-muted-foreground/60',
+                                  patternClasses[pattern.value]
+                                )}
+                              />
+                              <span className="text-xs">{pattern.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <Button size="sm" variant="ghost" onClick={() => onDeleteArret(arret.id)}>
