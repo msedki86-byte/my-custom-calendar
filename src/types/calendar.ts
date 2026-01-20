@@ -64,6 +64,7 @@ export interface Arret {
   startDate: Date;
   endDate: Date;
   color: string;
+  pattern?: PatternType;
   tranche: string;
 }
 

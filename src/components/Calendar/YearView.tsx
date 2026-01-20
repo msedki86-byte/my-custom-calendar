@@ -186,12 +186,13 @@ export function YearView({
                     key={arret.id}
                     className={cn(
                       "absolute h-full flex items-center justify-center",
-                      arret.type === 'prepa' && 'opacity-70'
+                      arret.type === 'prepa' && 'opacity-70',
+                      arret.pattern && arret.pattern !== 'none' && patternClasses[arret.pattern]
                     )}
                     style={{ 
                       left: `${arret.left}%`,
                       width: `${arret.width}%`,
-                      backgroundColor: arret.type === 'prepa' ? settings.arretPrepaColor : settings.arretColor,
+                      backgroundColor: arret.color,
                     }}
                     title={`${arret.name} (${arret.tranche})`}
                   >
@@ -280,14 +281,12 @@ export function YearView({
                       <div 
                         className={cn(
                           "absolute left-0 right-0 h-[3px]",
-                          arret.type === 'prepa' && 'opacity-70'
+                          arret.type === 'prepa' && 'opacity-70',
+                          arret.pattern && arret.pattern !== 'none' && patternClasses[arret.pattern]
                         )}
                         style={{ 
                           top: vacation ? '3px' : '0px',
-                          backgroundColor:
-                            arret.type === 'prepa'
-                              ? settings.arretPrepaColor
-                              : settings.arretColor,
+                          backgroundColor: arret.color,
                         }}
                       />
                     )}
