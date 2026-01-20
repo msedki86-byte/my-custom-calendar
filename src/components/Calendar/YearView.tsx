@@ -14,6 +14,7 @@ import {
 import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, Arret, CancelledAstreinteDate, PatternType, CalendarEvent } from '@/types/calendar';
 import { cn } from '@/lib/utils';
+import { getArretColor } from '@/lib/trancheColors';
 import { AlertTriangle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -118,7 +119,7 @@ export function YearView({
           };
         });
         
-        // Calculate arret bars for mini display
+        // Calculate arret bars for mini display - group by row for multi-line support
         const arretBars = monthArrets.map(arret => {
           const displayStart = arret.startDate < monthStart ? monthStart : arret.startDate;
           const displayEnd = arret.endDate > monthEnd ? monthEnd : arret.endDate;
@@ -130,8 +131,30 @@ export function YearView({
             ...arret,
             left: (startDayIndex / daysInMonth) * 100,
             width: (width / daysInMonth) * 100,
+            displayColor: arret.color || getArretColor(arret, settings),
           };
         });
+        
+        // Sort bars and assign to rows (up to 3 rows)
+        const sortedBars = [...arretBars].sort((a, b) => a.left - b.left);
+        const rows: typeof arretBars[] = [[], [], []];
+        
+        sortedBars.forEach(bar => {
+          // Find the first row where this bar fits (no overlap)
+          for (let i = 0; i < 3; i++) {
+            const rowBars = rows[i];
+            const overlaps = rowBars.some(existing => 
+              !(bar.left + bar.width <= existing.left || bar.left >= existing.left + existing.width)
+            );
+            if (!overlaps) {
+              rows[i].push(bar);
+              break;
+            }
+          }
+        });
+        
+        // Filter out empty rows
+        const activeRows = rows.filter(row => row.length > 0);
         
         return (
           <div
@@ -178,25 +201,29 @@ export function YearView({
               ))}
             </div>
             
-            {/* Arret indicator bar */}
-            {arretBars.length > 0 && (
-              <div className="relative h-4 bg-muted/20">
-                {arretBars.map(arret => (
-                  <div
-                    key={arret.id}
-                    className={cn(
-                      "absolute h-full flex items-center justify-center",
-                      arret.type === 'prepa' && 'opacity-70',
-                      arret.pattern && arret.pattern !== 'none' && patternClasses[arret.pattern]
-                    )}
-                    style={{ 
-                      left: `${arret.left}%`,
-                      width: `${arret.width}%`,
-                      backgroundColor: arret.color,
-                    }}
-                    title={`${arret.name} (${arret.tranche})`}
-                  >
-                    <span className="text-[7px] text-white font-medium truncate px-1">{arret.name}</span>
+            {/* Arret indicator bars - up to 3 rows for overlapping */}
+            {activeRows.length > 0 && (
+              <div className="space-y-0.5">
+                {activeRows.map((rowBars, rowIndex) => (
+                  <div key={rowIndex} className="relative h-4 bg-muted/20">
+                    {rowBars.map(arret => (
+                      <div
+                        key={arret.id}
+                        className={cn(
+                          "absolute h-full flex items-center justify-center",
+                          arret.type === 'prepa' && 'opacity-80',
+                          arret.pattern && arret.pattern !== 'none' && patternClasses[arret.pattern]
+                        )}
+                        style={{ 
+                          left: `${arret.left}%`,
+                          width: `${arret.width}%`,
+                          backgroundColor: arret.displayColor,
+                        }}
+                        title={`${arret.name} (${arret.tranche})`}
+                      >
+                        <span className="text-[7px] text-white font-medium truncate px-1">{arret.name}</span>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -286,7 +313,7 @@ export function YearView({
                         )}
                         style={{ 
                           top: vacation ? '3px' : '0px',
-                          backgroundColor: arret.color,
+                          backgroundColor: arret.color || getArretColor(arret, settings),
                         }}
                       />
                     )}

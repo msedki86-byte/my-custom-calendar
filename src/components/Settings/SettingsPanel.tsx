@@ -115,19 +115,56 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
             </div>
           </section>
 
-          {/* Arrets */}
+          {/* Arrets par tranche */}
           <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Arrêts de tranches</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Arrêts par tranche</h3>
             <div className="space-y-3">
               <ColorPicker
-                label="Arrêt"
-                value={settings.arretColor}
-                onChange={(v) => onUpdateSettings({ arretColor: v })}
+                label="Arrêt Tr2"
+                value={settings.arretTr2Color}
+                onChange={(v) => onUpdateSettings({ arretTr2Color: v })}
               />
               <ColorPicker
-                label="Préparation"
-                value={settings.arretPrepaColor}
-                onChange={(v) => onUpdateSettings({ arretPrepaColor: v })}
+                label="Arrêt Tr3"
+                value={settings.arretTr3Color}
+                onChange={(v) => onUpdateSettings({ arretTr3Color: v })}
+              />
+              <ColorPicker
+                label="Arrêt Tr4"
+                value={settings.arretTr4Color}
+                onChange={(v) => onUpdateSettings({ arretTr4Color: v })}
+              />
+              <ColorPicker
+                label="Arrêt Tr5"
+                value={settings.arretTr5Color}
+                onChange={(v) => onUpdateSettings({ arretTr5Color: v })}
+              />
+            </div>
+          </section>
+
+          {/* Préparations par tranche */}
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Préparations par tranche</h3>
+            <div className="space-y-3">
+              <ColorPicker
+                label="Prépa Tr2"
+                value={settings.prepaTr2Color}
+                onChange={(v) => onUpdateSettings({ prepaTr2Color: v })}
+              />
+              <ColorPicker
+                label="Prépa Tr3"
+                value={settings.prepaTr3Color}
+                onChange={(v) => onUpdateSettings({ prepaTr3Color: v })}
+              />
+              <ColorPicker
+                label="Prépa Tr4"
+                value={settings.prepaTr4Color}
+                onChange={(v) => onUpdateSettings({ prepaTr4Color: v })}
+              />
+              <ColorPicker
+                label="Prépa Tr5"
+                value={settings.prepaTr5Color}
+                onChange={(v) => onUpdateSettings({ prepaTr5Color: v })}
               />
               <PatternPicker
                 label="Motif préparation"

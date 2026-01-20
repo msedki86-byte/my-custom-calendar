@@ -10,9 +10,12 @@ import { SettingsPanel } from '@/components/Settings/SettingsPanel';
 import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { AddEventDialog } from '@/components/Dialogs/AddEventDialog';
 import { EventsManager } from '@/components/Events/EventsManager';
+import { ConflictsList } from '@/components/Conflicts/ConflictsList';
+import { ExportPDF } from '@/components/Export/ExportPDF';
+import { ExcelImport } from '@/components/Import/ExcelImport';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar as CalendarIcon, List } from 'lucide-react';
+import { Calendar as CalendarIcon, List, AlertTriangle } from 'lucide-react';
 
 const Index = () => {
   const {
@@ -57,6 +60,10 @@ const Index = () => {
     getEventsForDate,
     getArretsForPeriod,
     getAstreintesForYear,
+    importEvents,
+    importVacations,
+    importArrets,
+    importHolidays,
   } = useCalendar();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -121,6 +128,10 @@ const Index = () => {
               <List className="h-4 w-4" />
               Gestion des événements
             </TabsTrigger>
+            <TabsTrigger value="conflicts" className="gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Conflits
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="calendar">
@@ -134,39 +145,54 @@ const Index = () => {
               onViewModeChange={setViewMode}
             />
 
-            {/* Toolbar */}
-            <Toolbar
-              currentYear={currentDate.getFullYear()}
-              onOpenSettings={() => setSettingsOpen(true)}
-              onAddEvent={() => {
-                setSelectedDate(new Date());
-                setAddEventOpen(true);
-              }}
-              onYearChange={handleYearChange}
-            />
+            {/* Toolbar with PDF Export */}
+            <div className="flex items-center gap-4">
+              <Toolbar
+                currentYear={currentDate.getFullYear()}
+                onOpenSettings={() => setSettingsOpen(true)}
+                onAddEvent={() => {
+                  setSelectedDate(new Date());
+                  setAddEventOpen(true);
+                }}
+                onYearChange={handleYearChange}
+              />
+              <ExportPDF 
+                viewMode={viewMode} 
+                year={currentDate.getFullYear()} 
+                month={currentDate.getMonth()} 
+              />
+              <ExcelImport
+                onImportEvents={importEvents}
+                onImportVacations={importVacations}
+                onImportArrets={importArrets}
+                onImportHolidays={importHolidays}
+              />
+            </div>
 
             {viewMode === 'year' ? (
               /* Year View */
-              <YearView
-                year={currentDate.getFullYear()}
-                settings={settings}
-                astreintes={yearAstreintes}
-                holidays={holidays}
-                vacations={vacations}
-                arrets={arrets}
-                onMonthClick={handleMonthClick}
-                onDayClick={handleDayClick}
-                isAstreinteDay={isAstreinteDay}
-                isDateCancelled={isDateCancelled}
-                isHoliday={isHoliday}
-                isVacationDay={isVacationDay}
-                isArretDay={isArretDay}
-                getEventsForDate={getEventsForDate}
-                hasConflict={hasConflict}
-                getConflictDetails={getConflictDetails}
-              />
+              <div data-calendar-print>
+                <YearView
+                  year={currentDate.getFullYear()}
+                  settings={settings}
+                  astreintes={yearAstreintes}
+                  holidays={holidays}
+                  vacations={vacations}
+                  arrets={arrets}
+                  onMonthClick={handleMonthClick}
+                  onDayClick={handleDayClick}
+                  isAstreinteDay={isAstreinteDay}
+                  isDateCancelled={isDateCancelled}
+                  isHoliday={isHoliday}
+                  isVacationDay={isVacationDay}
+                  isArretDay={isArretDay}
+                  getEventsForDate={getEventsForDate}
+                  hasConflict={hasConflict}
+                  getConflictDetails={getConflictDetails}
+                />
+              </div>
             ) : (
-              <>
+              <div data-calendar-print>
                 {/* Vacation Bar */}
                 <VacationBar
                   vacations={vacations}
@@ -197,7 +223,7 @@ const Index = () => {
                   getEventsForDate={getEventsForDate}
                   onDayClick={handleDayClick}
                 />
-              </>
+              </div>
             )}
 
             {/* Legend */}
@@ -230,6 +256,17 @@ const Index = () => {
               onAddHoliday={addHoliday}
               onAddPonctualAstreinte={addPonctualAstreinte}
               onCancelAstreinteDates={cancelAstreinteDates}
+            />
+          </TabsContent>
+
+          <TabsContent value="conflicts">
+            <ConflictsList
+              events={events}
+              vacations={vacations}
+              holidays={holidays}
+              astreintes={yearAstreintes}
+              settings={settings}
+              year={currentDate.getFullYear()}
             />
           </TabsContent>
         </Tabs>

@@ -82,8 +82,16 @@ export interface CalendarSettings {
   astreintePonctuelleColor: string;
   eventColor: string;
   vacationColor: string;
-  arretColor: string;
-  arretPrepaColor: string;
+  // Couleurs par tranche - Arrêts
+  arretTr2Color: string;
+  arretTr3Color: string;
+  arretTr4Color: string;
+  arretTr5Color: string;
+  // Couleurs par tranche - Préparations
+  prepaTr2Color: string;
+  prepaTr3Color: string;
+  prepaTr4Color: string;
+  prepaTr5Color: string;
   arretPrepaPattern: PatternType;
 }
 
@@ -101,7 +109,15 @@ export const defaultSettings: CalendarSettings = {
   astreintePonctuelleColor: '#ea580c',
   eventColor: '#0ea5e9',
   vacationColor: '#a855f7',
-  arretColor: '#22c55e',
-  arretPrepaColor: '#86efac',
+  // Couleurs par tranche - Arrêts
+  arretTr2Color: '#22c55e',
+  arretTr3Color: '#3b82f6',
+  arretTr4Color: '#ef4444',
+  arretTr5Color: '#f59e0b',
+  // Couleurs par tranche - Préparations
+  prepaTr2Color: '#86efac',
+  prepaTr3Color: '#93c5fd',
+  prepaTr4Color: '#fca5a5',
+  prepaTr5Color: '#fcd34d',
   arretPrepaPattern: 'dots',
 };

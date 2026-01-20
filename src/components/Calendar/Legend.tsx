@@ -12,8 +12,11 @@ export function Legend({ settings }: LegendProps) {
     { label: 'Événement', color: settings.eventColor, pattern: false },
     { label: 'Vacances scolaires', color: settings.vacationColor, pattern: false },
     { label: 'Jour férié', color: settings.holidayPattern === 'none' ? '#ef4444' : '#ef4444', pattern: true, patternClass: 'pattern-stripes' },
-    { label: 'Arrêt de tranche', color: settings.arretColor, pattern: false },
-    { label: 'Prépa arrêt', color: settings.arretPrepaColor, pattern: true, patternClass: 'pattern-dots' },
+    { label: 'Arrêt Tr2', color: settings.arretTr2Color, pattern: false },
+    { label: 'Arrêt Tr3', color: settings.arretTr3Color, pattern: false },
+    { label: 'Arrêt Tr4', color: settings.arretTr4Color, pattern: false },
+    { label: 'Arrêt Tr5', color: settings.arretTr5Color, pattern: false },
+    { label: 'Prépa', color: settings.prepaTr2Color, pattern: true, patternClass: 'pattern-dots' },
   ];
 
   return (

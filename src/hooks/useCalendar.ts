@@ -339,6 +339,39 @@ export function useCalendar() {
     return generateAstreintes(start, end);
   }, [generateAstreintes]);
 
+  // Import functions
+  const importEvents = useCallback((data: any[]) => {
+    data.forEach(item => {
+      if (item.startDate && item.endDate) {
+        addEvent(item);
+      }
+    });
+  }, [addEvent]);
+
+  const importVacations = useCallback((data: any[]) => {
+    data.forEach(item => {
+      if (item.startDate && item.endDate) {
+        addVacation(item);
+      }
+    });
+  }, [addVacation]);
+
+  const importArrets = useCallback((data: any[]) => {
+    data.forEach(item => {
+      if (item.startDate && item.endDate) {
+        addArret(item);
+      }
+    });
+  }, [addArret]);
+
+  const importHolidays = useCallback((data: any[]) => {
+    data.forEach(item => {
+      if (item.date) {
+        addHoliday(item);
+      }
+    });
+  }, [addHoliday]);
+
   return {
     currentDate,
     settings,
@@ -383,5 +416,9 @@ export function useCalendar() {
     getEventsForDate,
     getArretsForPeriod,
     getAstreintesForYear,
+    importEvents,
+    importVacations,
+    importArrets,
+    importHolidays,
   };
 }
