@@ -1,15 +1,12 @@
 import { useMemo } from 'react';
 import { format, eachDayOfInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarEvent, Astreinte, Vacation, Holiday, CalendarSettings } from '@/types/calendar';
+import { CalendarEvent, Astreinte, CalendarSettings } from '@/types/calendar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { AlertTriangle } from 'lucide-react';
 
 interface ConflictsListProps {
   events: CalendarEvent[];
-  vacations: Vacation[];
-  holidays: Holiday[];
   astreintes: Astreinte[];
   settings: CalendarSettings;
   year: number;
@@ -18,16 +15,12 @@ interface ConflictsListProps {
 interface ConflictItem {
   date: Date;
   astreinte: Astreinte;
-  conflictType: 'event' | 'vacation' | 'holiday';
-  conflictName: string;
+  eventName: string;
 }
 
 export function ConflictsList({
   events,
-  vacations,
-  holidays,
   astreintes,
-  settings,
   year,
 }: ConflictsListProps) {
   const conflicts = useMemo(() => {
@@ -35,7 +28,7 @@ export function ConflictsList({
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31);
 
-    // For each astreinte period
+    // For each astreinte period - only check events (not vacations, holidays, or arrets)
     astreintes.forEach(astreinte => {
       if (astreinte.isCancelled) return;
       
@@ -47,42 +40,13 @@ export function ConflictsList({
       const days = eachDayOfInterval({ start: astreinteStart, end: astreinteEnd });
 
       days.forEach(day => {
-        // Check events
+        // Check events only (not vacations, holidays, or arrets)
         events.forEach(event => {
           if (day >= event.startDate && day <= event.endDate) {
             result.push({
               date: day,
               astreinte,
-              conflictType: 'event',
-              conflictName: event.name,
-            });
-          }
-        });
-
-        // Check vacations
-        vacations.forEach(vacation => {
-          if (day >= vacation.startDate && day <= vacation.endDate) {
-            result.push({
-              date: day,
-              astreinte,
-              conflictType: 'vacation',
-              conflictName: vacation.name,
-            });
-          }
-        });
-
-        // Check holidays
-        holidays.forEach(holiday => {
-          if (
-            day.getFullYear() === holiday.date.getFullYear() &&
-            day.getMonth() === holiday.date.getMonth() &&
-            day.getDate() === holiday.date.getDate()
-          ) {
-            result.push({
-              date: day,
-              astreinte,
-              conflictType: 'holiday',
-              conflictName: holiday.name,
+              eventName: event.name,
             });
           }
         });
@@ -91,18 +55,7 @@ export function ConflictsList({
 
     // Sort by date
     return result.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [events, vacations, holidays, astreintes, year]);
-
-  const getConflictTypeBadge = (type: 'event' | 'vacation' | 'holiday') => {
-    switch (type) {
-      case 'event':
-        return <Badge variant="default">Événement</Badge>;
-      case 'vacation':
-        return <Badge variant="secondary" style={{ backgroundColor: settings.vacationColor, color: '#fff' }}>Vacances</Badge>;
-      case 'holiday':
-        return <Badge variant="outline">Férié</Badge>;
-    }
-  };
+  }, [events, astreintes, year]);
 
   if (conflicts.length === 0) {
     return (
@@ -125,27 +78,20 @@ export function ConflictsList({
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
-            <TableHead>Période d'astreinte</TableHead>
-            <TableHead>Type de conflit</TableHead>
-            <TableHead>Élément en conflit</TableHead>
+            <TableHead>Conflit</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {conflicts.map((conflict, index) => (
             <TableRow key={index}>
               <TableCell className="font-medium">
-                {format(conflict.date, 'EEEE d MMMM yyyy', { locale: fr })}
+                {format(conflict.date, 'd MMMM yyyy', { locale: fr })}
               </TableCell>
               <TableCell>
-                {format(conflict.astreinte.startDate, 'dd/MM')} - {format(conflict.astreinte.endDate, 'dd/MM')}
-                {conflict.astreinte.isPonctuelle && (
-                  <Badge variant="outline" className="ml-2">Ponctuelle</Badge>
-                )}
+                <span className="text-primary font-medium">{conflict.eventName}</span>
+                <span className="text-muted-foreground mx-2">/</span>
+                <span className="text-orange-600 font-medium">Astreinte</span>
               </TableCell>
-              <TableCell>
-                {getConflictTypeBadge(conflict.conflictType)}
-              </TableCell>
-              <TableCell>{conflict.conflictName}</TableCell>
             </TableRow>
           ))}
         </TableBody>

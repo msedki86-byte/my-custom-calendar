@@ -15,6 +15,9 @@ const patterns: { value: PatternType; label: string }[] = [
   { value: 'dots', label: 'Points' },
   { value: 'crosshatch', label: 'Croisillons' },
   { value: 'waves', label: 'Lignes' },
+  { value: 'diagonal', label: 'Diagonales' },
+  { value: 'grid', label: 'Grille' },
+  { value: 'zigzag', label: 'Zigzag' },
 ];
 
 const patternClasses: Record<PatternType, string> = {
@@ -23,6 +26,9 @@ const patternClasses: Record<PatternType, string> = {
   dots: 'pattern-dots',
   crosshatch: 'pattern-crosshatch',
   waves: 'pattern-waves',
+  diagonal: 'pattern-diagonal',
+  grid: 'pattern-grid',
+  zigzag: 'pattern-zigzag',
 };
 
 export function PatternPicker({ label, value, onChange }: PatternPickerProps) {

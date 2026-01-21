@@ -116,20 +116,22 @@ const Index = () => {
   }, [currentDate, goToDate]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container py-6 max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      <div className="container py-2 sm:py-4 lg:py-6 max-w-7xl mx-auto px-2 sm:px-4">
         <Tabs defaultValue="calendar" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="calendar" className="gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              Calendrier
+          <TabsList className="mb-2 sm:mb-4 lg:mb-6 flex-wrap h-auto gap-1">
+            <TabsTrigger value="calendar" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Calendrier</span>
+              <span className="xs:hidden">Cal.</span>
             </TabsTrigger>
-            <TabsTrigger value="events" className="gap-2">
-              <List className="h-4 w-4" />
-              Gestion des événements
+            <TabsTrigger value="events" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <List className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Gestion des événements</span>
+              <span className="sm:hidden">Événements</span>
             </TabsTrigger>
-            <TabsTrigger value="conflicts" className="gap-2">
-              <AlertTriangle className="h-4 w-4" />
+            <TabsTrigger value="conflicts" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
               Conflits
             </TabsTrigger>
           </TabsList>
@@ -146,7 +148,7 @@ const Index = () => {
             />
 
             {/* Toolbar with PDF Export */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <Toolbar
                 currentYear={currentDate.getFullYear()}
                 onOpenSettings={() => setSettingsOpen(true)}
@@ -156,17 +158,19 @@ const Index = () => {
                 }}
                 onYearChange={handleYearChange}
               />
-              <ExportPDF 
-                viewMode={viewMode} 
-                year={currentDate.getFullYear()} 
-                month={currentDate.getMonth()} 
-              />
-              <ExcelImport
-                onImportEvents={importEvents}
-                onImportVacations={importVacations}
-                onImportArrets={importArrets}
-                onImportHolidays={importHolidays}
-              />
+              <div className="flex items-center gap-2">
+                <ExportPDF 
+                  viewMode={viewMode} 
+                  year={currentDate.getFullYear()} 
+                  month={currentDate.getMonth()} 
+                />
+                <ExcelImport
+                  onImportEvents={importEvents}
+                  onImportVacations={importVacations}
+                  onImportArrets={importArrets}
+                  onImportHolidays={importHolidays}
+                />
+              </div>
             </div>
 
             {viewMode === 'year' ? (
@@ -262,8 +266,6 @@ const Index = () => {
           <TabsContent value="conflicts">
             <ConflictsList
               events={events}
-              vacations={vacations}
-              holidays={holidays}
               astreintes={yearAstreintes}
               settings={settings}
               year={currentDate.getFullYear()}

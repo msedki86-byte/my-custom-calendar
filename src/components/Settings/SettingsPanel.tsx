@@ -16,7 +16,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-card border-l border-border shadow-card-elevated z-50 animate-slide-in">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-80 max-w-[90vw] bg-card border-l border-border shadow-card-elevated z-50 animate-slide-in">
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-primary" />

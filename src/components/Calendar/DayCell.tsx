@@ -26,6 +26,9 @@ const patternClasses: Record<PatternType, string> = {
   dots: 'pattern-dots',
   crosshatch: 'pattern-crosshatch',
   waves: 'pattern-waves',
+  diagonal: 'pattern-diagonal',
+  grid: 'pattern-grid',
+  zigzag: 'pattern-zigzag',
 };
 
 export function DayCell({

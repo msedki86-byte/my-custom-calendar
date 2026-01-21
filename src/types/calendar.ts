@@ -13,7 +13,10 @@ export type PatternType =
   | 'stripes'
   | 'dots'
   | 'crosshatch'
-  | 'waves';
+  | 'waves'
+  | 'diagonal'
+  | 'grid'
+  | 'zigzag';
 
 export interface CalendarEvent {
   id: string;

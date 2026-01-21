@@ -191,9 +191,10 @@ export function ExcelImport({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Upload className="h-4 w-4" />
-          Importer Excel/CSV
+        <Button variant="outline" size="sm" className="gap-1 sm:gap-2 h-8 text-xs sm:text-sm px-2 sm:px-3">
+          <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Importer Excel/CSV</span>
+          <span className="sm:hidden">Import</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
