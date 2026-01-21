@@ -24,6 +24,9 @@ const patternClasses: Record<PatternType, string> = {
   dots: 'pattern-dots-mini',
   crosshatch: 'pattern-crosshatch-mini',
   waves: 'pattern-waves-mini',
+  diagonal: 'pattern-diagonal-mini',
+  grid: 'pattern-grid-mini',
+  zigzag: 'pattern-zigzag-mini',
 };
 
 interface YearViewProps {
@@ -102,7 +105,7 @@ export function YearView({
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
       {monthsData.map(({ date, days, monthArrets, monthVacations, monthStart, monthEnd }) => {
         // Calculate vacation bars for mini display
         const vacationBars = monthVacations.map(vac => {
@@ -164,10 +167,11 @@ export function YearView({
           >
             {/* Month header */}
             <div 
-              className="px-3 py-2 text-center font-semibold text-white text-sm"
+              className="px-2 sm:px-3 py-1.5 sm:py-2 text-center font-semibold text-white text-xs sm:text-sm"
               style={{ backgroundColor: settings.titleWeekColor }}
             >
-              {format(date, 'MMMM', { locale: fr })}
+              {format(date, 'MMM', { locale: fr })}
+              <span className="hidden sm:inline">{format(date, 'MMM', { locale: fr }).length < 4 ? '' : ''}</span>
             </div>
             
             {/* Vacation indicator bar with day numbers */}
@@ -245,7 +249,7 @@ export function YearView({
             </div>
             
             {/* Days grid */}
-            <div className="grid grid-cols-7 gap-px p-1">
+            <div className="grid grid-cols-7 gap-px p-0.5 sm:p-1">
               {days.map((day, index) => {
                 const inMonth = isSameMonth(day, date);
                 const todayDate = isToday(day);
@@ -276,7 +280,7 @@ export function YearView({
                   <div
                     key={index}
                     className={cn(
-                      "relative text-[9px] h-7 rounded-sm cursor-pointer hover:ring-1 hover:ring-primary/50 overflow-hidden",
+                      "relative text-[7px] sm:text-[9px] h-5 sm:h-7 rounded-sm cursor-pointer hover:ring-1 hover:ring-primary/50 overflow-hidden",
                       !inMonth && "text-muted-foreground/30 pointer-events-none",
                       inMonth && weekend && "text-muted-foreground bg-muted/30",
                       inMonth && todayDate && "ring-1 ring-primary font-bold",

@@ -82,9 +82,10 @@ export function ExportPDF({ viewMode, year, month }: ExportPDFProps) {
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
-      <FileDown className="h-4 w-4" />
-      Exporter PDF
+    <Button variant="outline" size="sm" onClick={handleExport} className="gap-1 sm:gap-2 h-8 text-xs sm:text-sm px-2 sm:px-3">
+      <FileDown className="h-3 w-3 sm:h-4 sm:w-4" />
+      <span className="hidden sm:inline">Exporter PDF</span>
+      <span className="sm:hidden">PDF</span>
     </Button>
   );
 }
