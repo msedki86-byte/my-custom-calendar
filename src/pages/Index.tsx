@@ -4,7 +4,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { CalendarHeader } from '@/components/Calendar/CalendarHeader';
 import { CalendarGrid } from '@/components/Calendar/CalendarGrid';
 import { MobileCalendarGrid } from '@/components/Calendar/MobileCalendarGrid';
-import { MobileHeader } from '@/components/Calendar/MobileHeader';
+import { MobileToolbar } from '@/components/Calendar/MobileToolbar';
+import { MobileYearView } from '@/components/Calendar/MobileYearView';
+import { MobileVacationBar } from '@/components/Calendar/MobileVacationBar';
+import { MobileArretBar } from '@/components/Calendar/MobileArretBar';
 import { MobileLegend } from '@/components/Calendar/MobileLegend';
 import { DayDetails } from '@/components/Calendar/DayDetails';
 import { VacationBar } from '@/components/Calendar/VacationBar';
@@ -140,44 +143,86 @@ const Index = () => {
     setAddEventOpen(true);
   }, []);
 
-  // Mobile Layout
+  // Mobile Layout - Unified with same options as desktop
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="px-4 py-3 max-w-lg mx-auto">
-          {/* Mobile Header */}
-          <MobileHeader
+        <div className="px-3 py-2 max-w-lg mx-auto">
+          {/* Mobile Toolbar - Same options as desktop */}
+          <MobileToolbar
             currentDate={currentDate}
-            onPrevMonth={goToPrevMonth}
-            onNextMonth={goToNextMonth}
+            currentYear={currentDate.getFullYear()}
+            viewMode={viewMode}
+            onPrevMonth={viewMode === 'year' 
+              ? () => goToDate(new Date(currentDate.getFullYear() - 1, 0, 1))
+              : goToPrevMonth
+            }
+            onNextMonth={viewMode === 'year'
+              ? () => goToDate(new Date(currentDate.getFullYear() + 1, 0, 1))
+              : goToNextMonth
+            }
             onToday={goToToday}
             onAddEvent={() => {
               setSelectedDate(new Date());
               setAddEventOpen(true);
             }}
             onOpenSettings={() => setSettingsOpen(true)}
+            onViewModeChange={setViewMode}
+            onYearChange={handleYearChange}
           />
 
-          {/* Mobile Calendar Grid */}
-          <div className="mt-4">
-            <MobileCalendarGrid
+          {/* Info Bars - Same in both views */}
+          <div className="mt-3 space-y-2">
+            <MobileVacationBar
+              vacations={vacations}
               currentDate={currentDate}
               settings={settings}
-              astreintes={currentAstreintes}
-              isAstreinteDay={isAstreinteDay}
-              hasConflict={hasConflict}
-              isHoliday={isHoliday}
-              isVacationDay={isVacationDay}
-              isArretDay={isArretDay}
-              getEventsForDate={getEventsForDate}
-              isDateCancelled={isDateCancelled}
-              onDayClick={handleDayClick}
+              viewMode={viewMode}
+            />
+            <MobileArretBar
+              arrets={arrets}
+              currentDate={currentDate}
+              settings={settings}
+              viewMode={viewMode}
             />
           </div>
 
-          {/* Mobile Legend */}
-          <div className="mt-4">
-            <MobileLegend settings={settings} />
+          {/* Calendar View - Year or Month */}
+          <div className="mt-3">
+            {viewMode === 'year' ? (
+              <MobileYearView
+                year={currentDate.getFullYear()}
+                settings={settings}
+                astreintes={yearAstreintes}
+                isAstreinteDay={isAstreinteDay}
+                hasConflict={hasConflict}
+                isHoliday={isHoliday}
+                isVacationDay={isVacationDay}
+                isArretDay={isArretDay}
+                getEventsForDate={getEventsForDate}
+                isDateCancelled={isDateCancelled}
+                onMonthClick={handleMonthClick}
+              />
+            ) : (
+              <MobileCalendarGrid
+                currentDate={currentDate}
+                settings={settings}
+                astreintes={currentAstreintes}
+                isAstreinteDay={isAstreinteDay}
+                hasConflict={hasConflict}
+                isHoliday={isHoliday}
+                isVacationDay={isVacationDay}
+                isArretDay={isArretDay}
+                getEventsForDate={getEventsForDate}
+                isDateCancelled={isDateCancelled}
+                onDayClick={handleDayClick}
+              />
+            )}
+          </div>
+
+          {/* Legend - Same complete legend in both views */}
+          <div className="mt-3">
+            <MobileLegend settings={settings} expanded={false} />
           </div>
         </div>
 
