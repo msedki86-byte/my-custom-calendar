@@ -1,7 +1,12 @@
 import { useState, useCallback } from 'react';
 import { useCalendar } from '@/hooks/useCalendar';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { CalendarHeader } from '@/components/Calendar/CalendarHeader';
 import { CalendarGrid } from '@/components/Calendar/CalendarGrid';
+import { MobileCalendarGrid } from '@/components/Calendar/MobileCalendarGrid';
+import { MobileHeader } from '@/components/Calendar/MobileHeader';
+import { MobileLegend } from '@/components/Calendar/MobileLegend';
+import { DayDetails } from '@/components/Calendar/DayDetails';
 import { VacationBar } from '@/components/Calendar/VacationBar';
 import { ArretBar } from '@/components/Calendar/ArretBar';
 import { YearView } from '@/components/Calendar/YearView';
@@ -66,10 +71,12 @@ const Index = () => {
     importHolidays,
   } = useCalendar();
 
+  const isMobile = useIsMobile();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [viewMode, setViewMode] = useState<'year' | 'month'>('year');
+  const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'year' | 'month'>('month');
 
   const currentMonthArrets = getArretsForPeriod(
     startOfMonth(currentDate),
@@ -78,10 +85,24 @@ const Index = () => {
 
   const yearAstreintes = getAstreintesForYear(currentDate.getFullYear());
 
+  // Get data for selected day
+  const selectedDayData = selectedDate ? {
+    events: getEventsForDate(selectedDate),
+    astreinte: isAstreinteDay(selectedDate, currentAstreintes),
+    holiday: isHoliday(selectedDate),
+    vacation: isVacationDay(selectedDate),
+    arret: isArretDay(selectedDate),
+    cancelled: isDateCancelled(selectedDate),
+  } : null;
+
   const handleDayClick = useCallback((date: Date) => {
     setSelectedDate(date);
-    setAddEventOpen(true);
-  }, []);
+    if (isMobile) {
+      setDayDetailsOpen(true);
+    } else {
+      setAddEventOpen(true);
+    }
+  }, [isMobile]);
 
   const handleMonthClick = useCallback((date: Date) => {
     goToDate(date);
@@ -106,7 +127,6 @@ const Index = () => {
     } else if (eventData.type === 'astreinte-ponctuelle') {
       addPonctualAstreinte(eventData.startDate, eventData.endDate, eventData.name);
     } else if (eventData.type === 'astreinte-cancelled') {
-      // Cancel only the specific dates selected
       cancelAstreinteDates(eventData.startDate, eventData.endDate, eventData.name);
     }
   }, [addEvent, addPonctualAstreinte, cancelAstreinteDates]);
@@ -115,6 +135,95 @@ const Index = () => {
     goToDate(new Date(year, currentDate.getMonth(), 1));
   }, [currentDate, goToDate]);
 
+  const openAddEventFromDetails = useCallback(() => {
+    setDayDetailsOpen(false);
+    setAddEventOpen(true);
+  }, []);
+
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="px-4 py-3 max-w-lg mx-auto">
+          {/* Mobile Header */}
+          <MobileHeader
+            currentDate={currentDate}
+            onPrevMonth={goToPrevMonth}
+            onNextMonth={goToNextMonth}
+            onToday={goToToday}
+            onAddEvent={() => {
+              setSelectedDate(new Date());
+              setAddEventOpen(true);
+            }}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
+
+          {/* Mobile Calendar Grid */}
+          <div className="mt-4">
+            <MobileCalendarGrid
+              currentDate={currentDate}
+              settings={settings}
+              astreintes={currentAstreintes}
+              isAstreinteDay={isAstreinteDay}
+              hasConflict={hasConflict}
+              isHoliday={isHoliday}
+              isVacationDay={isVacationDay}
+              isArretDay={isArretDay}
+              getEventsForDate={getEventsForDate}
+              isDateCancelled={isDateCancelled}
+              onDayClick={handleDayClick}
+            />
+          </div>
+
+          {/* Mobile Legend */}
+          <div className="mt-4">
+            <MobileLegend settings={settings} />
+          </div>
+        </div>
+
+        {/* Day Details Drawer */}
+        <DayDetails
+          date={selectedDate || null}
+          isOpen={dayDetailsOpen}
+          onClose={() => setDayDetailsOpen(false)}
+          onAddEvent={openAddEventFromDetails}
+          events={selectedDayData?.events || []}
+          astreinte={selectedDayData?.astreinte || null}
+          holiday={selectedDayData?.holiday || null}
+          vacation={selectedDayData?.vacation || null}
+          arret={selectedDayData?.arret || null}
+          cancelled={selectedDayData?.cancelled || null}
+          settings={settings}
+        />
+
+        {/* Settings Panel */}
+        <SettingsPanel
+          settings={settings}
+          onUpdateSettings={updateSettings}
+          isOpen={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+        />
+
+        {/* Add Event Dialog */}
+        <AddEventDialog
+          isOpen={addEventOpen}
+          onClose={() => setAddEventOpen(false)}
+          onAdd={handleAddEvent}
+          initialDate={selectedDate}
+        />
+
+        {/* Backdrop for settings */}
+        {settingsOpen && (
+          <div 
+            className="fixed inset-0 bg-black/20 z-40"
+            onClick={() => setSettingsOpen(false)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <div className="container py-2 sm:py-4 lg:py-6 max-w-7xl mx-auto px-2 sm:px-4">
