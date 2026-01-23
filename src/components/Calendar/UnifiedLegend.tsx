@@ -13,6 +13,7 @@ export function UnifiedLegend({ settings, defaultExpanded = true }: UnifiedLegen
     { label: 'Astr. ponctuelle', color: settings.astreintePonctuelleColor, pattern: false },
     { label: 'Astr. annulée', color: settings.astreinteCancelledColor, pattern: true, patternClass: 'pattern-crosshatch' },
     { label: 'Événement', color: settings.eventColor, pattern: false },
+    { label: 'RE (Repos)', color: settings.reColor, pattern: false },
     { label: 'Vacances', color: settings.vacationColor, pattern: false },
     { label: 'Jour férié', color: '#ef4444', pattern: true, patternClass: 'pattern-stripes' },
     { label: 'Arrêt Tr2', color: settings.arretTr2Color, pattern: false },

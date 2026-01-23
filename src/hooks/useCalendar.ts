@@ -136,6 +136,20 @@ export function useCalendar() {
     );
   }, [events]);
 
+  // Check if date is a RE (repos/récupération) day
+  const isREDay = useCallback((date: Date): CalendarEvent | null => {
+    return events.find(event => 
+      event.name === 'RE' && isWithinInterval(date, { start: event.startDate, end: event.endDate })
+    ) || null;
+  }, [events]);
+
+  // Get non-RE events for a specific date
+  const getNonREEventsForDate = useCallback((date: Date): CalendarEvent[] => {
+    return events.filter(event => 
+      event.name !== 'RE' && isWithinInterval(date, { start: event.startDate, end: event.endDate })
+    );
+  }, [events]);
+
   // Get conflict details for a date
   const getConflictDetails = useCallback((date: Date, astreintes: Astreinte[]): string[] => {
     const details: string[] = [];
@@ -413,7 +427,9 @@ export function useCalendar() {
     isHoliday,
     isVacationDay,
     isArretDay,
+    isREDay,
     getEventsForDate,
+    getNonREEventsForDate,
     getArretsForPeriod,
     getAstreintesForYear,
     importEvents,
