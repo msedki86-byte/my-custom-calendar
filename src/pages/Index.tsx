@@ -1,29 +1,20 @@
 import { useState, useCallback } from 'react';
 import { useCalendar } from '@/hooks/useCalendar';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { CalendarHeader } from '@/components/Calendar/CalendarHeader';
-import { CalendarGrid } from '@/components/Calendar/CalendarGrid';
-import { MobileCalendarGrid } from '@/components/Calendar/MobileCalendarGrid';
-import { MobileToolbar } from '@/components/Calendar/MobileToolbar';
-import { MobileYearView } from '@/components/Calendar/MobileYearView';
-import { MobileVacationBar } from '@/components/Calendar/MobileVacationBar';
-import { MobileArretBar } from '@/components/Calendar/MobileArretBar';
-import { MobileLegend } from '@/components/Calendar/MobileLegend';
+import { UnifiedToolbar } from '@/components/Calendar/UnifiedToolbar';
+import { UnifiedCalendarGrid } from '@/components/Calendar/UnifiedCalendarGrid';
+import { UnifiedYearView } from '@/components/Calendar/UnifiedYearView';
+import { UnifiedVacationBar } from '@/components/Calendar/UnifiedVacationBar';
+import { UnifiedArretBar } from '@/components/Calendar/UnifiedArretBar';
+import { UnifiedLegend } from '@/components/Calendar/UnifiedLegend';
 import { DayDetails } from '@/components/Calendar/DayDetails';
-import { VacationBar } from '@/components/Calendar/VacationBar';
-import { ArretBar } from '@/components/Calendar/ArretBar';
-import { YearView } from '@/components/Calendar/YearView';
-import { Legend } from '@/components/Calendar/Legend';
 import { SettingsPanel } from '@/components/Settings/SettingsPanel';
-import { Toolbar } from '@/components/Toolbar/Toolbar';
 import { AddEventDialog } from '@/components/Dialogs/AddEventDialog';
 import { EventsManager } from '@/components/Events/EventsManager';
 import { ConflictsList } from '@/components/Conflicts/ConflictsList';
 import { ExportPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
 import { startOfMonth, endOfMonth } from 'date-fns';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar as CalendarIcon, List, AlertTriangle } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const {
@@ -80,11 +71,14 @@ const Index = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'year' | 'month'>('month');
+  const [activeTab, setActiveTab] = useState('calendar');
 
-  const currentMonthArrets = getArretsForPeriod(
-    startOfMonth(currentDate),
-    endOfMonth(currentDate)
-  );
+  // State for collapsible sections - shared between views
+  const [sectionsExpanded, setSectionsExpanded] = useState({
+    vacations: !isMobile,
+    arrets: !isMobile,
+    legend: !isMobile,
+  });
 
   const yearAstreintes = getAstreintesForYear(currentDate.getFullYear());
 
@@ -100,12 +94,8 @@ const Index = () => {
 
   const handleDayClick = useCallback((date: Date) => {
     setSelectedDate(date);
-    if (isMobile) {
-      setDayDetailsOpen(true);
-    } else {
-      setAddEventOpen(true);
-    }
-  }, [isMobile]);
+    setDayDetailsOpen(true);
+  }, []);
 
   const handleMonthClick = useCallback((date: Date) => {
     goToDate(date);
@@ -143,254 +133,119 @@ const Index = () => {
     setAddEventOpen(true);
   }, []);
 
-  // Mobile Layout - Unified with same options as desktop
-  if (isMobile) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="px-3 py-2 max-w-lg mx-auto">
-          {/* Mobile Toolbar - Same options as desktop */}
-          <MobileToolbar
-            currentDate={currentDate}
-            currentYear={currentDate.getFullYear()}
-            viewMode={viewMode}
-            onPrevMonth={viewMode === 'year' 
-              ? () => goToDate(new Date(currentDate.getFullYear() - 1, 0, 1))
-              : goToPrevMonth
-            }
-            onNextMonth={viewMode === 'year'
-              ? () => goToDate(new Date(currentDate.getFullYear() + 1, 0, 1))
-              : goToNextMonth
-            }
-            onToday={goToToday}
-            onAddEvent={() => {
-              setSelectedDate(new Date());
-              setAddEventOpen(true);
-            }}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onViewModeChange={setViewMode}
-            onYearChange={handleYearChange}
-          />
-
-          {/* Info Bars - Same in both views */}
-          <div className="mt-3 space-y-2">
-            <MobileVacationBar
-              vacations={vacations}
-              currentDate={currentDate}
-              settings={settings}
-              viewMode={viewMode}
-            />
-            <MobileArretBar
-              arrets={arrets}
-              currentDate={currentDate}
-              settings={settings}
-              viewMode={viewMode}
-            />
-          </div>
-
-          {/* Calendar View - Year or Month */}
-          <div className="mt-3">
-            {viewMode === 'year' ? (
-              <MobileYearView
-                year={currentDate.getFullYear()}
-                settings={settings}
-                astreintes={yearAstreintes}
-                isAstreinteDay={isAstreinteDay}
-                hasConflict={hasConflict}
-                isHoliday={isHoliday}
-                isVacationDay={isVacationDay}
-                isArretDay={isArretDay}
-                getEventsForDate={getEventsForDate}
-                isDateCancelled={isDateCancelled}
-                onMonthClick={handleMonthClick}
-              />
-            ) : (
-              <MobileCalendarGrid
-                currentDate={currentDate}
-                settings={settings}
-                astreintes={currentAstreintes}
-                isAstreinteDay={isAstreinteDay}
-                hasConflict={hasConflict}
-                isHoliday={isHoliday}
-                isVacationDay={isVacationDay}
-                isArretDay={isArretDay}
-                getEventsForDate={getEventsForDate}
-                isDateCancelled={isDateCancelled}
-                onDayClick={handleDayClick}
-              />
-            )}
-          </div>
-
-          {/* Legend - Same complete legend in both views */}
-          <div className="mt-3">
-            <MobileLegend settings={settings} expanded={false} />
-          </div>
-        </div>
-
-        {/* Day Details Drawer */}
-        <DayDetails
-          date={selectedDate || null}
-          isOpen={dayDetailsOpen}
-          onClose={() => setDayDetailsOpen(false)}
-          onAddEvent={openAddEventFromDetails}
-          events={selectedDayData?.events || []}
-          astreinte={selectedDayData?.astreinte || null}
-          holiday={selectedDayData?.holiday || null}
-          vacation={selectedDayData?.vacation || null}
-          arret={selectedDayData?.arret || null}
-          cancelled={selectedDayData?.cancelled || null}
-          settings={settings}
-        />
-
-        {/* Settings Panel */}
-        <SettingsPanel
-          settings={settings}
-          onUpdateSettings={updateSettings}
-          isOpen={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
-        />
-
-        {/* Add Event Dialog */}
-        <AddEventDialog
-          isOpen={addEventOpen}
-          onClose={() => setAddEventOpen(false)}
-          onAdd={handleAddEvent}
-          initialDate={selectedDate}
-        />
-
-        {/* Backdrop for settings */}
-        {settingsOpen && (
-          <div 
-            className="fixed inset-0 bg-black/20 z-40"
-            onClick={() => setSettingsOpen(false)}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // Desktop Layout
+  // Unified Layout - Same features on all screen sizes
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <div className="container py-2 sm:py-4 lg:py-6 max-w-7xl mx-auto px-2 sm:px-4">
-        <Tabs defaultValue="calendar" className="w-full">
-          <TabsList className="mb-2 sm:mb-4 lg:mb-6 flex-wrap h-auto gap-1">
-            <TabsTrigger value="calendar" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Calendrier</span>
-              <span className="xs:hidden">Cal.</span>
-            </TabsTrigger>
-            <TabsTrigger value="events" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <List className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Gestion des événements</span>
-              <span className="sm:hidden">Événements</span>
-            </TabsTrigger>
-            <TabsTrigger value="conflicts" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
-              Conflits
-            </TabsTrigger>
-          </TabsList>
+    <div className="min-h-screen bg-background">
+      <div className="px-2 sm:px-4 lg:px-6 py-2 sm:py-4 max-w-7xl mx-auto">
+        {/* Unified Toolbar - Same options everywhere */}
+        <UnifiedToolbar
+          currentDate={currentDate}
+          currentYear={currentDate.getFullYear()}
+          viewMode={viewMode}
+          activeTab={activeTab}
+          onPrevMonth={viewMode === 'year' 
+            ? () => goToDate(new Date(currentDate.getFullYear() - 1, 0, 1))
+            : goToPrevMonth
+          }
+          onNextMonth={viewMode === 'year'
+            ? () => goToDate(new Date(currentDate.getFullYear() + 1, 0, 1))
+            : goToNextMonth
+          }
+          onToday={goToToday}
+          onAddEvent={() => {
+            setSelectedDate(new Date());
+            setAddEventOpen(true);
+          }}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onViewModeChange={setViewMode}
+          onYearChange={handleYearChange}
+          onTabChange={setActiveTab}
+        />
 
-          <TabsContent value="calendar">
-            {/* Header */}
-            <CalendarHeader
-              currentDate={currentDate}
-              onPrevMonth={goToPrevMonth}
-              onNextMonth={goToNextMonth}
-              onToday={goToToday}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-            />
-
-            {/* Toolbar with PDF Export */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-              <Toolbar
-                currentYear={currentDate.getFullYear()}
-                onOpenSettings={() => setSettingsOpen(true)}
-                onAddEvent={() => {
-                  setSelectedDate(new Date());
-                  setAddEventOpen(true);
-                }}
-                onYearChange={handleYearChange}
+        {/* Calendar Tab Content */}
+        {activeTab === 'calendar' && (
+          <div className="mt-3 sm:mt-4">
+            {/* Export/Import buttons */}
+            <div className="flex items-center justify-end gap-2 mb-3">
+              <ExportPDF 
+                viewMode={viewMode} 
+                year={currentDate.getFullYear()} 
+                month={currentDate.getMonth()} 
               />
-              <div className="flex items-center gap-2">
-                <ExportPDF 
-                  viewMode={viewMode} 
-                  year={currentDate.getFullYear()} 
-                  month={currentDate.getMonth()} 
-                />
-                <ExcelImport
-                  onImportEvents={importEvents}
-                  onImportVacations={importVacations}
-                  onImportArrets={importArrets}
-                  onImportHolidays={importHolidays}
-                />
-              </div>
+              <ExcelImport
+                onImportEvents={importEvents}
+                onImportVacations={importVacations}
+                onImportArrets={importArrets}
+                onImportHolidays={importHolidays}
+              />
             </div>
 
-            {viewMode === 'year' ? (
-              /* Year View */
-              <div data-calendar-print>
-                <YearView
+            {/* Collapsible Info Bars - Same in both views */}
+            <div className="space-y-2 sm:space-y-3">
+              <UnifiedVacationBar
+                vacations={vacations}
+                currentDate={currentDate}
+                settings={settings}
+                viewMode={viewMode}
+                defaultExpanded={sectionsExpanded.vacations}
+              />
+              <UnifiedArretBar
+                arrets={arrets}
+                currentDate={currentDate}
+                settings={settings}
+                viewMode={viewMode}
+                defaultExpanded={sectionsExpanded.arrets}
+              />
+            </div>
+
+            {/* Calendar View - Year or Month */}
+            <div className="mt-3 sm:mt-4" data-calendar-print>
+              {viewMode === 'year' ? (
+                <UnifiedYearView
                   year={currentDate.getFullYear()}
                   settings={settings}
                   astreintes={yearAstreintes}
-                  holidays={holidays}
-                  vacations={vacations}
-                  arrets={arrets}
-                  onMonthClick={handleMonthClick}
-                  onDayClick={handleDayClick}
                   isAstreinteDay={isAstreinteDay}
-                  isDateCancelled={isDateCancelled}
+                  hasConflict={hasConflict}
                   isHoliday={isHoliday}
                   isVacationDay={isVacationDay}
                   isArretDay={isArretDay}
                   getEventsForDate={getEventsForDate}
-                  hasConflict={hasConflict}
-                  getConflictDetails={getConflictDetails}
+                  isDateCancelled={isDateCancelled}
+                  onMonthClick={handleMonthClick}
+                  onDayClick={handleDayClick}
                 />
-              </div>
-            ) : (
-              <div data-calendar-print>
-                {/* Vacation Bar */}
-                <VacationBar
-                  vacations={vacations}
-                  currentDate={currentDate}
-                  settings={settings}
-                />
-
-                {/* Arret Bar - like vacations */}
-                <ArretBar
-                  arrets={arrets}
-                  currentDate={currentDate}
-                  settings={settings}
-                />
-
-                {/* Calendar Grid */}
-                <CalendarGrid
+              ) : (
+                <UnifiedCalendarGrid
                   currentDate={currentDate}
                   settings={settings}
                   astreintes={currentAstreintes}
-                  arrets={arrets}
                   isAstreinteDay={isAstreinteDay}
-                  isDateCancelled={isDateCancelled}
                   hasConflict={hasConflict}
-                  getConflictDetails={getConflictDetails}
                   isHoliday={isHoliday}
                   isVacationDay={isVacationDay}
                   isArretDay={isArretDay}
                   getEventsForDate={getEventsForDate}
+                  isDateCancelled={isDateCancelled}
                   onDayClick={handleDayClick}
+                  showWeekNumbers={true}
                 />
-              </div>
-            )}
-
-            {/* Legend */}
-            <div className="mt-6">
-              <Legend settings={settings} />
+              )}
             </div>
-          </TabsContent>
 
-          <TabsContent value="events">
+            {/* Collapsible Legend */}
+            <div className="mt-3 sm:mt-4">
+              <UnifiedLegend 
+                settings={settings} 
+                defaultExpanded={sectionsExpanded.legend}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Events Management Tab */}
+        {activeTab === 'events' && (
+          <div className="mt-3 sm:mt-4">
             <EventsManager
               events={events}
               vacations={vacations}
@@ -415,20 +270,38 @@ const Index = () => {
               onAddPonctualAstreinte={addPonctualAstreinte}
               onCancelAstreinteDates={cancelAstreinteDates}
             />
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="conflicts">
+        {/* Conflicts Tab */}
+        {activeTab === 'conflicts' && (
+          <div className="mt-3 sm:mt-4">
             <ConflictsList
               events={events}
               astreintes={yearAstreintes}
               settings={settings}
               year={currentDate.getFullYear()}
             />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
 
-      {/* Settings Panel */}
+      {/* Day Details Drawer - Works on all screen sizes */}
+      <DayDetails
+        date={selectedDate || null}
+        isOpen={dayDetailsOpen}
+        onClose={() => setDayDetailsOpen(false)}
+        onAddEvent={openAddEventFromDetails}
+        events={selectedDayData?.events || []}
+        astreinte={selectedDayData?.astreinte || null}
+        holiday={selectedDayData?.holiday || null}
+        vacation={selectedDayData?.vacation || null}
+        arret={selectedDayData?.arret || null}
+        cancelled={selectedDayData?.cancelled || null}
+        settings={settings}
+      />
+
+      {/* Settings Panel - Full functionality */}
       <SettingsPanel
         settings={settings}
         onUpdateSettings={updateSettings}
@@ -436,7 +309,7 @@ const Index = () => {
         onClose={() => setSettingsOpen(false)}
       />
 
-      {/* Add Event Dialog */}
+      {/* Add Event Dialog - Full functionality */}
       <AddEventDialog
         isOpen={addEventOpen}
         onClose={() => setAddEventOpen(false)}
