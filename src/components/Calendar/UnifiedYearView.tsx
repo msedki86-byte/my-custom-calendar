@@ -12,7 +12,6 @@ import {
   isToday,
   isWeekend,
   format,
-  getWeek,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate, Arret } from '@/types/calendar';
@@ -22,12 +21,16 @@ interface UnifiedYearViewProps {
   year: number;
   settings: CalendarSettings;
   astreintes: Astreinte[];
+  vacations: Vacation[];
+  arrets: Arret[];
   isAstreinteDay: (date: Date, astreintes: Astreinte[]) => Astreinte | null;
   hasConflict: (date: Date, astreintes: Astreinte[]) => boolean;
   isHoliday: (date: Date) => Holiday | null;
   isVacationDay: (date: Date) => Vacation | null;
   isArretDay: (date: Date) => Arret | null;
+  isREDay: (date: Date) => CalendarEvent | null;
   getEventsForDate: (date: Date) => CalendarEvent[];
+  getNonREEventsForDate: (date: Date) => CalendarEvent[];
   isDateCancelled: (date: Date) => CancelledAstreinteDate | null;
   onMonthClick?: (date: Date) => void;
   onDayClick?: (date: Date) => void;
@@ -39,12 +42,16 @@ export function UnifiedYearView({
   year,
   settings,
   astreintes,
+  vacations,
+  arrets,
   isAstreinteDay,
   hasConflict,
   isHoliday,
   isVacationDay,
   isArretDay,
+  isREDay,
   getEventsForDate,
+  getNonREEventsForDate,
   isDateCancelled,
   onMonthClick,
   onDayClick,
@@ -64,6 +71,14 @@ export function UnifiedYearView({
         const calendarEnd = endOfWeek(monthEnd, { locale: fr, weekStartsOn: 1 });
         const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
+        // Get context info for the month header
+        const monthVacations = vacations.filter(v => 
+          v.startDate <= monthEnd && v.endDate >= monthStart
+        );
+        const monthArrets = arrets.filter(a => 
+          a.startDate <= monthEnd && a.endDate >= monthStart
+        );
+
         return (
           <div 
             key={month.toString()} 
@@ -78,6 +93,32 @@ export function UnifiedYearView({
                 {format(month, 'MMMM', { locale: fr })}
               </span>
             </button>
+
+            {/* Context bars */}
+            {(monthVacations.length > 0 || monthArrets.length > 0) && (
+              <div className="px-1 py-0.5 bg-muted/30 space-y-0.5">
+                {monthVacations.slice(0, 2).map((v, idx) => (
+                  <div
+                    key={`vac-${idx}`}
+                    className="h-2 rounded text-[6px] text-white flex items-center justify-center truncate"
+                    style={{ backgroundColor: v.color || settings.vacationColor }}
+                    title={v.name}
+                  >
+                    {v.name}
+                  </div>
+                ))}
+                {monthArrets.slice(0, 2).map((a, idx) => (
+                  <div
+                    key={`arret-${idx}`}
+                    className="h-2 rounded text-[6px] text-white flex items-center justify-center truncate"
+                    style={{ backgroundColor: a.color }}
+                    title={a.name}
+                  >
+                    {a.name}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Weekday Headers */}
             <div className="grid grid-cols-7 bg-muted/30">
@@ -102,13 +143,15 @@ export function UnifiedYearView({
                 const isWeekendDay = isWeekend(day);
                 const astreinte = isAstreinteDay(day, astreintes);
                 const holiday = isHoliday(day);
-                const vacation = isVacationDay(day);
-                const arret = isArretDay(day);
-                const events = getEventsForDate(day);
                 const cancelled = isDateCancelled(day);
                 const conflict = hasConflict(day, astreintes);
+                const reDay = isREDay(day);
+                const events = getNonREEventsForDate(day);
                 
-                const hasEvent = events.length > 0 || astreinte || vacation || arret;
+                // Visual priority logic
+                const hasActiveAstreinte = astreinte && !astreinte.isCancelled && !cancelled;
+                const showREBackground = reDay && !hasActiveAstreinte;
+                const hasEvents = events.length > 0;
 
                 return (
                   <button
@@ -116,21 +159,42 @@ export function UnifiedYearView({
                     onClick={() => isCurrentMonth && onDayClick?.(day)}
                     disabled={!isCurrentMonth}
                     className={cn(
-                      "relative aspect-square flex items-center justify-center text-[9px] sm:text-[10px] rounded-sm transition-all",
+                      "relative aspect-square flex flex-col items-center justify-center text-[9px] sm:text-[10px] rounded-sm transition-all",
                       "touch-manipulation active:scale-95",
                       !isCurrentMonth && "opacity-20",
                       isCurrentMonth && "hover:bg-accent/50",
-                      isWeekendDay && isCurrentMonth && "bg-muted/40",
+                      isWeekendDay && isCurrentMonth && !showREBackground && "bg-muted/40",
+                      showREBackground && isCurrentMonth && "bg-gray-300",
                       isTodayDate && "ring-1 ring-primary bg-primary/20 font-bold",
-                      holiday && isCurrentMonth && "bg-destructive/20 text-destructive",
-                      astreinte && !astreinte.isCancelled && !cancelled && isCurrentMonth && "bg-orange-500/80 text-white",
+                      holiday && isCurrentMonth && !hasActiveAstreinte && "text-destructive",
+                      hasActiveAstreinte && isCurrentMonth && "text-white"
                     )}
+                    style={hasActiveAstreinte && isCurrentMonth ? {
+                      backgroundColor: astreinte.isPonctuelle 
+                        ? settings.astreintePonctuelleColor 
+                        : settings.astreinteColor
+                    } : undefined}
                   >
                     {format(day, 'd')}
                     
-                    {/* Event dot */}
-                    {hasEvent && isCurrentMonth && !astreinte && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                    {/* Indicators row */}
+                    {isCurrentMonth && (
+                      <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-px pb-0.5">
+                        {/* Event indicator bar */}
+                        {hasEvents && !hasActiveAstreinte && (
+                          <div 
+                            className="w-2 h-0.5 rounded-full"
+                            style={{ backgroundColor: events[0].color }}
+                          />
+                        )}
+                        {/* Cancelled indicator */}
+                        {cancelled && (
+                          <div 
+                            className="w-2 h-0.5 rounded-full"
+                            style={{ backgroundColor: settings.astreinteCancelledColor }}
+                          />
+                        )}
+                      </div>
                     )}
                     
                     {/* Conflict indicator */}

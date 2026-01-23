@@ -56,7 +56,9 @@ const Index = () => {
     isHoliday,
     isVacationDay,
     isArretDay,
+    isREDay,
     getEventsForDate,
+    getNonREEventsForDate,
     getArretsForPeriod,
     getAstreintesForYear,
     importEvents,
@@ -205,12 +207,16 @@ const Index = () => {
                   year={currentDate.getFullYear()}
                   settings={settings}
                   astreintes={yearAstreintes}
+                  vacations={vacations}
+                  arrets={arrets}
                   isAstreinteDay={isAstreinteDay}
                   hasConflict={hasConflict}
                   isHoliday={isHoliday}
                   isVacationDay={isVacationDay}
                   isArretDay={isArretDay}
+                  isREDay={isREDay}
                   getEventsForDate={getEventsForDate}
+                  getNonREEventsForDate={getNonREEventsForDate}
                   isDateCancelled={isDateCancelled}
                   onMonthClick={handleMonthClick}
                   onDayClick={handleDayClick}
@@ -220,12 +226,17 @@ const Index = () => {
                   currentDate={currentDate}
                   settings={settings}
                   astreintes={currentAstreintes}
+                  vacations={vacations}
+                  arrets={arrets}
                   isAstreinteDay={isAstreinteDay}
                   hasConflict={hasConflict}
+                  getConflictDetails={getConflictDetails}
                   isHoliday={isHoliday}
                   isVacationDay={isVacationDay}
                   isArretDay={isArretDay}
+                  isREDay={isREDay}
                   getEventsForDate={getEventsForDate}
+                  getNonREEventsForDate={getNonREEventsForDate}
                   isDateCancelled={isDateCancelled}
                   onDayClick={handleDayClick}
                   showWeekNumbers={true}

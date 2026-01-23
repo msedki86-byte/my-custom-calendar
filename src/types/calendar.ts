@@ -6,7 +6,8 @@ export type EventType =
   | 'vacation'
   | 'holiday'
   | 'arret'
-  | 'arret-prepa';
+  | 'arret-prepa'
+  | 're'; // Repos / Récupération
 
 export type PatternType = 
   | 'none'
@@ -85,6 +86,7 @@ export interface CalendarSettings {
   astreintePonctuelleColor: string;
   eventColor: string;
   vacationColor: string;
+  reColor: string; // Color for RE (repos/récupération) - grayed out days
   // Couleurs par tranche - Arrêts
   arretTr2Color: string;
   arretTr3Color: string;
@@ -112,6 +114,7 @@ export const defaultSettings: CalendarSettings = {
   astreintePonctuelleColor: '#ea580c',
   eventColor: '#0ea5e9',
   vacationColor: '#a855f7',
+  reColor: '#d1d5db', // Gray color for RE days
   // Couleurs par tranche - Arrêts
   arretTr2Color: '#22c55e',
   arretTr3Color: '#3b82f6',

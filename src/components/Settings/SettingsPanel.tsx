@@ -103,6 +103,11 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                 onChange={(v) => onUpdateSettings({ eventColor: v })}
               />
               <ColorPicker
+                label="RE (Repos)"
+                value={settings.reColor}
+                onChange={(v) => onUpdateSettings({ reColor: v })}
+              />
+              <ColorPicker
                 label="Vacances scolaires"
                 value={settings.vacationColor}
                 onChange={(v) => onUpdateSettings({ vacationColor: v })}
