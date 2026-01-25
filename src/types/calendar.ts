@@ -8,7 +8,6 @@ export type EventType =
   | 'arret'
   | 'arret-prepa'
   | 're'; // Repos / Récupération
-
 export type PatternType = 
   | 'none'
   | 'stripes'
@@ -19,6 +18,18 @@ export type PatternType =
   | 'grid'
   | 'zigzag';
 
+// Module types for AT preparation phases
+export type PrepaModuleType = 'M0' | 'M1' | 'M2A' | 'M2B' | 'M3' | 'M4';
+
+// Pattern mapping for each preparation module
+export const modulePatterns: Record<PrepaModuleType, PatternType> = {
+  'M0': 'dots',
+  'M1': 'stripes',
+  'M2A': 'diagonal',
+  'M2B': 'crosshatch',
+  'M3': 'waves',
+  'M4': 'grid',
+};
 export interface CalendarEvent {
   id: string;
   type: EventType;
@@ -67,9 +78,11 @@ export interface Arret {
   name: string;
   startDate: Date;
   endDate: Date;
-  color: string;
+  color?: string; // Optional - will use tranche color by default
   pattern?: PatternType;
-  tranche: string;
+  tranche: 'Tr2' | 'Tr3' | 'Tr4' | 'Tr5';
+  module?: PrepaModuleType; // For prepa types: M0, M1, M2A, M2B, M3, M4
+  parentArretId?: string; // Reference to the parent AT for preparations
 }
 
 export interface CalendarSettings {
@@ -100,6 +113,14 @@ export interface CalendarSettings {
   arretPrepaPattern: PatternType;
 }
 
+// Mandatory tranche colors as per specification
+export const TRANCHE_COLORS = {
+  Tr2: '#3C9453',
+  Tr3: '#CC6600',
+  Tr4: '#558ED5',
+  Tr5: '#FF0000',
+} as const;
+
 export const defaultSettings: CalendarSettings = {
   titleWeekColor: '#3b82f6',
   titleWeekendColor: '#6366f1',
@@ -115,15 +136,15 @@ export const defaultSettings: CalendarSettings = {
   eventColor: '#0ea5e9',
   vacationColor: '#a855f7',
   reColor: '#d1d5db', // Gray color for RE days
-  // Couleurs par tranche - Arrêts
-  arretTr2Color: '#22c55e',
-  arretTr3Color: '#3b82f6',
-  arretTr4Color: '#ef4444',
-  arretTr5Color: '#f59e0b',
-  // Couleurs par tranche - Préparations
-  prepaTr2Color: '#86efac',
-  prepaTr3Color: '#93c5fd',
-  prepaTr4Color: '#fca5a5',
-  prepaTr5Color: '#fcd34d',
+  // Couleurs par tranche - Arrêts (mandatory colors)
+  arretTr2Color: TRANCHE_COLORS.Tr2,
+  arretTr3Color: TRANCHE_COLORS.Tr3,
+  arretTr4Color: TRANCHE_COLORS.Tr4,
+  arretTr5Color: TRANCHE_COLORS.Tr5,
+  // Couleurs par tranche - Préparations (same as AT, patterns differentiate)
+  prepaTr2Color: TRANCHE_COLORS.Tr2,
+  prepaTr3Color: TRANCHE_COLORS.Tr3,
+  prepaTr4Color: TRANCHE_COLORS.Tr4,
+  prepaTr5Color: TRANCHE_COLORS.Tr5,
   arretPrepaPattern: 'dots',
 };
