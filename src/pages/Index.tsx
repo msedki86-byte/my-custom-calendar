@@ -167,8 +167,8 @@ const Index = () => {
         {/* Calendar Tab Content */}
         {activeTab === 'calendar' && (
           <div className="mt-3 sm:mt-4">
-            {/* Export/Import buttons */}
-            <div className="flex items-center justify-end gap-2 mb-3">
+            {/* Export/Import buttons - Desktop only, mobile uses toolbar menu */}
+            <div className="hidden sm:flex items-center justify-end gap-2 mb-3">
               <ExportPDF 
                 viewMode={viewMode} 
                 year={currentDate.getFullYear()} 

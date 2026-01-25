@@ -110,9 +110,9 @@ export function EventsManager({
         name: newItem.name || 'Nouvel arrêt',
         startDate: newItem.startDate || new Date(),
         endDate: newItem.endDate || new Date(),
-        color: newItem.color || '#22c55e',
         pattern: newItem.pattern || 'none',
-        tranche: newItem.tranche || 'Tr1',
+        tranche: newItem.tranche || 'Tr2',
+        module: newItem.module,
       });
     } else if (type === 'holiday') {
       onAddHoliday({
@@ -651,10 +651,20 @@ export function EventsManager({
                     />
                   </TableCell>
                   <TableCell>
-                    <EditableText
-                      value={arret.tranche}
-                      onSave={(tranche) => onUpdateArret(arret.id, { tranche })}
-                    />
+                    <Select 
+                      value={arret.tranche} 
+                      onValueChange={(v) => onUpdateArret(arret.id, { tranche: v as 'Tr2' | 'Tr3' | 'Tr4' | 'Tr5' })}
+                    >
+                      <SelectTrigger className="w-20 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Tr2">Tr2</SelectItem>
+                        <SelectItem value="Tr3">Tr3</SelectItem>
+                        <SelectItem value="Tr4">Tr4</SelectItem>
+                        <SelectItem value="Tr5">Tr5</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <DateEditor
