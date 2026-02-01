@@ -144,6 +144,13 @@ const Index = () => {
   }, []);
 
   // Unified Layout - Same features on all screen sizes
+  if (!(currentDate instanceof Date) || isNaN(currentDate.getTime())) {
+  return (
+    <div className="p-4 text-center text-muted-foreground">
+      Chargement du calendrier…
+    </div>
+  );
+}
   return (
     <div className="min-h-screen bg-background">
       <div className="px-2 sm:px-4 lg:px-6 py-2 sm:py-4 max-w-7xl mx-auto">
