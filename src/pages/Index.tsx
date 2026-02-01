@@ -127,8 +127,16 @@ const Index = () => {
   }, [addEvent, addPonctualAstreinte, cancelAstreinteDates]);
 
   const handleYearChange = useCallback((year: number) => {
-    goToDate(new Date(year, currentDate.getMonth(), 1));
-  }, [currentDate, goToDate]);
+  if (isNaN(year)) return;
+
+  const safeMonth = Math.min(Math.max(currentDate.getMonth(), 0), 11);
+  const safeDate = new Date(year, safeMonth, 1);
+
+  if (isNaN(safeDate.getTime())) return;
+
+  goToDate(safeDate);
+}, [currentDate, goToDate]);
+
 
   const openAddEventFromDetails = useCallback(() => {
     setDayDetailsOpen(false);
