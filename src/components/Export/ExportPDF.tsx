@@ -1,91 +1,39 @@
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 
-interface ExportPDFProps {
-  viewMode: 'year' | 'month';
-  year: number;
-  month?: number;
-}
-
-export function ExportPDF({ viewMode, year, month }: ExportPDFProps) {
+export function ExportPDF() {
   const handleExport = () => {
-    // Use browser print functionality with specific styling
-    const printContent = document.querySelector('[data-calendar-print]');
-    if (!printContent) {
-      alert('Veuillez vous assurer que le calendrier est visible.');
-      return;
-    }
+    const content = document.querySelector('[data-calendar-print]');
+    if (!content) return alert('Calendrier non visible');
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Veuillez autoriser les pop-ups pour exporter en PDF.');
-      return;
-    }
+    const win = window.open('', '_blank');
+    if (!win) return alert('Pop-up bloquée');
 
-    const title = viewMode === 'year' 
-      ? `Calendrier ${year}` 
-      : `Calendrier ${new Date(year, month || 0).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`;
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
+    win.document.write(`
       <html>
         <head>
-          <title>${title}</title>
+          <title>Calendrier</title>
           <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { 
-              font-family: system-ui, -apple-system, sans-serif; 
-              padding: 20px;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            h1 { 
-              text-align: center; 
-              margin-bottom: 20px; 
-              font-size: 24px;
-            }
-            .calendar-content {
-              width: 100%;
-            }
-            /* Preserve all background colors */
-            [style*="background"] {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            @media print {
-              body { padding: 10px; }
-              @page { 
-                size: ${viewMode === 'year' ? 'A3 landscape' : 'A4 portrait'}; 
-                margin: 10mm;
-              }
-            }
+            @page { size: A3 landscape; margin: 10mm; }
+            body { font-family: system-ui; }
           </style>
           <link rel="stylesheet" href="${window.location.origin}/src/index.css" />
         </head>
         <body>
-          <h1>${title}</h1>
-          <div class="calendar-content">
-            ${printContent.outerHTML}
-          </div>
+          ${content.outerHTML}
           <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-                window.close();
-              }, 500);
-            };
+            window.onload = () => { window.print(); window.close(); }
           </script>
         </body>
       </html>
     `);
-    printWindow.document.close();
+    win.document.close();
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleExport} className="gap-1 sm:gap-2 h-8 text-xs sm:text-sm px-2 sm:px-3">
-      <FileDown className="h-3 w-3 sm:h-4 sm:w-4" />
-      <span className="hidden sm:inline">Exporter PDF</span>
-      <span className="sm:hidden">PDF</span>
+    <Button variant="outline" size="sm" onClick={handleExport}>
+      <FileDown className="h-4 w-4 mr-1" />
+      PDF
     </Button>
   );
 }
