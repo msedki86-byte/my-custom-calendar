@@ -184,11 +184,7 @@ const Index = () => {
           <div className="mt-3 sm:mt-4">
             {/* Export/Import buttons - Desktop only, mobile uses toolbar menu */}
             <div className="hidden sm:flex items-center justify-end gap-2 mb-3">
-              <ExportPDF 
-                viewMode={viewMode} 
-                year={currentDate.getFullYear()} 
-                month={currentDate.getMonth()} 
-              />
+              <ExportPDF />
               <ExcelImport
                 onImportEvents={importEvents}
                 onImportVacations={importVacations}
