@@ -29,7 +29,7 @@ import {
   format,
 } from 'date-fns';
 
-export function useCalendar() {
+export  useCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
   const [settings, setSettings] = useState<CalendarSettings>(defaultSettings);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
