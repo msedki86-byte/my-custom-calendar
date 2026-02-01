@@ -32,6 +32,7 @@ interface UnifiedCalendarGridProps {
   isVacationDay: (date: Date) => Vacation | null;
   isArretDay: (date: Date) => Arret | null;
   isREDay: (date: Date) => CalendarEvent | null;
+  isCPDay: (date: Date) => CalendarEvent | null;
   getEventsForDate: (date: Date) => CalendarEvent[];
   getNonREEventsForDate: (date: Date) => CalendarEvent[];
   isDateCancelled: (date: Date) => CancelledAstreinteDate | null;
@@ -81,6 +82,7 @@ export function UnifiedCalendarGrid({
   isVacationDay,
   isArretDay,
   isREDay,
+  isCPDay,
   getEventsForDate,
   getNonREEventsForDate,
   isDateCancelled,
@@ -252,14 +254,24 @@ export function UnifiedCalendarGrid({
                   const conflict = hasConflict(day, astreintes);
                   const conflictDetails = conflict ? getConflictDetails(day, astreintes) : [];
                   const reDay = isREDay(day);
+                  const cpDay = isCPDay(day);
                   const events = getNonREEventsForDate(day);
                   
                   // Determine visual priority:
                   // 1. Astreinte (normal or ponctuelle) takes visual priority
-                  // 2. If astreinte is cancelled, show RE gray if applicable
-                  // 3. Otherwise RE grays out the cell
+                  // 2. If astreinte is cancelled, show RE/CP gray if applicable
+                  // 3. Otherwise RE/CP grays out the cell (CP darker than RE)
                   const hasActiveAstreinte = astreinte && !astreinte.isCancelled && !cancelled;
-                  const showREBackground = reDay && !hasActiveAstreinte;
+                  const showCPBackground = cpDay && !hasActiveAstreinte;
+                  const showREBackground = reDay && !hasActiveAstreinte && !showCPBackground;
+
+                  // Determine background color
+                  let cellBgColor = undefined;
+                  if (showCPBackground && isCurrentMonth) {
+                    cellBgColor = settings.cpColor;
+                  } else if (showREBackground && isCurrentMonth) {
+                    cellBgColor = settings.reColor;
+                  }
 
                   return (
                     <button
@@ -270,11 +282,11 @@ export function UnifiedCalendarGrid({
                         "relative min-h-[60px] sm:min-h-[80px] flex flex-col p-0.5 sm:p-1 transition-all duration-200 border-r border-border/30 last:border-r-0",
                         "active:scale-[0.98] touch-manipulation",
                         !isCurrentMonth && "opacity-30 bg-muted/20",
-                        isCurrentMonth && "hover:bg-accent/30",
-                        isWeekendDay && isCurrentMonth && !showREBackground && "bg-muted/20",
-                        showREBackground && isCurrentMonth && "bg-gray-200",
+                        isCurrentMonth && !showREBackground && !showCPBackground && "hover:bg-accent/30",
+                        isWeekendDay && isCurrentMonth && !showREBackground && !showCPBackground && "bg-muted/20",
                         isTodayDate && "ring-2 ring-primary ring-inset"
                       )}
+                      style={cellBgColor ? { backgroundColor: cellBgColor } : undefined}
                     >
                       {/* Day Number Header */}
                       <div className="flex items-center justify-between w-full mb-0.5">

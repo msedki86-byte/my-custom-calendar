@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarEvent, Vacation, Arret, Holiday, Astreinte, CancelledAstreinteDate, PatternType } from '@/types/calendar';
@@ -10,8 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Trash2, X, Check, Plus } from 'lucide-react';
+import { CalendarIcon, Trash2, X, Check, Plus, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Sort types
+type SortField = 'date' | 'name' | 'tranche';
+type SortDirection = 'asc' | 'desc';
 
 const patterns: { value: PatternType; label: string }[] = [
   { value: 'none', label: 'Aucun' },
@@ -93,8 +97,105 @@ export function EventsManager({
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [addingNew, setAddingNew] = useState<string | null>(null);
   const [newItem, setNewItem] = useState<any>({});
+  
+  // Sorting states for different tabs
+  const [arretSort, setArretSort] = useState<{ field: SortField; direction: SortDirection }>({ field: 'date', direction: 'asc' });
+  const [eventSort, setEventSort] = useState<{ field: SortField; direction: SortDirection }>({ field: 'date', direction: 'asc' });
+  const [vacationSort, setVacationSort] = useState<{ field: SortField; direction: SortDirection }>({ field: 'date', direction: 'asc' });
 
   const formatDate = (date: Date) => format(date, 'dd/MM/yyyy', { locale: fr });
+
+  // Sorted arrets
+  const sortedArrets = useMemo(() => {
+    return [...arrets].sort((a, b) => {
+      const direction = arretSort.direction === 'asc' ? 1 : -1;
+      switch (arretSort.field) {
+        case 'date':
+          return direction * (a.startDate.getTime() - b.startDate.getTime());
+        case 'name':
+          return direction * a.name.localeCompare(b.name);
+        case 'tranche':
+          return direction * a.tranche.localeCompare(b.tranche);
+        default:
+          return 0;
+      }
+    });
+  }, [arrets, arretSort]);
+
+  // Sorted events (excluding RE/CP which are managed in settings)
+  const sortedEvents = useMemo(() => {
+    const filteredEvents = events.filter(e => e.type !== 're' && e.type !== 'cp');
+    return [...filteredEvents].sort((a, b) => {
+      const direction = eventSort.direction === 'asc' ? 1 : -1;
+      switch (eventSort.field) {
+        case 'date':
+          return direction * (a.startDate.getTime() - b.startDate.getTime());
+        case 'name':
+          return direction * a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+  }, [events, eventSort]);
+
+  // Sorted vacations
+  const sortedVacations = useMemo(() => {
+    return [...vacations].sort((a, b) => {
+      const direction = vacationSort.direction === 'asc' ? 1 : -1;
+      switch (vacationSort.field) {
+        case 'date':
+          return direction * (a.startDate.getTime() - b.startDate.getTime());
+        case 'name':
+          return direction * a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+  }, [vacations, vacationSort]);
+
+  // Toggle sort helper
+  const toggleSort = (
+    currentSort: { field: SortField; direction: SortDirection },
+    setSort: (s: { field: SortField; direction: SortDirection }) => void,
+    field: SortField
+  ) => {
+    if (currentSort.field === field) {
+      setSort({ field, direction: currentSort.direction === 'asc' ? 'desc' : 'asc' });
+    } else {
+      setSort({ field, direction: 'asc' });
+    }
+  };
+
+  // Sort button component
+  const SortButton = ({ 
+    field, 
+    label, 
+    currentSort, 
+    setSort 
+  }: { 
+    field: SortField; 
+    label: string; 
+    currentSort: { field: SortField; direction: SortDirection };
+    setSort: (s: { field: SortField; direction: SortDirection }) => void;
+  }) => (
+    <Button
+      variant="ghost"
+      size="sm"
+      className={cn(
+        "h-8 px-2 text-xs font-medium",
+        currentSort.field === field && "text-primary"
+      )}
+      onClick={() => toggleSort(currentSort, setSort, field)}
+    >
+      {label}
+      <ArrowUpDown className="ml-1 h-3 w-3" />
+      {currentSort.field === field && (
+        <span className="ml-1 text-[10px]">
+          {currentSort.direction === 'asc' ? '↑' : '↓'}
+        </span>
+      )}
+    </Button>
+  );
 
   const handleAddNew = (type: string) => {
     if (type === 'vacation') {
@@ -159,6 +260,13 @@ export function EventsManager({
 
         {/* Events Tab */}
         <TabsContent value="events" className="mt-4">
+          {/* Sort controls */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <span className="text-xs text-muted-foreground">Trier par:</span>
+            <SortButton field="date" label="Date" currentSort={eventSort} setSort={setEventSort} />
+            <SortButton field="name" label="Nom" currentSort={eventSort} setSort={setEventSort} />
+          </div>
+          
           <Table>
             <TableHeader>
               <TableRow>
@@ -170,7 +278,7 @@ export function EventsManager({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {events.map(event => (
+              {sortedEvents.map(event => (
                 <TableRow key={event.id}>
                   <TableCell>
                     <EditableText
@@ -207,10 +315,10 @@ export function EventsManager({
                   </TableCell>
                 </TableRow>
               ))}
-              {events.length === 0 && (
+              {sortedEvents.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    Aucun événement
+                    Aucun événement (RE et CP sont gérés dans les paramètres)
                   </TableCell>
                 </TableRow>
               )}
@@ -429,10 +537,15 @@ export function EventsManager({
 
         {/* Vacations Tab */}
         <TabsContent value="vacations" className="mt-4">
-          <div className="mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <Button size="sm" onClick={() => setAddingNew('vacation')}>
               <Plus className="h-4 w-4 mr-2" /> Ajouter une période
             </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Trier par:</span>
+              <SortButton field="date" label="Date" currentSort={vacationSort} setSort={setVacationSort} />
+              <SortButton field="name" label="Nom" currentSort={vacationSort} setSort={setVacationSort} />
+            </div>
           </div>
           {addingNew === 'vacation' && (
             <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
@@ -489,7 +602,7 @@ export function EventsManager({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vacations.map(vacation => (
+              {sortedVacations.map(vacation => (
                 <TableRow key={vacation.id}>
                   <TableCell>
                     <EditableText
@@ -522,10 +635,16 @@ export function EventsManager({
 
         {/* Arrets Tab */}
         <TabsContent value="arrets" className="mt-4">
-          <div className="mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <Button size="sm" onClick={() => setAddingNew('arret')}>
               <Plus className="h-4 w-4 mr-2" /> Ajouter un arrêt
             </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Trier par:</span>
+              <SortButton field="date" label="Date" currentSort={arretSort} setSort={setArretSort} />
+              <SortButton field="name" label="Nom" currentSort={arretSort} setSort={setArretSort} />
+              <SortButton field="tranche" label="Tranche" currentSort={arretSort} setSort={setArretSort} />
+            </div>
           </div>
           {addingNew === 'arret' && (
             <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
@@ -536,54 +655,48 @@ export function EventsManager({
                   onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                   className="flex-1"
                 />
-                <Input
-                  placeholder="Tranche (ex: Tr1)"
-                  value={newItem.tranche || ''}
-                  onChange={(e) => setNewItem({ ...newItem, tranche: e.target.value })}
-                  className="w-32"
-                />
+                <Select 
+                  value={newItem.tranche || 'Tr2'} 
+                  onValueChange={(v) => setNewItem({ ...newItem, tranche: v })}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue placeholder="Tranche" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Tr2">Tr2</SelectItem>
+                    <SelectItem value="Tr3">Tr3</SelectItem>
+                    <SelectItem value="Tr4">Tr4</SelectItem>
+                    <SelectItem value="Tr5">Tr5</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex gap-4 flex-wrap">
+              <div className="flex gap-4 flex-wrap items-center">
                 <select 
-                  className="px-3 py-2 border rounded-md bg-background"
+                  className="px-3 py-2 border rounded-md bg-background text-sm"
                   value={newItem.arretType || 'arret'}
                   onChange={(e) => setNewItem({ ...newItem, arretType: e.target.value })}
                 >
-                  <option value="arret">Arrêt</option>
+                  <option value="arret">Arrêt (AT)</option>
                   <option value="prepa">Préparation</option>
                 </select>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Couleur:</span>
-                  <Input
-                    type="color"
-                    value={newItem.color || '#22c55e'}
-                    onChange={(e) => setNewItem({ ...newItem, color: e.target.value })}
-                    className="w-10 h-8 p-1 cursor-pointer"
-                  />
-                </div>
-                <Select 
-                  value={newItem.pattern || 'none'} 
-                  onValueChange={(v) => setNewItem({ ...newItem, pattern: v })}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Motif" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patterns.map(pattern => (
-                      <SelectItem key={pattern.value} value={pattern.value}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className={cn(
-                              'w-4 h-4 rounded bg-muted-foreground/60',
-                              patternClasses[pattern.value]
-                            )}
-                          />
-                          <span>{pattern.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {newItem.arretType === 'prepa' && (
+                  <Select 
+                    value={newItem.module || 'M0'} 
+                    onValueChange={(v) => setNewItem({ ...newItem, module: v })}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue placeholder="Module" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M0">M0</SelectItem>
+                      <SelectItem value="M1">M1</SelectItem>
+                      <SelectItem value="M2A">M2A</SelectItem>
+                      <SelectItem value="M2B">M2B</SelectItem>
+                      <SelectItem value="M3">M3</SelectItem>
+                      <SelectItem value="M4">M4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="flex gap-4">
                 <Popover>
@@ -623,25 +736,30 @@ export function EventsManager({
               </div>
             </div>
           )}
+          
+          {/* Info about patterns */}
+          <div className="mb-3 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+            Les patterns de préparation (M0-M4) sont définis automatiquement selon le module.
+          </div>
+          
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Type</TableHead>
                 <TableHead>Nom</TableHead>
                 <TableHead>Tranche</TableHead>
+                <TableHead>Module</TableHead>
                 <TableHead>Début</TableHead>
                 <TableHead>Fin</TableHead>
-                <TableHead>Couleur</TableHead>
-                <TableHead>Motif</TableHead>
                 <TableHead className="w-20">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {arrets.map(arret => (
+              {sortedArrets.map(arret => (
                 <TableRow key={arret.id}>
                   <TableCell>
                     <Badge variant={arret.type === 'prepa' ? 'secondary' : 'default'}>
-                      {arret.type === 'prepa' ? 'Prépa' : 'Arrêt'}
+                      {arret.type === 'prepa' ? 'Prépa' : 'AT'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -667,6 +785,15 @@ export function EventsManager({
                     </Select>
                   </TableCell>
                   <TableCell>
+                    {arret.type === 'prepa' ? (
+                      <Badge variant="outline" className="text-xs">
+                        {arret.module || '-'}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <DateEditor
                       date={arret.startDate}
                       onSave={(date) => onUpdateArret(arret.id, { startDate: date })}
@@ -677,41 +804,6 @@ export function EventsManager({
                       date={arret.endDate}
                       onSave={(date) => onUpdateArret(arret.id, { endDate: date })}
                     />
-                  </TableCell>
-                  <TableCell>
-                    <div 
-                      className="w-6 h-6 rounded-full border cursor-pointer"
-                      style={{ backgroundColor: arret.color }}
-                      onClick={() => {
-                        const color = prompt('Nouvelle couleur (hex):', arret.color);
-                        if (color) onUpdateArret(arret.id, { color });
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Select 
-                      value={arret.pattern || 'none'} 
-                      onValueChange={(v) => onUpdateArret(arret.id, { pattern: v as PatternType })}
-                    >
-                      <SelectTrigger className="w-28 h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {patterns.map(pattern => (
-                          <SelectItem key={pattern.value} value={pattern.value}>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className={cn(
-                                  'w-3 h-3 rounded bg-muted-foreground/60',
-                                  patternClasses[pattern.value]
-                                )}
-                              />
-                              <span className="text-xs">{pattern.label}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </TableCell>
                   <TableCell>
                     <Button size="sm" variant="ghost" onClick={() => onDeleteArret(arret.id)}>

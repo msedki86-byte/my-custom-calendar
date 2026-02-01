@@ -148,9 +148,12 @@ export function useCalendar() {
     );
   }, [events]);
 
-  const getNonREEventsForDate = useCallback((date: Date): CalendarEvent[] => {
-    return getEventsForDate(date).filter(e => e.type !== 're');
+  const getNonRECPEventsForDate = useCallback((date: Date): CalendarEvent[] => {
+    return getEventsForDate(date).filter(e => e.type !== 're' && e.type !== 'cp');
   }, [getEventsForDate]);
+
+  // Alias for backwards compatibility
+  const getNonREEventsForDate = getNonRECPEventsForDate;
 
   const isREDay = useCallback((date: Date): CalendarEvent | null => {
     const reEvents = events.filter(e => 
@@ -161,6 +164,17 @@ export function useCalendar() {
       )
     );
     return reEvents.length > 0 ? reEvents[0] : null;
+  }, [events]);
+
+  const isCPDay = useCallback((date: Date): CalendarEvent | null => {
+    const cpEvents = events.filter(e => 
+      e.type === 'cp' && (
+        isWithinInterval(date, { start: e.startDate, end: e.endDate }) ||
+        isSameDay(date, e.startDate) ||
+        isSameDay(date, e.endDate)
+      )
+    );
+    return cpEvents.length > 0 ? cpEvents[0] : null;
   }, [events]);
 
   /* ================= ASTREINTE MANAGEMENT ================= */
@@ -382,7 +396,9 @@ export function useCalendar() {
     removeEvent,
     getEventsForDate,
     getNonREEventsForDate,
+    getNonRECPEventsForDate,
     isREDay,
+    isCPDay,
     // Astreintes
     isAstreinteDay,
     isDateCancelled,

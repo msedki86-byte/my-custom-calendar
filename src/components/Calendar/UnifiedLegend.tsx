@@ -26,6 +26,7 @@ export function UnifiedLegend({ settings, defaultExpanded = true }: UnifiedLegen
     { label: 'Astr. annulée', color: settings.astreinteCancelledColor, pattern: 'crosshatch' as PatternType },
     { label: 'Événement', color: settings.eventColor, pattern: 'none' as PatternType },
     { label: 'RE (Repos)', color: settings.reColor, pattern: 'none' as PatternType },
+    { label: 'CP (Congés)', color: settings.cpColor, pattern: 'none' as PatternType },
     { label: 'Vacances', color: settings.vacationColor, pattern: 'none' as PatternType },
     { label: 'Jour férié', color: '#ef4444', pattern: 'stripes' as PatternType },
   ];

@@ -29,6 +29,7 @@ interface UnifiedYearViewProps {
   isVacationDay: (date: Date) => Vacation | null;
   isArretDay: (date: Date) => Arret | null;
   isREDay: (date: Date) => CalendarEvent | null;
+  isCPDay: (date: Date) => CalendarEvent | null;
   getEventsForDate: (date: Date) => CalendarEvent[];
   getNonREEventsForDate: (date: Date) => CalendarEvent[];
   isDateCancelled: (date: Date) => CancelledAstreinteDate | null;
@@ -50,6 +51,7 @@ export function UnifiedYearView({
   isVacationDay,
   isArretDay,
   isREDay,
+  isCPDay,
   getEventsForDate,
   getNonREEventsForDate,
   isDateCancelled,
@@ -146,12 +148,26 @@ export function UnifiedYearView({
                 const cancelled = isDateCancelled(day);
                 const conflict = hasConflict(day, astreintes);
                 const reDay = isREDay(day);
+                const cpDay = isCPDay(day);
                 const events = getNonREEventsForDate(day);
                 
                 // Visual priority logic
                 const hasActiveAstreinte = astreinte && !astreinte.isCancelled && !cancelled;
-                const showREBackground = reDay && !hasActiveAstreinte;
+                const showCPBackground = cpDay && !hasActiveAstreinte;
+                const showREBackground = reDay && !hasActiveAstreinte && !showCPBackground;
                 const hasEvents = events.length > 0;
+
+                // Determine background color
+                let cellBgColor = undefined;
+                if (hasActiveAstreinte && isCurrentMonth) {
+                  cellBgColor = astreinte.isPonctuelle 
+                    ? settings.astreintePonctuelleColor 
+                    : settings.astreinteColor;
+                } else if (showCPBackground && isCurrentMonth) {
+                  cellBgColor = settings.cpColor;
+                } else if (showREBackground && isCurrentMonth) {
+                  cellBgColor = settings.reColor;
+                }
 
                 return (
                   <button
@@ -162,18 +178,13 @@ export function UnifiedYearView({
                       "relative aspect-square flex flex-col items-center justify-center text-[9px] sm:text-[10px] rounded-sm transition-all",
                       "touch-manipulation active:scale-95",
                       !isCurrentMonth && "opacity-20",
-                      isCurrentMonth && "hover:bg-accent/50",
-                      isWeekendDay && isCurrentMonth && !showREBackground && "bg-muted/40",
-                      showREBackground && isCurrentMonth && "bg-gray-300",
-                      isTodayDate && "ring-1 ring-primary bg-primary/20 font-bold",
+                      isCurrentMonth && !showREBackground && !showCPBackground && !hasActiveAstreinte && "hover:bg-accent/50",
+                      isWeekendDay && isCurrentMonth && !showREBackground && !showCPBackground && !hasActiveAstreinte && "bg-muted/40",
+                      isTodayDate && "ring-1 ring-primary font-bold",
                       holiday && isCurrentMonth && !hasActiveAstreinte && "text-destructive",
                       hasActiveAstreinte && isCurrentMonth && "text-white"
                     )}
-                    style={hasActiveAstreinte && isCurrentMonth ? {
-                      backgroundColor: astreinte.isPonctuelle 
-                        ? settings.astreintePonctuelleColor 
-                        : settings.astreinteColor
-                    } : undefined}
+                    style={cellBgColor ? { backgroundColor: cellBgColor } : undefined}
                   >
                     {format(day, 'd')}
                     

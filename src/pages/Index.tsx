@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useCalendar } from '@/hooks/useCalendar';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { UnifiedToolbar } from '@/components/Calendar/UnifiedToolbar';
 import { UnifiedCalendarGrid } from '@/components/Calendar/UnifiedCalendarGrid';
 import { UnifiedYearView } from '@/components/Calendar/UnifiedYearView';
@@ -13,7 +14,6 @@ import { EventsManager } from '@/components/Events/EventsManager';
 import { ConflictsList } from '@/components/Conflicts/ConflictsList';
 import { ExportPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
-import { startOfMonth, endOfMonth } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -57,6 +57,7 @@ const Index = () => {
     isVacationDay,
     isArretDay,
     isREDay,
+    isCPDay,
     getEventsForDate,
     getNonREEventsForDate,
     getArretsForPeriod,
@@ -84,6 +85,53 @@ const Index = () => {
 
   const yearAstreintes = getAstreintesForYear(currentDate.getFullYear());
 
+  // Swipe navigation handlers - intelligently handles month/year changes
+  const handleSwipeNext = useCallback(() => {
+    if (viewMode === 'year') {
+      // Year view: go to next year
+      const nextYear = currentDate.getFullYear() + 1;
+      const safeDate = new Date(nextYear, 0, 1);
+      if (!isNaN(safeDate.getTime())) {
+        goToDate(safeDate);
+      }
+    } else {
+      // Month view: if December, go to January of next year
+      if (currentDate.getMonth() === 11) {
+        const nextYear = currentDate.getFullYear() + 1;
+        const safeDate = new Date(nextYear, 0, 1);
+        if (!isNaN(safeDate.getTime())) {
+          goToDate(safeDate);
+        }
+      } else {
+        goToNextMonth();
+      }
+    }
+  }, [viewMode, currentDate, goToDate, goToNextMonth]);
+
+  const handleSwipePrev = useCallback(() => {
+    if (viewMode === 'year') {
+      // Year view: go to previous year
+      const prevYear = currentDate.getFullYear() - 1;
+      const safeDate = new Date(prevYear, 0, 1);
+      if (!isNaN(safeDate.getTime())) {
+        goToDate(safeDate);
+      }
+    } else {
+      // Month view: if January, go to December of previous year
+      if (currentDate.getMonth() === 0) {
+        const prevYear = currentDate.getFullYear() - 1;
+        const safeDate = new Date(prevYear, 11, 1);
+        if (!isNaN(safeDate.getTime())) {
+          goToDate(safeDate);
+        }
+      } else {
+        goToPrevMonth();
+      }
+    }
+  }, [viewMode, currentDate, goToDate, goToPrevMonth]);
+
+  const swipeHandlers = useSwipeNavigation(handleSwipeNext, handleSwipePrev);
+
   // Get data for selected day
   const selectedDayData = selectedDate ? {
     events: getEventsForDate(selectedDate),
@@ -100,6 +148,7 @@ const Index = () => {
   }, []);
 
   const handleMonthClick = useCallback((date: Date) => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return;
     goToDate(date);
     setViewMode('month');
   }, [goToDate]);
@@ -127,30 +176,29 @@ const Index = () => {
   }, [addEvent, addPonctualAstreinte, cancelAstreinteDates]);
 
   const handleYearChange = useCallback((year: number) => {
-  if (isNaN(year)) return;
+    if (isNaN(year) || year < 1900 || year > 2100) return;
 
-  const safeMonth = Math.min(Math.max(currentDate.getMonth(), 0), 11);
-  const safeDate = new Date(year, safeMonth, 1);
+    const safeMonth = Math.min(Math.max(currentDate.getMonth(), 0), 11);
+    const safeDate = new Date(year, safeMonth, 1);
 
-  if (isNaN(safeDate.getTime())) return;
+    if (isNaN(safeDate.getTime())) return;
 
-  goToDate(safeDate);
-}, [currentDate, goToDate]);
-
+    goToDate(safeDate);
+  }, [currentDate, goToDate]);
 
   const openAddEventFromDetails = useCallback(() => {
     setDayDetailsOpen(false);
     setAddEventOpen(true);
   }, []);
 
-  // Unified Layout - Same features on all screen sizes
+  // Validate currentDate before rendering
   if (!(currentDate instanceof Date) || isNaN(currentDate.getTime())) {
-  return (
-    <div className="p-4 text-center text-muted-foreground">
-      Chargement du calendrier…
-    </div>
-  );
-}
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        Chargement du calendrier…
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-background">
       <div className="px-2 sm:px-4 lg:px-6 py-2 sm:py-4 max-w-7xl mx-auto">
@@ -211,8 +259,12 @@ const Index = () => {
               />
             </div>
 
-            {/* Calendar View - Year or Month */}
-            <div className="mt-3 sm:mt-4" data-calendar-print>
+            {/* Calendar View - Year or Month with swipe navigation */}
+            <div 
+              className="mt-3 sm:mt-4" 
+              data-calendar-print
+              {...swipeHandlers}
+            >
               {viewMode === 'year' ? (
                 <UnifiedYearView
                   year={currentDate.getFullYear()}
@@ -226,6 +278,7 @@ const Index = () => {
                   isVacationDay={isVacationDay}
                   isArretDay={isArretDay}
                   isREDay={isREDay}
+                  isCPDay={isCPDay}
                   getEventsForDate={getEventsForDate}
                   getNonREEventsForDate={getNonREEventsForDate}
                   isDateCancelled={isDateCancelled}
@@ -246,6 +299,7 @@ const Index = () => {
                   isVacationDay={isVacationDay}
                   isArretDay={isArretDay}
                   isREDay={isREDay}
+                  isCPDay={isCPDay}
                   getEventsForDate={getEventsForDate}
                   getNonREEventsForDate={getNonREEventsForDate}
                   isDateCancelled={isDateCancelled}

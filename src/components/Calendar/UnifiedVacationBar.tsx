@@ -5,7 +5,6 @@ import {
   endOfMonth, 
   startOfYear,
   endOfYear,
-  eachDayOfInterval, 
   eachMonthOfInterval,
   differenceInDays,
   format,
@@ -40,12 +39,8 @@ export function UnifiedVacationBar({
     }
   }, [currentDate, viewMode]);
 
-  const daysInPeriod = useMemo(() => 
-    eachDayOfInterval({ start: periodStart, end: periodEnd }), 
-    [periodStart, periodEnd]
-  );
-
-  const vacationBars = useMemo(() => {
+  // Create vacation segments for display on a SINGLE line
+  const vacationSegments = useMemo(() => {
     return vacations
       .filter(vac => vac.startDate <= periodEnd && vac.endDate >= periodStart)
       .map(vac => {
@@ -59,11 +54,14 @@ export function UnifiedVacationBar({
           ...vac,
           startIndex: startDayIndex,
           width,
+          leftPercent: (startDayIndex / totalDays) * 100,
+          widthPercent: (width / totalDays) * 100,
         };
-      });
-  }, [vacations, periodStart, periodEnd]);
+      })
+      .sort((a, b) => a.startIndex - b.startIndex);
+  }, [vacations, periodStart, periodEnd, totalDays]);
 
-  if (vacationBars.length === 0) return null;
+  if (vacationSegments.length === 0) return null;
 
   return (
     <CollapsibleSection 
@@ -74,8 +72,8 @@ export function UnifiedVacationBar({
     >
       <div className="p-3 sm:p-4">
         <div className="relative">
-          {/* Grid background with day/month markers */}
-          {viewMode === 'year' ? (
+          {/* Month markers for year view */}
+          {viewMode === 'year' && (
             <div className="flex mb-1">
               {eachMonthOfInterval({ start: periodStart, end: periodEnd }).map((month, index) => (
                 <div 
@@ -86,35 +84,23 @@ export function UnifiedVacationBar({
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="grid gap-px" style={{ gridTemplateColumns: `repeat(${daysInPeriod.length}, 1fr)` }}>
-              {daysInPeriod.map((day, index) => (
-                <div 
-                  key={index} 
-                  className="h-4 bg-muted/30 text-[7px] sm:text-[8px] text-muted-foreground text-center"
-                >
-                  {format(day, 'd')}
-                </div>
-              ))}
-            </div>
           )}
 
-          {/* Vacation bars */}
-          <div className="mt-2 space-y-1">
-            {vacationBars.map(vac => (
-              <div key={vac.id} className="relative h-6 sm:h-7">
-                <div
-                  className="absolute h-full rounded-full flex items-center justify-center px-2 sm:px-3 text-[10px] sm:text-xs font-medium text-white shadow-sm overflow-hidden"
-                  style={{
-                    left: `${(vac.startIndex / totalDays) * 100}%`,
-                    width: `${(vac.width / totalDays) * 100}%`,
-                    backgroundColor: settings.vacationColor,
-                    minWidth: '20px',
-                  }}
-                  title={vac.name}
-                >
-                  <span className="truncate">{vac.name}</span>
-                </div>
+          {/* Single line with all vacation segments */}
+          <div className="relative h-7 sm:h-8 bg-muted/20 rounded-full overflow-hidden">
+            {vacationSegments.map(vac => (
+              <div
+                key={vac.id}
+                className="absolute h-full flex items-center justify-center px-1 sm:px-2 text-[9px] sm:text-[11px] font-medium text-white shadow-sm overflow-hidden rounded-full transition-transform hover:scale-[1.02] hover:z-10"
+                style={{
+                  left: `${vac.leftPercent}%`,
+                  width: `${vac.widthPercent}%`,
+                  backgroundColor: settings.vacationColor,
+                  minWidth: '16px',
+                }}
+                title={`${vac.name} (${format(vac.startDate, 'dd/MM')} - ${format(vac.endDate, 'dd/MM')})`}
+              >
+                <span className="truncate">{vac.name}</span>
               </div>
             ))}
           </div>

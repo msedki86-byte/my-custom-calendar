@@ -93,9 +93,9 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
             </div>
           </section>
 
-          {/* Events */}
+          {/* Événements et états de journée */}
           <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Événements</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Événements & états</h3>
             <div className="space-y-3">
               <ColorPicker
                 label="Événement par défaut"
@@ -106,6 +106,11 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                 label="RE (Repos)"
                 value={settings.reColor}
                 onChange={(v) => onUpdateSettings({ reColor: v })}
+              />
+              <ColorPicker
+                label="CP (Congés Payés)"
+                value={settings.cpColor}
+                onChange={(v) => onUpdateSettings({ cpColor: v })}
               />
               <ColorPicker
                 label="Vacances scolaires"
@@ -120,9 +125,21 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
             </div>
           </section>
 
-          {/* Arrets par tranche */}
+          {/* Info RE/CP */}
+          <section className="bg-muted/50 rounded-lg p-3">
+            <p className="text-xs text-muted-foreground">
+              <strong>RE</strong> et <strong>CP</strong> grisent la case jour entière. 
+              Les astreintes actives restent prioritaires sur le grisage.
+              Les patterns de préparation (M0-M4) sont définis en dur.
+            </p>
+          </section>
+
+          {/* Arrêts par tranche */}
           <section>
             <h3 className="text-sm font-semibold text-foreground mb-3">Arrêts par tranche</h3>
+            <p className="text-xs text-muted-foreground mb-2">
+              Couleurs obligatoires par tranche. Les patterns différencient les phases de préparation.
+            </p>
             <div className="space-y-3">
               <ColorPicker
                 label="Arrêt Tr2"
@@ -143,38 +160,6 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                 label="Arrêt Tr5"
                 value={settings.arretTr5Color}
                 onChange={(v) => onUpdateSettings({ arretTr5Color: v })}
-              />
-            </div>
-          </section>
-
-          {/* Préparations par tranche */}
-          <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Préparations par tranche</h3>
-            <div className="space-y-3">
-              <ColorPicker
-                label="Prépa Tr2"
-                value={settings.prepaTr2Color}
-                onChange={(v) => onUpdateSettings({ prepaTr2Color: v })}
-              />
-              <ColorPicker
-                label="Prépa Tr3"
-                value={settings.prepaTr3Color}
-                onChange={(v) => onUpdateSettings({ prepaTr3Color: v })}
-              />
-              <ColorPicker
-                label="Prépa Tr4"
-                value={settings.prepaTr4Color}
-                onChange={(v) => onUpdateSettings({ prepaTr4Color: v })}
-              />
-              <ColorPicker
-                label="Prépa Tr5"
-                value={settings.prepaTr5Color}
-                onChange={(v) => onUpdateSettings({ prepaTr5Color: v })}
-              />
-              <PatternPicker
-                label="Motif préparation"
-                value={settings.arretPrepaPattern}
-                onChange={(v) => onUpdateSettings({ arretPrepaPattern: v })}
               />
             </div>
           </section>
