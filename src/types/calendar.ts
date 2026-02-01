@@ -7,7 +7,9 @@ export type EventType =
   | 'holiday'
   | 'arret'
   | 'arret-prepa'
-  | 're'; // Repos / Récupération
+  | 're'  // Repos / Récupération
+  | 'cp'; // Congés Payés
+
 export type PatternType = 
   | 'none'
   | 'stripes'
@@ -99,18 +101,18 @@ export interface CalendarSettings {
   astreintePonctuelleColor: string;
   eventColor: string;
   vacationColor: string;
-  reColor: string; // Color for RE (repos/récupération) - grayed out days
+  reColor: string;  // Couleur RE (repos/récupération) - grisage case
+  cpColor: string;  // Couleur CP (congés payés) - plus foncée que RE
   // Couleurs par tranche - Arrêts
   arretTr2Color: string;
   arretTr3Color: string;
   arretTr4Color: string;
   arretTr5Color: string;
-  // Couleurs par tranche - Préparations
+  // Couleurs par tranche - Préparations (mêmes couleurs, patterns différencient)
   prepaTr2Color: string;
   prepaTr3Color: string;
   prepaTr4Color: string;
   prepaTr5Color: string;
-  arretPrepaPattern: PatternType;
 }
 
 // Mandatory tranche colors as per specification
@@ -135,16 +137,16 @@ export const defaultSettings: CalendarSettings = {
   astreintePonctuelleColor: '#ea580c',
   eventColor: '#0ea5e9',
   vacationColor: '#a855f7',
-  reColor: '#d1d5db', // Gray color for RE days
-  // Couleurs par tranche - Arrêts (mandatory colors)
+  reColor: '#d1d5db',   // Gris clair pour RE
+  cpColor: '#9ca3af',   // Gris plus foncé pour CP
+  // Couleurs par tranche - Arrêts (obligatoires)
   arretTr2Color: TRANCHE_COLORS.Tr2,
   arretTr3Color: TRANCHE_COLORS.Tr3,
   arretTr4Color: TRANCHE_COLORS.Tr4,
   arretTr5Color: TRANCHE_COLORS.Tr5,
-  // Couleurs par tranche - Préparations (same as AT, patterns differentiate)
+  // Couleurs par tranche - Préparations (mêmes que AT, patterns différencient)
   prepaTr2Color: TRANCHE_COLORS.Tr2,
   prepaTr3Color: TRANCHE_COLORS.Tr3,
   prepaTr4Color: TRANCHE_COLORS.Tr4,
   prepaTr5Color: TRANCHE_COLORS.Tr5,
-  arretPrepaPattern: 'dots',
 };

@@ -5,7 +5,6 @@ import {
   endOfMonth, 
   startOfYear,
   endOfYear,
-  eachDayOfInterval, 
   eachMonthOfInterval,
   differenceInDays,
   format,
@@ -35,6 +34,9 @@ const patternClasses: Record<PatternType, string> = {
   zigzag: 'pattern-zigzag',
 };
 
+// Tranche order for consistent display
+const TRANCHE_ORDER = ['Tr2', 'Tr3', 'Tr4', 'Tr5'] as const;
+
 export function UnifiedArretBar({ 
   arrets, 
   currentDate, 
@@ -54,43 +56,44 @@ export function UnifiedArretBar({
     }
   }, [currentDate, viewMode]);
 
-  const daysInPeriod = useMemo(() => 
-    eachDayOfInterval({ start: periodStart, end: periodEnd }), 
-    [periodStart, periodEnd]
-  );
+  // Group arrets by tranche - each tranche gets ONE line with all its AT + prépas
+  const arretsByTranche = useMemo(() => {
+    const visibleArrets = arrets.filter(
+      arret => arret.startDate <= periodEnd && arret.endDate >= periodStart
+    );
 
-  // Sort arrets: preparations first, then arrêts, grouped by tranche
-  const arretBars = useMemo(() => {
-    return arrets
-      .filter(arret => arret.startDate <= periodEnd && arret.endDate >= periodStart)
-      .sort((a, b) => {
-        // Sort by tranche first
-        if (a.tranche !== b.tranche) {
-          return a.tranche.localeCompare(b.tranche);
-        }
-        // Then by type (prepa before arret)
-        if (a.type !== b.type) {
-          return a.type === 'prepa' ? -1 : 1;
-        }
-        // Then by start date
-        return a.startDate.getTime() - b.startDate.getTime();
-      })
-      .map(arret => {
-        const displayStart = arret.startDate < periodStart ? periodStart : arret.startDate;
-        const displayEnd = arret.endDate > periodEnd ? periodEnd : arret.endDate;
-        
-        const startDayIndex = differenceInDays(displayStart, periodStart);
-        const width = differenceInDays(displayEnd, displayStart) + 1;
-        
-        return {
-          ...arret,
-          startIndex: startDayIndex,
-          width,
-        };
-      });
-  }, [arrets, periodStart, periodEnd]);
+    const grouped: Record<string, Array<Arret & { startIndex: number; width: number; leftPercent: number; widthPercent: number }>> = {};
 
-  if (arretBars.length === 0) return null;
+    for (const tranche of TRANCHE_ORDER) {
+      const trancheArrets = visibleArrets
+        .filter(a => a.tranche === tranche)
+        .map(arret => {
+          const displayStart = arret.startDate < periodStart ? periodStart : arret.startDate;
+          const displayEnd = arret.endDate > periodEnd ? periodEnd : arret.endDate;
+          
+          const startDayIndex = differenceInDays(displayStart, periodStart);
+          const width = differenceInDays(displayEnd, displayStart) + 1;
+          
+          return {
+            ...arret,
+            startIndex: startDayIndex,
+            width,
+            leftPercent: (startDayIndex / totalDays) * 100,
+            widthPercent: (width / totalDays) * 100,
+          };
+        })
+        .sort((a, b) => a.startIndex - b.startIndex);
+
+      if (trancheArrets.length > 0) {
+        grouped[tranche] = trancheArrets;
+      }
+    }
+
+    return grouped;
+  }, [arrets, periodStart, periodEnd, totalDays]);
+
+  const hasTranches = Object.keys(arretsByTranche).length > 0;
+  if (!hasTranches) return null;
 
   return (
     <CollapsibleSection 
@@ -101,9 +104,9 @@ export function UnifiedArretBar({
     >
       <div className="p-3 sm:p-4">
         <div className="relative">
-          {/* Grid background with day/month markers */}
-          {viewMode === 'year' ? (
-            <div className="flex mb-1">
+          {/* Month markers for year view */}
+          {viewMode === 'year' && (
+            <div className="flex mb-2">
               {eachMonthOfInterval({ start: periodStart, end: periodEnd }).map((month, index) => (
                 <div 
                   key={index} 
@@ -113,81 +116,75 @@ export function UnifiedArretBar({
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="grid gap-px" style={{ gridTemplateColumns: `repeat(${daysInPeriod.length}, 1fr)` }}>
-              {daysInPeriod.map((day, index) => (
-                <div 
-                  key={index} 
-                  className="h-4 bg-muted/30 text-[7px] sm:text-[8px] text-muted-foreground text-center"
-                >
-                  {format(day, 'd')}
-                </div>
-              ))}
-            </div>
           )}
 
-          {/* Arret bars - grouped by tranche */}
-          <div className="mt-2 space-y-1">
-            {arretBars.map(arret => {
-              const pattern = getArretPattern(arret);
-              const moduleLabel = arret.module ? getModuleLabel(arret.module) : '';
-              const isPrepa = arret.type === 'prepa';
-              
+          {/* One line per tranche with all AT + preparations */}
+          <div className="space-y-2">
+            {TRANCHE_ORDER.map(tranche => {
+              const trancheArrets = arretsByTranche[tranche];
+              if (!trancheArrets) return null;
+
+              const trancheColor = getArretColor({ tranche, type: 'arret' } as Arret, settings);
+
               return (
-                <div key={arret.id} className="relative h-6 sm:h-7">
-                  <div
-                    className={cn(
-                      "absolute h-full flex items-center justify-center px-2 sm:px-3 text-[10px] sm:text-xs font-medium text-white shadow-sm overflow-hidden transition-transform hover:scale-[1.02]",
-                      isPrepa ? 'rounded-md border-2 border-white/30' : 'rounded-full',
-                      patternClasses[pattern]
-                    )}
-                    style={{
-                      left: `${(arret.startIndex / totalDays) * 100}%`,
-                      width: `${(arret.width / totalDays) * 100}%`,
-                      backgroundColor: getArretColor(arret, settings),
-                      minWidth: '24px',
-                    }}
-                    title={`${arret.name} (${arret.tranche})${moduleLabel ? ` - ${moduleLabel}` : ''}`}
+                <div key={tranche} className="flex items-center gap-2">
+                  {/* Tranche label */}
+                  <div 
+                    className="w-10 sm:w-12 flex-shrink-0 text-[10px] sm:text-xs font-semibold text-white rounded px-1 py-0.5 text-center"
+                    style={{ backgroundColor: trancheColor }}
                   >
-                    <span className="truncate flex items-center gap-1">
-                      {isPrepa && arret.module && (
-                        <span className="bg-white/20 rounded px-1 text-[8px] sm:text-[9px]">
-                          {arret.module}
-                        </span>
-                      )}
-                      <span>{arret.name}</span>
-                    </span>
+                    {tranche}
+                  </div>
+
+                  {/* Timeline for this tranche - single line with all segments */}
+                  <div className="flex-1 relative h-6 sm:h-7 bg-muted/20 rounded overflow-visible">
+                    {trancheArrets.map(arret => {
+                      const pattern = getArretPattern(arret);
+                      const isPrepa = arret.type === 'prepa';
+                      const moduleLabel = arret.module ? getModuleLabel(arret.module) : '';
+                      
+                      return (
+                        <div
+                          key={arret.id}
+                          className={cn(
+                            "absolute h-full flex items-center justify-center px-1 sm:px-2 text-[8px] sm:text-[10px] font-medium text-white shadow-sm overflow-hidden transition-all hover:scale-[1.02] hover:z-10",
+                            isPrepa ? 'rounded border border-white/40' : 'rounded-full',
+                            patternClasses[pattern]
+                          )}
+                          style={{
+                            left: `${arret.leftPercent}%`,
+                            width: `${arret.widthPercent}%`,
+                            backgroundColor: getArretColor(arret, settings),
+                            minWidth: '20px',
+                          }}
+                          title={`${arret.name}${moduleLabel ? ` - ${moduleLabel}` : ''} (${format(arret.startDate, 'dd/MM')} - ${format(arret.endDate, 'dd/MM')})`}
+                        >
+                          <span className="truncate flex items-center gap-0.5">
+                            {isPrepa && arret.module && (
+                              <span className="bg-white/25 rounded px-0.5 text-[7px] sm:text-[8px] font-bold">
+                                {arret.module}
+                              </span>
+                            )}
+                            <span className="hidden sm:inline">{arret.name}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Legend for tranches */}
-          <div className="mt-3 flex flex-wrap gap-2 text-[10px] sm:text-xs">
+          {/* Compact legend */}
+          <div className="mt-3 pt-2 border-t border-border/30 flex flex-wrap gap-3 text-[9px] sm:text-[10px] text-muted-foreground">
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: settings.arretTr2Color }} />
-              <span className="text-muted-foreground">Tr2</span>
+              <div className="w-4 h-3 rounded-full bg-muted-foreground/60" />
+              <span>AT (arrêt)</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: settings.arretTr3Color }} />
-              <span className="text-muted-foreground">Tr3</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: settings.arretTr4Color }} />
-              <span className="text-muted-foreground">Tr4</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: settings.arretTr5Color }} />
-              <span className="text-muted-foreground">Tr5</span>
-            </div>
-            <div className="border-l border-border pl-2 flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full bg-muted-foreground/50" />
-              <span className="text-muted-foreground">AT</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-md bg-muted-foreground/50 pattern-dots" />
-              <span className="text-muted-foreground">Prépa</span>
+              <div className="w-4 h-3 rounded bg-muted-foreground/60 pattern-dots border border-white/30" />
+              <span>Prépa (M0-M4)</span>
             </div>
           </div>
         </div>
