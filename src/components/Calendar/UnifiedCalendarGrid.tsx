@@ -123,20 +123,8 @@ export function UnifiedCalendarGrid({
     ));
   }, [weeks, arrets]);
 
-  // Compute RE bars for header
-  const reBars = useMemo(() => {
-    const reEvents = getEventsForDate(calendarDays[0]).filter(e => e.name === 'RE');
-    return weeks.map(week => {
-      const allRE: Array<{ startDate: Date; endDate: Date; name: string; color: string; id: string }> = [];
-      week.forEach(day => {
-        const re = isREDay(day);
-        if (re && !allRE.find(r => r.id === re.id)) {
-          allRE.push({ ...re, color: settings.reColor });
-        }
-      });
-      return computeBarSpans(allRE, week);
-    });
-  }, [weeks, isREDay, settings.reColor, calendarDays, getEventsForDate]);
+  // RE/CP are day states, NOT events - they should NOT have header bars
+  // They only gray out the day cells (handled below in day rendering)
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
@@ -169,9 +157,9 @@ export function UnifiedCalendarGrid({
           const weekNumber = getWeek(week[0], { locale: fr, weekStartsOn: 1 });
           const weekVacationBars = vacationBars[weekIndex] || [];
           const weekArretBars = arretBars[weekIndex] || [];
-          const weekREBars = reBars[weekIndex] || [];
           
-          const hasContextBars = weekVacationBars.length > 0 || weekArretBars.length > 0 || weekREBars.length > 0;
+          // RE/CP are NOT shown as bars - they gray out day cells only
+          const hasContextBars = weekVacationBars.length > 0 || weekArretBars.length > 0;
           
           return (
             <div key={weekIndex}>
@@ -213,21 +201,7 @@ export function UnifiedCalendarGrid({
                         {bar.span >= 2 && bar.item.name}
                       </div>
                     ))}
-                    {/* RE bars */}
-                    {weekREBars.map((bar, idx) => (
-                      <div
-                        key={`re-${idx}`}
-                        className="h-3 sm:h-4 rounded text-[8px] sm:text-[10px] text-gray-600 font-medium flex items-center justify-center truncate shadow-sm border border-gray-300"
-                        style={{
-                          backgroundColor: settings.reColor,
-                          marginLeft: `${(bar.startCol / 7) * 100}%`,
-                          width: `${(bar.span / 7) * 100}%`,
-                        }}
-                        title="RE (Repos)"
-                      >
-                        {bar.span >= 2 && 'RE'}
-                      </div>
-                    ))}
+                    {/* RE/CP are NOT displayed as bars - they gray out day cells only */}
                   </div>
                 </div>
               )}

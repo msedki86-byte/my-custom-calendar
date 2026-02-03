@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useCalendar } from '@/hooks/useCalendar';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { UnifiedToolbar } from '@/components/Calendar/UnifiedToolbar';
@@ -15,6 +15,7 @@ import { ConflictsList } from '@/components/Conflicts/ConflictsList';
 import { ExportPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from 'sonner';
 
 const Index = () => {
   const {
@@ -76,57 +77,75 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'year' | 'month'>('month');
   const [activeTab, setActiveTab] = useState('calendar');
 
-  // State for collapsible sections - shared between views
-  const [sectionsExpanded, setSectionsExpanded] = useState({
-    vacations: !isMobile,
-    arrets: !isMobile,
-    legend: !isMobile,
-  });
+  // Global error handler for unhandled promise rejections (prevents blank screen)
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled rejection:", event.reason);
+      toast.error("Une erreur inattendue s'est produite.");
+      event.preventDefault(); // Prevent crash
+    };
+
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => window.removeEventListener("unhandledrejection", handleRejection);
+  }, []);
+
+  // Collapsible sections - collapsed by default on mobile
+  const defaultSectionsExpanded = !isMobile;
 
   const yearAstreintes = getAstreintesForYear(currentDate.getFullYear());
 
   // Swipe navigation handlers - intelligently handles month/year changes
   const handleSwipeNext = useCallback(() => {
-    if (viewMode === 'year') {
-      // Year view: go to next year
-      const nextYear = currentDate.getFullYear() + 1;
-      const safeDate = new Date(nextYear, 0, 1);
-      if (!isNaN(safeDate.getTime())) {
-        goToDate(safeDate);
-      }
-    } else {
-      // Month view: if December, go to January of next year
-      if (currentDate.getMonth() === 11) {
+    try {
+      if (viewMode === 'year') {
         const nextYear = currentDate.getFullYear() + 1;
+        if (isNaN(nextYear) || nextYear < 1900 || nextYear > 2100) return;
         const safeDate = new Date(nextYear, 0, 1);
         if (!isNaN(safeDate.getTime())) {
           goToDate(safeDate);
         }
       } else {
-        goToNextMonth();
+        if (currentDate.getMonth() === 11) {
+          const nextYear = currentDate.getFullYear() + 1;
+          if (isNaN(nextYear) || nextYear < 1900 || nextYear > 2100) return;
+          const safeDate = new Date(nextYear, 0, 1);
+          if (!isNaN(safeDate.getTime())) {
+            goToDate(safeDate);
+          }
+        } else {
+          goToNextMonth();
+        }
       }
+    } catch (error) {
+      console.error("Navigation error:", error);
+      toast.error("Erreur de navigation.");
     }
   }, [viewMode, currentDate, goToDate, goToNextMonth]);
 
   const handleSwipePrev = useCallback(() => {
-    if (viewMode === 'year') {
-      // Year view: go to previous year
-      const prevYear = currentDate.getFullYear() - 1;
-      const safeDate = new Date(prevYear, 0, 1);
-      if (!isNaN(safeDate.getTime())) {
-        goToDate(safeDate);
-      }
-    } else {
-      // Month view: if January, go to December of previous year
-      if (currentDate.getMonth() === 0) {
+    try {
+      if (viewMode === 'year') {
         const prevYear = currentDate.getFullYear() - 1;
-        const safeDate = new Date(prevYear, 11, 1);
+        if (isNaN(prevYear) || prevYear < 1900 || prevYear > 2100) return;
+        const safeDate = new Date(prevYear, 0, 1);
         if (!isNaN(safeDate.getTime())) {
           goToDate(safeDate);
         }
       } else {
-        goToPrevMonth();
+        if (currentDate.getMonth() === 0) {
+          const prevYear = currentDate.getFullYear() - 1;
+          if (isNaN(prevYear) || prevYear < 1900 || prevYear > 2100) return;
+          const safeDate = new Date(prevYear, 11, 1);
+          if (!isNaN(safeDate.getTime())) {
+            goToDate(safeDate);
+          }
+        } else {
+          goToPrevMonth();
+        }
       }
+    } catch (error) {
+      console.error("Navigation error:", error);
+      toast.error("Erreur de navigation.");
     }
   }, [viewMode, currentDate, goToDate, goToPrevMonth]);
 
@@ -176,14 +195,27 @@ const Index = () => {
   }, [addEvent, addPonctualAstreinte, cancelAstreinteDates]);
 
   const handleYearChange = useCallback((year: number) => {
-    if (isNaN(year) || year < 1900 || year > 2100) return;
+    try {
+      // Validate year is a valid number
+      const numericYear = typeof year === 'string' ? parseInt(year, 10) : year;
+      if (isNaN(numericYear) || numericYear < 1900 || numericYear > 2100) {
+        console.warn("Invalid year:", year);
+        return;
+      }
 
-    const safeMonth = Math.min(Math.max(currentDate.getMonth(), 0), 11);
-    const safeDate = new Date(year, safeMonth, 1);
+      const safeMonth = Math.min(Math.max(currentDate.getMonth(), 0), 11);
+      const safeDate = new Date(numericYear, safeMonth, 1);
 
-    if (isNaN(safeDate.getTime())) return;
+      if (isNaN(safeDate.getTime())) {
+        console.warn("Invalid date created from year:", year);
+        return;
+      }
 
-    goToDate(safeDate);
+      goToDate(safeDate);
+    } catch (error) {
+      console.error("Year change error:", error);
+      toast.error("Erreur lors du changement d'année.");
+    }
   }, [currentDate, goToDate]);
 
   const openAddEventFromDetails = useCallback(() => {
@@ -243,19 +275,19 @@ const Index = () => {
 
             {/* Collapsible Info Bars - Same in both views */}
             <div className="space-y-2 sm:space-y-3">
-              <UnifiedVacationBar
+            <UnifiedVacationBar
                 vacations={vacations}
                 currentDate={currentDate}
                 settings={settings}
                 viewMode={viewMode}
-                defaultExpanded={sectionsExpanded.vacations}
+                defaultExpanded={defaultSectionsExpanded}
               />
               <UnifiedArretBar
                 arrets={arrets}
                 currentDate={currentDate}
                 settings={settings}
                 viewMode={viewMode}
-                defaultExpanded={sectionsExpanded.arrets}
+                defaultExpanded={defaultSectionsExpanded}
               />
             </div>
 
@@ -313,7 +345,7 @@ const Index = () => {
             <div className="mt-3 sm:mt-4">
               <UnifiedLegend 
                 settings={settings} 
-                defaultExpanded={sectionsExpanded.legend}
+                defaultExpanded={defaultSectionsExpanded}
               />
             </div>
           </div>
