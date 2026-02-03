@@ -191,13 +191,23 @@ export const initialArrets: Arret[] = [
 
 // Events from the Excel file
 export const initialEvents: CalendarEvent[] = [
+  // RE events (day state - grays out the cell)
   {
-    id: 'evt-1',
-    type: 'event',
+    id: 'evt-re-1',
+    type: 're',
     name: 'RE',
     startDate: new Date(2025, 11, 20),
     endDate: new Date(2026, 0, 4),
-    color: '#0ea5e9',
+    color: '#d1d5db', // Uses settings.reColor in practice
+  },
+  // CP events (day state - darker gray)
+  {
+    id: 'evt-cp-1',
+    type: 'cp',
+    name: 'CP',
+    startDate: new Date(2026, 1, 9),
+    endDate: new Date(2026, 1, 13),
+    color: '#9ca3af', // Uses settings.cpColor in practice
   },
   {
     id: 'evt-2',
