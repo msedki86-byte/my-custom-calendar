@@ -209,10 +209,10 @@ export function ExcelImport({
           <div>
             <label className="text-sm font-medium mb-2 block">Type de données à importer</label>
             <Select value={importType} onValueChange={(v) => setImportType(v as ImportType)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50" position="popper" sideOffset={4}>
                 <SelectItem value="events">Événements</SelectItem>
                 <SelectItem value="vacations">Vacances scolaires</SelectItem>
                 <SelectItem value="arrets">Arrêts de tranches</SelectItem>

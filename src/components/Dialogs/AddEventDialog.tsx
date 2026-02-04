@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type EventTypeOption = 'event' | 'astreinte-ponctuelle' | 'astreinte-cancelled';
+type EventTypeOption = 'event' | 'astreinte-ponctuelle' | 'astreinte-cancelled' | 're' | 'cp';
 
 interface AddEventDialogProps {
   isOpen: boolean;
@@ -41,12 +41,30 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
   const [color, setColor] = useState('#0ea5e9');
 
   // Synchronize dates when initialDate changes or dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen && initialDate) {
       setStartDate(initialDate);
       setEndDate(initialDate);
     }
   }, [isOpen, initialDate]);
+
+  // Auto-fill end date when start date changes
+  const handleStartDateChange = (date: Date | undefined) => {
+    setStartDate(date);
+    // Auto-fill end date with start date (user can still modify it)
+    if (date) {
+      setEndDate(date);
+    }
+  };
+
+  // Auto-set name for RE/CP types
+  useEffect(() => {
+    if (type === 're' && name === '') {
+      setName('RE');
+    } else if (type === 'cp' && name === '') {
+      setName('CP');
+    }
+  }, [type]);
 
   const handleSubmit = () => {
     if (!startDate || !endDate || !name.trim()) return;
@@ -74,12 +92,19 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
         return 'Ajoutez une astreinte supplémentaire pour les dates sélectionnées.';
       case 'astreinte-cancelled':
         return 'Annulez votre astreinte UNIQUEMENT pour les jours sélectionnés (le remplaçant prend ces jours).';
+      case 're':
+        return 'Marquez les jours comme RE (Repos/Récupération). La case sera grisée.';
+      case 'cp':
+        return 'Marquez les jours comme CP (Congés Payés). La case sera grisée (plus foncée que RE).';
     }
   };
 
+  // RE and CP don't need color picker - they use settings colors
+  const showColorPicker = type === 'event';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Ajouter un événement</DialogTitle>
           <DialogDescription>
@@ -91,11 +116,13 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
           <div className="grid gap-2">
             <Label htmlFor="type">Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as EventTypeOption)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 <SelectItem value="event">Événement</SelectItem>
+                <SelectItem value="re">RE (Repos/Récupération)</SelectItem>
+                <SelectItem value="cp">CP (Congés Payés)</SelectItem>
                 <SelectItem value="astreinte-ponctuelle">Astreinte ponctuelle</SelectItem>
                 <SelectItem value="astreinte-cancelled">Annulation d'astreinte (jours spécifiques)</SelectItem>
               </SelectContent>
@@ -110,7 +137,15 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={type === 'astreinte-cancelled' ? 'Nom du remplaçant' : "Nom de l'événement"}
+              placeholder={
+                type === 'astreinte-cancelled' 
+                  ? 'Nom du remplaçant' 
+                  : type === 're' 
+                    ? 'RE' 
+                    : type === 'cp' 
+                      ? 'CP' 
+                      : "Nom de l'événement"
+              }
             />
           </div>
           
@@ -130,12 +165,13 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
                     {startDate ? format(startDate, 'dd/MM/yyyy', { locale: fr }) : 'Sélectionner'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-50 bg-background" align="start">
                   <Calendar
                     mode="single"
                     selected={startDate}
-                    onSelect={setStartDate}
+                    onSelect={handleStartDateChange}
                     initialFocus
+                    locale={fr}
                   />
                 </PopoverContent>
               </Popover>
@@ -156,19 +192,20 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
                     {endDate ? format(endDate, 'dd/MM/yyyy', { locale: fr }) : 'Sélectionner'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-50 bg-background" align="start">
                   <Calendar
                     mode="single"
                     selected={endDate}
                     onSelect={setEndDate}
                     initialFocus
+                    locale={fr}
                   />
                 </PopoverContent>
               </Popover>
             </div>
           </div>
           
-          {type === 'event' && (
+          {showColorPicker && (
             <div className="grid gap-2">
               <Label htmlFor="color">Couleur</Label>
               <div className="flex items-center gap-2">

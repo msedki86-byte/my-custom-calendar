@@ -173,7 +173,7 @@ const Index = () => {
   }, [goToDate]);
 
   const handleAddEvent = useCallback((eventData: {
-    type: 'event' | 'astreinte-ponctuelle' | 'astreinte-cancelled';
+    type: 'event' | 'astreinte-ponctuelle' | 'astreinte-cancelled' | 're' | 'cp';
     name: string;
     startDate: Date;
     endDate: Date;
@@ -187,12 +187,28 @@ const Index = () => {
         endDate: eventData.endDate,
         color: eventData.color,
       });
+    } else if (eventData.type === 're') {
+      addEvent({
+        type: 're',
+        name: eventData.name || 'RE',
+        startDate: eventData.startDate,
+        endDate: eventData.endDate,
+        color: settings.reColor,
+      });
+    } else if (eventData.type === 'cp') {
+      addEvent({
+        type: 'cp',
+        name: eventData.name || 'CP',
+        startDate: eventData.startDate,
+        endDate: eventData.endDate,
+        color: settings.cpColor,
+      });
     } else if (eventData.type === 'astreinte-ponctuelle') {
       addPonctualAstreinte(eventData.startDate, eventData.endDate, eventData.name);
     } else if (eventData.type === 'astreinte-cancelled') {
       cancelAstreinteDates(eventData.startDate, eventData.endDate, eventData.name);
     }
-  }, [addEvent, addPonctualAstreinte, cancelAstreinteDates]);
+  }, [addEvent, addPonctualAstreinte, cancelAstreinteDates, settings.reColor, settings.cpColor]);
 
   const handleYearChange = useCallback((year: number) => {
     try {

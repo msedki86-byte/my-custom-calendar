@@ -300,12 +300,12 @@ export function UnifiedCalendarGrid({
                         </div>
                       )}
 
-                      {/* Horizontal bars for astreintes and events */}
-                      <div className="flex-1 w-full space-y-0.5 overflow-hidden">
-                        {/* Astreinte bar */}
+                      {/* Full cell for astreintes, otherwise event bars */}
+                      <div className="flex-1 w-full flex flex-col overflow-hidden">
+                        {/* Astreinte - takes full cell */}
                         {hasActiveAstreinte && isCurrentMonth && (
                           <div 
-                            className="h-3 sm:h-4 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center px-1 truncate"
+                            className="flex-1 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center justify-center truncate min-h-[24px] sm:min-h-[32px]"
                             style={{ 
                               backgroundColor: astreinte.isPonctuelle 
                                 ? settings.astreintePonctuelleColor 
@@ -316,31 +316,35 @@ export function UnifiedCalendarGrid({
                           </div>
                         )}
                         
-                        {/* Cancelled astreinte bar */}
-                        {cancelled && isCurrentMonth && (
+                        {/* Cancelled astreinte - with pattern */}
+                        {cancelled && isCurrentMonth && !hasActiveAstreinte && (
                           <div 
-                            className="h-3 sm:h-4 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center px-1 truncate"
+                            className="flex-1 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center justify-center truncate min-h-[24px] sm:min-h-[32px] pattern-crosshatch"
                             style={{ backgroundColor: settings.astreinteCancelledColor }}
                           >
                             {cancelled.name}
                           </div>
                         )}
                         
-                        {/* Event bars (non-RE) */}
-                        {events.slice(0, 2).map((event, idx) => (
-                          <div 
-                            key={event.id || idx}
-                            className="h-3 sm:h-4 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center px-1 truncate"
-                            style={{ backgroundColor: event.color }}
-                          >
-                            {event.name}
-                          </div>
-                        ))}
-                        
-                        {/* More events indicator */}
-                        {events.length > 2 && isCurrentMonth && (
-                          <div className="text-[8px] text-muted-foreground">
-                            +{events.length - 2} autres
+                        {/* Event bars (non-RE/CP) - only if no full-cell astreinte */}
+                        {!hasActiveAstreinte && !cancelled && (
+                          <div className="space-y-0.5">
+                            {events.slice(0, 2).map((event, idx) => (
+                              <div 
+                                key={event.id || idx}
+                                className="h-3 sm:h-4 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center px-1 truncate"
+                                style={{ backgroundColor: event.color }}
+                              >
+                                {event.name}
+                              </div>
+                            ))}
+                            
+                            {/* More events indicator */}
+                            {events.length > 2 && isCurrentMonth && (
+                              <div className="text-[8px] text-muted-foreground">
+                                +{events.length - 2} autres
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
