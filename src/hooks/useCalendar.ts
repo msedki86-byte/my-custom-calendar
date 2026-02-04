@@ -202,6 +202,10 @@ export function useCalendar() {
   }, [cancelledAstreinteDates]);
 
   const hasConflict = useCallback((date: Date, astreintes: Astreinte[]): boolean => {
+    // Check if the date is cancelled - if so, no conflict
+    const isCancelled = cancelledAstreinteDates.some(c => isSameDay(c.date, date));
+    if (isCancelled) return false;
+    
     const activeAstreintes = astreintes.filter(a => 
       !a.isCancelled && (
         isWithinInterval(date, { start: a.startDate, end: a.endDate }) ||
@@ -210,9 +214,13 @@ export function useCalendar() {
       )
     );
     return activeAstreintes.length > 1;
-  }, []);
+  }, [cancelledAstreinteDates]);
 
   const getConflictDetails = useCallback((date: Date, astreintes: Astreinte[]): string[] => {
+    // Check if the date is cancelled - if so, no conflict details
+    const isCancelled = cancelledAstreinteDates.some(c => isSameDay(c.date, date));
+    if (isCancelled) return [];
+    
     const conflicting = astreintes.filter(a => 
       !a.isCancelled && (
         isWithinInterval(date, { start: a.startDate, end: a.endDate }) ||
@@ -221,7 +229,7 @@ export function useCalendar() {
       )
     );
     return conflicting.map(a => a.name || `Astreinte ${format(a.startDate, 'dd/MM')}`);
-  }, []);
+  }, [cancelledAstreinteDates]);
 
   const cancelAstreinteDates = useCallback((startDate: Date, endDate: Date, name: string) => {
     const days = eachDayOfInterval({ start: startDate, end: endDate });

@@ -16,6 +16,7 @@ import {
 import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
+import { useOrientation } from '@/hooks/useOrientation';
 
 interface UnifiedYearViewProps {
   year: number;
@@ -37,6 +38,7 @@ interface UnifiedYearViewProps {
   onDayClick?: (date: Date) => void;
 }
 
+// French weekday abbreviations - explicit to avoid localization issues
 const WEEKDAYS_SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 export function UnifiedYearView({
@@ -58,14 +60,21 @@ export function UnifiedYearView({
   onMonthClick,
   onDayClick,
 }: UnifiedYearViewProps) {
+  const { isMobileLandscape } = useOrientation();
+
   const months = useMemo(() => {
     const yearStart = startOfYear(new Date(year, 0, 1));
     const yearEnd = endOfYear(yearStart);
     return eachMonthOfInterval({ start: yearStart, end: yearEnd });
   }, [year]);
 
+  // In mobile landscape mode, show 3 months per row
+  const gridCols = isMobileLandscape 
+    ? 'grid-cols-3' 
+    : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4';
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+    <div className={cn("grid gap-2 sm:gap-3 lg:gap-4", gridCols)}>
       {months.map((month) => {
         const monthStart = startOfMonth(month);
         const monthEnd = endOfMonth(month);
