@@ -393,6 +393,7 @@ const Index = () => {
               onAddHoliday={addHoliday}
               onAddPonctualAstreinte={addPonctualAstreinte}
               onCancelAstreinteDates={cancelAstreinteDates}
+              onAddEvent={addEvent}
             />
           </div>
         )}
@@ -405,6 +406,7 @@ const Index = () => {
               astreintes={yearAstreintes}
               settings={settings}
               year={currentDate.getFullYear()}
+              cancelledDates={cancelledAstreinteDates}
             />
           </div>
         )}
