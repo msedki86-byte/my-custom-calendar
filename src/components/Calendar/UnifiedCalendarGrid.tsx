@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { 
   startOfMonth, 
   endOfMonth, 
@@ -10,14 +10,13 @@ import {
   isWeekend,
   format,
   getWeek,
-  isSameDay,
-  differenceInDays,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 import { AlertTriangle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useOrientation } from '@/hooks/useOrientation';
 
 interface UnifiedCalendarGridProps {
   currentDate: Date;
@@ -41,6 +40,7 @@ interface UnifiedCalendarGridProps {
 }
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+const WEEKDAYS_SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 // Helper to compute bar spans for a week
 function computeBarSpans(
@@ -89,6 +89,18 @@ export function UnifiedCalendarGrid({
   onDayClick,
   showWeekNumbers = true,
 }: UnifiedCalendarGridProps) {
+  const { isMobileLandscape } = useOrientation();
+  const [isMobileView, setIsMobileView] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
@@ -127,22 +139,25 @@ export function UnifiedCalendarGrid({
   // They only gray out the day cells (handled below in day rendering)
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
+    <div className={cn(
+      "bg-card rounded-2xl border border-border shadow-lg overflow-hidden",
+      isMobileLandscape && "text-xs"
+    )}>
       {/* Weekday Headers */}
       <div className={cn(
         "grid bg-muted/50",
         showWeekNumbers ? "grid-cols-8" : "grid-cols-7"
       )}>
         {showWeekNumbers && (
-          <div className="py-2 sm:py-3 text-center text-[10px] sm:text-xs font-semibold text-muted-foreground border-r border-border">
+          <div className="py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold text-muted-foreground border-r border-border">
             S.
           </div>
         )}
-        {WEEKDAYS.map((day, index) => (
+        {(isMobileView ? WEEKDAYS_SHORT : WEEKDAYS).map((day, index) => (
           <div 
-            key={day} 
+            key={`${day}-${index}`} 
             className={cn(
-              "py-2 sm:py-3 text-center text-[10px] sm:text-xs font-semibold text-muted-foreground",
+              "py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold text-muted-foreground",
               index >= 5 && "text-primary/70"
             )}
           >
@@ -213,7 +228,7 @@ export function UnifiedCalendarGrid({
               )}>
                 {/* Week number */}
                 {showWeekNumbers && (
-                  <div className="flex items-center justify-center text-[10px] sm:text-xs font-medium text-muted-foreground bg-muted/30 border-r border-border">
+                  <div className="flex items-center justify-center text-[8px] sm:text-[10px] lg:text-xs font-medium text-muted-foreground bg-muted/30 border-r border-border min-h-[50px] sm:min-h-[60px] lg:min-h-[80px]">
                     {weekNumber}
                   </div>
                 )}
@@ -253,7 +268,7 @@ export function UnifiedCalendarGrid({
                       onClick={() => isCurrentMonth && onDayClick?.(day)}
                       disabled={!isCurrentMonth}
                       className={cn(
-                        "relative min-h-[60px] sm:min-h-[80px] flex flex-col p-0.5 sm:p-1 transition-all duration-200 border-r border-border/30 last:border-r-0",
+                        "relative min-h-[50px] sm:min-h-[60px] lg:min-h-[80px] flex flex-col p-0.5 sm:p-1 transition-all duration-200 border-r border-border/30 last:border-r-0",
                         "active:scale-[0.98] touch-manipulation",
                         !isCurrentMonth && "opacity-30 bg-muted/20",
                         isCurrentMonth && !showREBackground && !showCPBackground && "hover:bg-accent/30",
@@ -265,8 +280,8 @@ export function UnifiedCalendarGrid({
                       {/* Day Number Header */}
                       <div className="flex items-center justify-between w-full mb-0.5">
                         <span className={cn(
-                          "text-[10px] sm:text-xs font-medium",
-                          isTodayDate && "text-primary font-bold bg-primary/20 rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center",
+                          "text-[9px] sm:text-[10px] lg:text-xs font-medium",
+                          isTodayDate && "text-primary font-bold bg-primary/20 rounded-full w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 flex items-center justify-center",
                           holiday && !isTodayDate && "text-destructive font-bold",
                           !isTodayDate && !holiday && isWeekendDay && "text-muted-foreground"
                         )}>
@@ -277,12 +292,12 @@ export function UnifiedCalendarGrid({
                         {conflict && isCurrentMonth && (
                           <Popover>
                             <PopoverTrigger asChild>
-                              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-destructive rounded-full flex items-center justify-center cursor-pointer animate-pulse">
-                                <AlertTriangle className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" />
+                              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4 bg-destructive rounded-full flex items-center justify-center cursor-pointer animate-pulse">
+                                <AlertTriangle className="w-1.5 h-1.5 sm:w-2 sm:h-2 lg:w-2.5 lg:h-2.5 text-white" />
                               </div>
                             </PopoverTrigger>
-                            <PopoverContent className="w-64 p-3">
-                              <div className="text-sm font-semibold text-destructive mb-2">Conflits détectés</div>
+                            <PopoverContent className="w-64 p-3 z-50 bg-background">
+                              <div className="text-sm font-semibold text-destructive mb-2">{"Conflits détectés"}</div>
                               <ul className="text-xs space-y-1">
                                 {conflictDetails.map((detail, i) => (
                                   <li key={i} className="text-muted-foreground">• {detail}</li>
@@ -295,7 +310,7 @@ export function UnifiedCalendarGrid({
 
                       {/* Holiday name */}
                       {holiday && isCurrentMonth && (
-                        <div className="text-[8px] sm:text-[10px] text-destructive font-medium truncate w-full mb-0.5">
+                        <div className="text-[7px] sm:text-[8px] lg:text-[10px] text-destructive font-medium truncate w-full mb-0.5">
                           {holiday.name}
                         </div>
                       )}
@@ -305,24 +320,42 @@ export function UnifiedCalendarGrid({
                         {/* Astreinte - takes full cell */}
                         {hasActiveAstreinte && isCurrentMonth && (
                           <div 
-                            className="flex-1 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center justify-center truncate min-h-[24px] sm:min-h-[32px]"
+                            className="flex-1 rounded text-[6px] sm:text-[7px] lg:text-[9px] text-white font-medium flex items-center justify-center truncate min-h-[20px] sm:min-h-[24px] lg:min-h-[32px]"
                             style={{ 
                               backgroundColor: astreinte.isPonctuelle 
                                 ? settings.astreintePonctuelleColor 
                                 : settings.astreinteColor 
                             }}
                           >
-                            {astreinte.isPonctuelle ? 'Ponct.' : 'Astreinte'}
+                            {astreinte.isPonctuelle ? (isMobileView ? 'P' : 'Ponct.') : (isMobileView ? 'AST' : 'Astreinte')}
                           </div>
                         )}
                         
-                        {/* Cancelled astreinte - with pattern */}
-                        {cancelled && isCurrentMonth && !hasActiveAstreinte && (
+                        {/* Cancelled astreinte - with pattern AND events on top */}
+                        {cancelled && isCurrentMonth && !hasActiveAstreinte && events.length === 0 && (
                           <div 
-                            className="flex-1 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center justify-center truncate min-h-[24px] sm:min-h-[32px] pattern-crosshatch"
+                            className="flex-1 rounded text-[6px] sm:text-[7px] lg:text-[9px] text-white font-medium flex items-center justify-center truncate min-h-[20px] sm:min-h-[24px] lg:min-h-[32px] pattern-crosshatch"
                             style={{ backgroundColor: settings.astreinteCancelledColor }}
                           >
                             {cancelled.name}
+                          </div>
+                        )}
+                        
+                        {/* Cancelled astreinte WITH events - show events on colored background */}
+                        {cancelled && isCurrentMonth && !hasActiveAstreinte && events.length > 0 && (
+                          <div 
+                            className="flex-1 rounded p-0.5 pattern-crosshatch"
+                            style={{ backgroundColor: settings.astreinteCancelledColor }}
+                          >
+                            {events.slice(0, 2).map((event, idx) => (
+                              <div 
+                                key={event.id || idx}
+                                className="h-2.5 sm:h-3 lg:h-4 rounded text-[6px] sm:text-[7px] lg:text-[9px] text-white font-medium flex items-center px-0.5 truncate mb-0.5"
+                                style={{ backgroundColor: event.color }}
+                              >
+                                {event.name}
+                              </div>
+                            ))}
                           </div>
                         )}
                         
@@ -332,7 +365,7 @@ export function UnifiedCalendarGrid({
                             {events.slice(0, 2).map((event, idx) => (
                               <div 
                                 key={event.id || idx}
-                                className="h-3 sm:h-4 rounded text-[7px] sm:text-[9px] text-white font-medium flex items-center px-1 truncate"
+                                className="h-2.5 sm:h-3 lg:h-4 rounded text-[6px] sm:text-[7px] lg:text-[9px] text-white font-medium flex items-center px-0.5 truncate"
                                 style={{ backgroundColor: event.color }}
                               >
                                 {event.name}
@@ -341,7 +374,7 @@ export function UnifiedCalendarGrid({
                             
                             {/* More events indicator */}
                             {events.length > 2 && isCurrentMonth && (
-                              <div className="text-[8px] text-muted-foreground">
+                              <div className="text-[6px] sm:text-[8px] text-muted-foreground">
                                 +{events.length - 2} autres
                               </div>
                             )}

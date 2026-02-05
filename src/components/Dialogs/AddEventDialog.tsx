@@ -39,6 +39,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
   const [startDate, setStartDate] = useState<Date | undefined>(initialDate || new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(initialDate || new Date());
   const [color, setColor] = useState('#0ea5e9');
+  const [startPopoverOpen, setStartPopoverOpen] = useState(false);
+  const [endPopoverOpen, setEndPopoverOpen] = useState(false);
 
   // Synchronize dates when initialDate changes or dialog opens
   useEffect(() => {
@@ -55,6 +57,12 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
     if (date) {
       setEndDate(date);
     }
+    setStartPopoverOpen(false);
+  };
+
+  const handleEndDateChange = (date: Date | undefined) => {
+    setEndDate(date);
+    setEndPopoverOpen(false);
   };
 
   // Auto-set name for RE/CP types
@@ -151,8 +159,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
           
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>Date de début</Label>
-              <Popover>
+              <Label>{"Date de début"}</Label>
+              <Popover open={startPopoverOpen} onOpenChange={setStartPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -162,7 +170,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, 'dd/MM/yyyy', { locale: fr }) : 'Sélectionner'}
+                    {startDate ? format(startDate, 'dd/MM/yyyy', { locale: fr }) : "Sélectionner"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-50 bg-background" align="start">
@@ -178,8 +186,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
             </div>
             
             <div className="grid gap-2">
-              <Label>Date de fin</Label>
-              <Popover>
+              <Label>{"Date de fin"}</Label>
+              <Popover open={endPopoverOpen} onOpenChange={setEndPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -189,14 +197,14 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, 'dd/MM/yyyy', { locale: fr }) : 'Sélectionner'}
+                    {endDate ? format(endDate, 'dd/MM/yyyy', { locale: fr }) : "Sélectionner"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-50 bg-background" align="start">
                   <Calendar
                     mode="single"
                     selected={endDate}
-                    onSelect={setEndDate}
+                    onSelect={handleEndDateChange}
                     initialFocus
                     locale={fr}
                   />

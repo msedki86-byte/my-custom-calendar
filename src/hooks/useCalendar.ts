@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { 
   CalendarEvent, 
   Vacation, 
@@ -29,15 +29,93 @@ import {
   format,
 } from 'date-fns';
 
+// Helper to parse dates from localStorage
+const parseStoredData = <T>(key: string, fallback: T): T => {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return fallback;
+    return JSON.parse(item, (k, v) => {
+      if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v)) {
+        return new Date(v);
+      }
+      return v;
+    });
+  } catch {
+    return fallback;
+  }
+};
+
 export function useCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
-  const [settings, setSettings] = useState<CalendarSettings>(defaultSettings);
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
-  const [vacations, setVacations] = useState<Vacation[]>(initialVacations);
-  const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
-  const [arrets, setArrets] = useState<Arret[]>(initialArrets);
-  const [ponctualAstreintes, setPonctualAstreintes] = useState<Astreinte[]>([]);
-  const [cancelledAstreinteDates, setCancelledAstreinteDates] = useState<CancelledAstreinteDate[]>([]);
+  // Initialize from localStorage or fallback to initial data
+  const [currentDate, setCurrentDate] = useState(() => {
+    const stored = localStorage.getItem('calendar-current-date');
+    if (stored) {
+      const date = new Date(stored);
+      if (!isNaN(date.getTime())) return date;
+    }
+    return new Date(2026, 0, 1);
+  });
+  
+  const [settings, setSettings] = useState<CalendarSettings>(() => 
+    parseStoredData('calendar-settings', defaultSettings)
+  );
+  
+  const [events, setEvents] = useState<CalendarEvent[]>(() => 
+    parseStoredData('calendar-events', initialEvents)
+  );
+  
+  const [vacations, setVacations] = useState<Vacation[]>(() => 
+    parseStoredData('calendar-vacations', initialVacations)
+  );
+  
+  const [holidays, setHolidays] = useState<Holiday[]>(() => 
+    parseStoredData('calendar-holidays', initialHolidays)
+  );
+  
+  const [arrets, setArrets] = useState<Arret[]>(() => 
+    parseStoredData('calendar-arrets', initialArrets)
+  );
+  
+  const [ponctualAstreintes, setPonctualAstreintes] = useState<Astreinte[]>(() => 
+    parseStoredData('calendar-ponctual-astreintes', [])
+  );
+  
+  const [cancelledAstreinteDates, setCancelledAstreinteDates] = useState<CancelledAstreinteDate[]>(() => 
+    parseStoredData('calendar-cancelled-dates', [])
+  );
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    localStorage.setItem('calendar-current-date', currentDate.toISOString());
+  }, [currentDate]);
+  
+  useEffect(() => {
+    localStorage.setItem('calendar-settings', JSON.stringify(settings));
+  }, [settings]);
+  
+  useEffect(() => {
+    localStorage.setItem('calendar-events', JSON.stringify(events));
+  }, [events]);
+  
+  useEffect(() => {
+    localStorage.setItem('calendar-vacations', JSON.stringify(vacations));
+  }, [vacations]);
+  
+  useEffect(() => {
+    localStorage.setItem('calendar-holidays', JSON.stringify(holidays));
+  }, [holidays]);
+  
+  useEffect(() => {
+    localStorage.setItem('calendar-arrets', JSON.stringify(arrets));
+  }, [arrets]);
+  
+  useEffect(() => {
+    localStorage.setItem('calendar-ponctual-astreintes', JSON.stringify(ponctualAstreintes));
+  }, [ponctualAstreintes]);
+  
+  useEffect(() => {
+    localStorage.setItem('calendar-cancelled-dates', JSON.stringify(cancelledAstreinteDates));
+  }, [cancelledAstreinteDates]);
 
   /* 🔒 Sécurisation centrale des dates */
   const safeSetDate = useCallback((date: Date) => {

@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 type SortField = 'date' | 'name' | 'tranche';
 type SortDirection = 'asc' | 'desc';
 
+type NewEventType = 'event' | 're' | 'cp';
+
 const patterns: { value: PatternType; label: string }[] = [
   { value: 'none', label: 'Aucun' },
   { value: 'stripes', label: 'Rayures' },
@@ -62,6 +64,7 @@ interface EventsManagerProps {
   onAddHoliday: (holiday: Holiday) => void;
   onAddPonctualAstreinte: (startDate: Date, endDate: Date, name?: string) => void;
   onCancelAstreinteDates: (startDate: Date, endDate: Date, name: string) => void;
+  onAddEvent?: (event: Omit<CalendarEvent, 'id'>) => void;
 }
 
 interface EditingState {
@@ -93,6 +96,7 @@ export function EventsManager({
   onAddHoliday,
   onAddPonctualAstreinte,
   onCancelAstreinteDates,
+  onAddEvent,
 }: EventsManagerProps) {
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [addingNew, setAddingNew] = useState<string | null>(null);
@@ -230,6 +234,14 @@ export function EventsManager({
       if (newItem.startDate && newItem.endDate && newItem.name) {
         onCancelAstreinteDates(newItem.startDate, newItem.endDate, newItem.name);
       }
+    } else if (type === 'event' && onAddEvent) {
+      onAddEvent({
+        type: (newItem.eventType as 'event' | 're' | 'cp') || 'event',
+        name: newItem.name || 'Nouvel événement',
+        startDate: newItem.startDate || new Date(),
+        endDate: newItem.endDate || new Date(),
+        color: newItem.color || '#0ea5e9',
+      });
     }
     setAddingNew(null);
     setNewItem({});
@@ -260,9 +272,88 @@ export function EventsManager({
 
         {/* Events Tab */}
         <TabsContent value="events" className="mt-4">
+          {/* Add event button */}
+          {onAddEvent && (
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <Button size="sm" onClick={() => setAddingNew('event')}>
+                <Plus className="h-4 w-4 mr-2" /> {"Ajouter un événement"}
+              </Button>
+            </div>
+          )}
+          
+          {addingNew === 'event' && onAddEvent && (
+            <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
+              <div className="flex gap-4 flex-wrap">
+                <Input
+                  placeholder="Nom de l'événement"
+                  value={newItem.name || ''}
+                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                  className="flex-1 min-w-[200px]"
+                />
+                <Select 
+                  value={newItem.eventType || 'event'} 
+                  onValueChange={(v) => setNewItem({ ...newItem, eventType: v })}
+                >
+                  <SelectTrigger className="w-32 bg-background">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="event">{"Événement"}</SelectItem>
+                    <SelectItem value="re">RE</SelectItem>
+                    <SelectItem value="cp">CP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-4 flex-wrap">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-background">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {newItem.startDate ? formatDate(newItem.startDate) : "Début"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-background">
+                    <Calendar
+                      mode="single"
+                      selected={newItem.startDate}
+                      onSelect={(date) => setNewItem({ ...newItem, startDate: date, endDate: date })}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-background">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {newItem.endDate ? formatDate(newItem.endDate) : "Fin"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-background">
+                    <Calendar
+                      mode="single"
+                      selected={newItem.endDate}
+                      onSelect={(date) => setNewItem({ ...newItem, endDate: date })}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {newItem.eventType !== 're' && newItem.eventType !== 'cp' && (
+                  <Input
+                    type="color"
+                    value={newItem.color || '#0ea5e9'}
+                    onChange={(e) => setNewItem({ ...newItem, color: e.target.value })}
+                    className="w-12 h-9 p-1 cursor-pointer"
+                  />
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => handleAddNew('event')}>{"Ajouter"}</Button>
+                <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>{"Annuler"}</Button>
+              </div>
+            </div>
+          )}
+          
           {/* Sort controls */}
           <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <span className="text-xs text-muted-foreground">Trier par:</span>
+            <span className="text-xs text-muted-foreground">{"Trier par:"}</span>
             <SortButton field="date" label="Date" currentSort={eventSort} setSort={setEventSort} />
             <SortButton field="name" label="Nom" currentSort={eventSort} setSort={setEventSort} />
           </div>
@@ -451,27 +542,27 @@ export function EventsManager({
                   <div className="flex gap-4">
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" className="bg-background">
                           <CalendarIcon className="h-4 w-4 mr-2" />
-                          {newItem.startDate ? formatDate(newItem.startDate) : 'Début'}
+                          {newItem.startDate ? formatDate(newItem.startDate) : "Début"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
+                      <PopoverContent className="w-auto p-0 z-50 bg-background">
                         <Calendar
                           mode="single"
                           selected={newItem.startDate}
-                          onSelect={(date) => setNewItem({ ...newItem, startDate: date })}
+                          onSelect={(date) => setNewItem({ ...newItem, startDate: date, endDate: date })}
                         />
                       </PopoverContent>
                     </Popover>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" className="bg-background">
                           <CalendarIcon className="h-4 w-4 mr-2" />
-                          {newItem.endDate ? formatDate(newItem.endDate) : 'Fin'}
+                          {newItem.endDate ? formatDate(newItem.endDate) : "Fin"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
+                      <PopoverContent className="w-auto p-0 z-50 bg-background">
                         <Calendar
                           mode="single"
                           selected={newItem.endDate}
@@ -481,8 +572,8 @@ export function EventsManager({
                     </Popover>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleAddNew('cancelled')}>Annuler ces jours</Button>
-                    <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>Annuler</Button>
+                    <Button size="sm" onClick={() => handleAddNew('cancelled')}>{"Annuler ces jours"}</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>{"Annuler"}</Button>
                   </div>
                 </div>
               )}
@@ -517,7 +608,7 @@ export function EventsManager({
                           onClick={() => dates.forEach(d => onRestoreCancelledDate(d.id))}
                           title="Restaurer ces jours"
                         >
-                          <Check className="h-4 w-4 text-green-600" />
+                          <Check className="h-4 w-4 text-primary" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -539,10 +630,10 @@ export function EventsManager({
         <TabsContent value="vacations" className="mt-4">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <Button size="sm" onClick={() => setAddingNew('vacation')}>
-              <Plus className="h-4 w-4 mr-2" /> Ajouter une période
+              <Plus className="h-4 w-4 mr-2" /> {"Ajouter une période"}
             </Button>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Trier par:</span>
+              <span className="text-xs text-muted-foreground">{"Trier par:"}</span>
               <SortButton field="date" label="Date" currentSort={vacationSort} setSort={setVacationSort} />
               <SortButton field="name" label="Nom" currentSort={vacationSort} setSort={setVacationSort} />
             </div>
@@ -550,34 +641,34 @@ export function EventsManager({
           {addingNew === 'vacation' && (
             <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
               <Input
-                placeholder="Nom de la période"
+                placeholder={"Nom de la période"}
                 value={newItem.name || ''}
                 onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
               />
               <div className="flex gap-4">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="bg-background">
                       <CalendarIcon className="h-4 w-4 mr-2" />
-                      {newItem.startDate ? formatDate(newItem.startDate) : 'Début'}
+                      {newItem.startDate ? formatDate(newItem.startDate) : "Début"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 z-50 bg-background">
                     <Calendar
                       mode="single"
                       selected={newItem.startDate}
-                      onSelect={(date) => setNewItem({ ...newItem, startDate: date })}
+                      onSelect={(date) => setNewItem({ ...newItem, startDate: date, endDate: date })}
                     />
                   </PopoverContent>
                 </Popover>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="bg-background">
                       <CalendarIcon className="h-4 w-4 mr-2" />
-                      {newItem.endDate ? formatDate(newItem.endDate) : 'Fin'}
+                      {newItem.endDate ? formatDate(newItem.endDate) : "Fin"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 z-50 bg-background">
                     <Calendar
                       mode="single"
                       selected={newItem.endDate}
@@ -587,8 +678,8 @@ export function EventsManager({
                 </Popover>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => handleAddNew('vacation')}>Ajouter</Button>
-                <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>Annuler</Button>
+                <Button size="sm" onClick={() => handleAddNew('vacation')}>{"Ajouter"}</Button>
+                <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>{"Annuler"}</Button>
               </div>
             </div>
           )}
@@ -659,41 +750,41 @@ export function EventsManager({
                   value={newItem.tranche || 'Tr2'} 
                   onValueChange={(v) => setNewItem({ ...newItem, tranche: v })}
                 >
-                  <SelectTrigger className="w-24">
-                    <SelectValue placeholder="Tranche" />
+                  <SelectTrigger className="w-24 bg-background">
+                    <SelectValue placeholder={"Tranche"} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Tr2">Tr2</SelectItem>
-                    <SelectItem value="Tr3">Tr3</SelectItem>
-                    <SelectItem value="Tr4">Tr4</SelectItem>
-                    <SelectItem value="Tr5">Tr5</SelectItem>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="Tr2">{"Tr2"}</SelectItem>
+                    <SelectItem value="Tr3">{"Tr3"}</SelectItem>
+                    <SelectItem value="Tr4">{"Tr4"}</SelectItem>
+                    <SelectItem value="Tr5">{"Tr5"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex gap-4 flex-wrap items-center">
-                <select 
+                <select
                   className="px-3 py-2 border rounded-md bg-background text-sm"
                   value={newItem.arretType || 'arret'}
                   onChange={(e) => setNewItem({ ...newItem, arretType: e.target.value })}
                 >
-                  <option value="arret">Arrêt (AT)</option>
-                  <option value="prepa">Préparation</option>
+                  <option value="arret">{"Arrêt (AT)"}</option>
+                  <option value="prepa">{"Préparation"}</option>
                 </select>
                 {newItem.arretType === 'prepa' && (
                   <Select 
                     value={newItem.module || 'M0'} 
                     onValueChange={(v) => setNewItem({ ...newItem, module: v })}
                   >
-                    <SelectTrigger className="w-24">
-                      <SelectValue placeholder="Module" />
+                    <SelectTrigger className="w-24 bg-background">
+                      <SelectValue placeholder={"Module"} />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="M0">M0</SelectItem>
-                      <SelectItem value="M1">M1</SelectItem>
-                      <SelectItem value="M2A">M2A</SelectItem>
-                      <SelectItem value="M2B">M2B</SelectItem>
-                      <SelectItem value="M3">M3</SelectItem>
-                      <SelectItem value="M4">M4</SelectItem>
+                    <SelectContent className="z-50 bg-background">
+                      <SelectItem value="M0">{"M0"}</SelectItem>
+                      <SelectItem value="M1">{"M1"}</SelectItem>
+                      <SelectItem value="M2A">{"M2A"}</SelectItem>
+                      <SelectItem value="M2B">{"M2B"}</SelectItem>
+                      <SelectItem value="M3">{"M3"}</SelectItem>
+                      <SelectItem value="M4">{"M4"}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -701,27 +792,27 @@ export function EventsManager({
               <div className="flex gap-4">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="bg-background">
                       <CalendarIcon className="h-4 w-4 mr-2" />
-                      {newItem.startDate ? formatDate(newItem.startDate) : 'Début'}
+                      {newItem.startDate ? formatDate(newItem.startDate) : "Début"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 z-50 bg-background">
                     <Calendar
                       mode="single"
                       selected={newItem.startDate}
-                      onSelect={(date) => setNewItem({ ...newItem, startDate: date })}
+                      onSelect={(date) => setNewItem({ ...newItem, startDate: date, endDate: date })}
                     />
                   </PopoverContent>
                 </Popover>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="bg-background">
                       <CalendarIcon className="h-4 w-4 mr-2" />
-                      {newItem.endDate ? formatDate(newItem.endDate) : 'Fin'}
+                      {newItem.endDate ? formatDate(newItem.endDate) : "Fin"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 z-50 bg-background">
                     <Calendar
                       mode="single"
                       selected={newItem.endDate}
@@ -731,8 +822,8 @@ export function EventsManager({
                 </Popover>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => handleAddNew('arret')}>Ajouter</Button>
-                <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>Annuler</Button>
+                <Button size="sm" onClick={() => handleAddNew('arret')}>{"Ajouter"}</Button>
+                <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>{"Annuler"}</Button>
               </div>
             </div>
           )}
@@ -832,12 +923,12 @@ export function EventsManager({
               />
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="bg-background">
                     <CalendarIcon className="h-4 w-4 mr-2" />
-                    {newItem.date ? formatDate(newItem.date) : 'Date'}
+                    {newItem.date ? formatDate(newItem.date) : "Date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 z-50 bg-background">
                   <Calendar
                     mode="single"
                     selected={newItem.date}
@@ -846,8 +937,8 @@ export function EventsManager({
                 </PopoverContent>
               </Popover>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => handleAddNew('holiday')}>Ajouter</Button>
-                <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>Annuler</Button>
+                <Button size="sm" onClick={() => handleAddNew('holiday')}>{"Ajouter"}</Button>
+                <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>{"Annuler"}</Button>
               </div>
             </div>
           )}
@@ -929,11 +1020,11 @@ function DateEditor({ date, onSave }: { date: Date; onSave: (date: Date) => void
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 px-2 font-normal">
+        <Button variant="ghost" size="sm" className="h-8 px-2 font-normal bg-background">
           {format(date, 'dd/MM/yyyy', { locale: fr })}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 z-50 bg-background" align="start">
         <Calendar
           mode="single"
           selected={date}

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { format, eachDayOfInterval } from 'date-fns';
+import { format, eachDayOfInterval, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarEvent, Astreinte, CalendarSettings } from '@/types/calendar';
+import { CalendarEvent, Astreinte, CalendarSettings, CancelledAstreinteDate } from '@/types/calendar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle } from 'lucide-react';
 
@@ -10,6 +10,7 @@ interface ConflictsListProps {
   astreintes: Astreinte[];
   settings: CalendarSettings;
   year: number;
+  cancelledDates?: CancelledAstreinteDate[];
 }
 
 interface ConflictItem {
@@ -22,13 +23,15 @@ export function ConflictsList({
   events,
   astreintes,
   year,
+  cancelledDates = [],
 }: ConflictsListProps) {
   const conflicts = useMemo(() => {
     const result: ConflictItem[] = [];
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31);
 
-    // For each astreinte period - only check events (not vacations, holidays, or arrets)
+    // For each astreinte period - only check events (not vacations, holidays, arrets, RE, or CP)
+    // Also exclude cancelled dates
     astreintes.forEach(astreinte => {
       if (astreinte.isCancelled) return;
       
@@ -40,8 +43,15 @@ export function ConflictsList({
       const days = eachDayOfInterval({ start: astreinteStart, end: astreinteEnd });
 
       days.forEach(day => {
-        // Check events only (not vacations, holidays, or arrets)
+        // Skip if this date is cancelled
+        const isCancelledDate = cancelledDates.some(c => isSameDay(c.date, day));
+        if (isCancelledDate) return;
+
+        // Check events only (not RE or CP)
         events.forEach(event => {
+          // Exclude RE and CP from conflicts
+          if (event.type === 're' || event.type === 'cp') return;
+          
           if (day >= event.startDate && day <= event.endDate) {
             result.push({
               date: day,
@@ -55,14 +65,14 @@ export function ConflictsList({
 
     // Sort by date
     return result.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [events, astreintes, year]);
+  }, [events, astreintes, year, cancelledDates]);
 
   if (conflicts.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-30" />
-        <p className="text-lg font-medium">Aucun conflit détecté</p>
-        <p className="text-sm">Tous les événements sont compatibles avec les astreintes.</p>
+        <p className="text-lg font-medium">{"Aucun conflit détecté"}</p>
+        <p className="text-sm">{"Tous les événements sont compatibles avec les astreintes."}</p>
       </div>
     );
   }
@@ -71,7 +81,7 @@ export function ConflictsList({
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-destructive">
         <AlertTriangle className="w-5 h-5" />
-        <h3 className="font-semibold">{conflicts.length} conflit(s) détecté(s) en {year}</h3>
+        <h3 className="font-semibold">{conflicts.length} {"conflit(s) détecté(s) en"} {year}</h3>
       </div>
       
       <Table>
@@ -90,7 +100,7 @@ export function ConflictsList({
               <TableCell>
                 <span className="text-primary font-medium">{conflict.eventName}</span>
                 <span className="text-muted-foreground mx-2">/</span>
-                <span className="text-orange-600 font-medium">Astreinte</span>
+                <span className="text-orange-600 font-medium">{"Astreinte"}</span>
               </TableCell>
             </TableRow>
           ))}
