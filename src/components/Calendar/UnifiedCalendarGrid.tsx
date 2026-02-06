@@ -202,21 +202,29 @@ export function UnifiedCalendarGrid({
                         {bar.span >= 2 && bar.item.name}
                       </div>
                     ))}
-                    {/* Arret bars */}
-                    {weekArretBars.map((bar, idx) => (
-                      <div
-                        key={`arret-${idx}`}
-                        className="h-3 sm:h-4 rounded text-[8px] sm:text-[10px] text-white font-medium flex items-center justify-center truncate shadow-sm"
-                        style={{
-                          backgroundColor: bar.item.color,
-                          marginLeft: `${(bar.startCol / 7) * 100}%`,
-                          width: `${(bar.span / 7) * 100}%`,
-                        }}
-                        title={bar.item.name}
-                      >
-                        {bar.span >= 2 && bar.item.name}
-                      </div>
-                    ))}
+                    {/* Arret bars with patterns */}
+                    {weekArretBars.map((bar, idx) => {
+                      const arret = arrets.find(a => a.id === bar.item.id);
+                      const pattern = arret ? getArretPattern(arret) : 'none';
+                      const patternClass = pattern !== 'none' ? `pattern-${pattern === 'stripes' ? 'stripes-light' : pattern}` : '';
+                      return (
+                        <div
+                          key={`arret-${idx}`}
+                          className={cn(
+                            "h-3 sm:h-4 rounded text-[8px] sm:text-[10px] text-white font-medium flex items-center justify-center truncate shadow-sm",
+                            patternClass
+                          )}
+                          style={{
+                            backgroundColor: bar.item.color,
+                            marginLeft: `${(bar.startCol / 7) * 100}%`,
+                            width: `${(bar.span / 7) * 100}%`,
+                          }}
+                          title={bar.item.name}
+                        >
+                          {bar.span >= 2 && bar.item.name}
+                        </div>
+                      );
+                    })}
                     {/* RE/CP are NOT displayed as bars - they gray out day cells only */}
                   </div>
                 </div>

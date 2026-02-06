@@ -4,7 +4,7 @@ import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { UnifiedToolbar } from '@/components/Calendar/UnifiedToolbar';
 import { UnifiedCalendarGrid } from '@/components/Calendar/UnifiedCalendarGrid';
 import { UnifiedYearView } from '@/components/Calendar/UnifiedYearView';
-import { UnifiedVacationBar } from '@/components/Calendar/UnifiedVacationBar';
+
 import { UnifiedArretBar } from '@/components/Calendar/UnifiedArretBar';
 import { UnifiedLegend } from '@/components/Calendar/UnifiedLegend';
 import { DayDetails } from '@/components/Calendar/DayDetails';
@@ -257,11 +257,17 @@ const Index = () => {
           viewMode={viewMode}
           activeTab={activeTab}
           onPrevMonth={viewMode === 'year' 
-            ? () => goToDate(new Date(currentDate.getFullYear() - 1, 0, 1))
+            ? () => {
+                const y = currentDate.getFullYear() - 1;
+                if (y >= 1900 && y <= 2100) goToDate(new Date(y, 0, 1));
+              }
             : goToPrevMonth
           }
           onNextMonth={viewMode === 'year'
-            ? () => goToDate(new Date(currentDate.getFullYear() + 1, 0, 1))
+            ? () => {
+                const y = currentDate.getFullYear() + 1;
+                if (y >= 1900 && y <= 2100) goToDate(new Date(y, 0, 1));
+              }
             : goToNextMonth
           }
           onToday={goToToday}
@@ -289,15 +295,8 @@ const Index = () => {
               />
             </div>
 
-            {/* Collapsible Info Bars - Same in both views */}
+            {/* Collapsible Info Bar - Arrets only */}
             <div className="space-y-2 sm:space-y-3">
-            <UnifiedVacationBar
-                vacations={vacations}
-                currentDate={currentDate}
-                settings={settings}
-                viewMode={viewMode}
-                defaultExpanded={defaultSectionsExpanded}
-              />
               <UnifiedArretBar
                 arrets={arrets}
                 currentDate={currentDate}
@@ -441,6 +440,7 @@ const Index = () => {
         onClose={() => setAddEventOpen(false)}
         onAdd={handleAddEvent}
         initialDate={selectedDate}
+        existingEvents={events.map(e => ({ name: e.name, startDate: e.startDate, endDate: e.endDate }))}
       />
 
       {/* Backdrop for settings */}
