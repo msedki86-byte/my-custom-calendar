@@ -31,9 +31,10 @@ interface AddEventDialogProps {
     color: string;
   }) => void;
   initialDate?: Date;
+  existingEvents?: Array<{ name: string; startDate: Date; endDate: Date }>;
 }
 
-export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEventDialogProps) {
+export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEvents = [] }: AddEventDialogProps) {
   const [type, setType] = useState<EventTypeOption>('event');
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>(initialDate || new Date());
@@ -74,8 +75,23 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
     }
   }, [type]);
 
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+
+  const checkForDuplicates = (): boolean => {
+    if (!startDate || !endDate) return false;
+    return existingEvents.some(e => {
+      const overlap = e.startDate <= endDate && e.endDate >= startDate;
+      return overlap;
+    });
+  };
+
   const handleSubmit = () => {
     if (!startDate || !endDate || !name.trim()) return;
+    
+    if (!showDuplicateWarning && checkForDuplicates()) {
+      setShowDuplicateWarning(true);
+      return;
+    }
     
     onAdd({
       type,
@@ -89,6 +105,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
     setName('');
     setType('event');
     setColor('#0ea5e9');
+    setShowDuplicateWarning(false);
     onClose();
   };
 
@@ -157,9 +174,26 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
             />
           </div>
           
+          {showDuplicateWarning && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm text-destructive">
+              ⚠️ Un événement existe déjà sur cette période. Voulez-vous quand même ajouter ?
+              <div className="flex gap-2 mt-2">
+                <Button size="sm" variant="destructive" onClick={() => {
+                  setShowDuplicateWarning(false);
+                  if (startDate && endDate && name.trim()) {
+                    onAdd({ type, name: name.trim(), startDate, endDate, color });
+                    setName(''); setType('event'); setColor('#0ea5e9'); setShowDuplicateWarning(false); onClose();
+                  }
+                }}>Valider quand même</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowDuplicateWarning(false)}>Modifier</Button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>{"Date de début"}</Label>
+              <Label className="hidden sm:block">{"Date de début"}</Label>
+              <Label className="sm:hidden">Début</Label>
               <Popover open={startPopoverOpen} onOpenChange={setStartPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -186,7 +220,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
             </div>
             
             <div className="grid gap-2">
-              <Label>{"Date de fin"}</Label>
+              <Label className="hidden sm:block">{"Date de fin"}</Label>
+              <Label className="sm:hidden">Fin</Label>
               <Popover open={endPopoverOpen} onOpenChange={setEndPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
