@@ -127,7 +127,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate }: AddEvent
               <SelectTrigger className="bg-background">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-background z-50">
+              <SelectContent className="bg-background z-50" position="popper" sideOffset={4}>
                 <SelectItem value="event">Événement</SelectItem>
                 <SelectItem value="re">RE (Repos/Récupération)</SelectItem>
                 <SelectItem value="cp">CP (Congés Payés)</SelectItem>

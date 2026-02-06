@@ -14,6 +14,7 @@ import {
 import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
+import { getArretColor, getArretPattern } from '@/lib/trancheColors';
 import { AlertTriangle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useOrientation } from '@/hooks/useOrientation';
@@ -127,13 +128,13 @@ export function UnifiedCalendarGrid({
     ));
   }, [weeks, vacations, settings.vacationColor]);
 
-  // Compute arret bars for header
+  // Compute arret bars for header - resolve tranche colors
   const arretBars = useMemo(() => {
     return weeks.map(week => computeBarSpans(
-      arrets.map(a => ({ ...a, color: a.color })),
+      arrets.map(a => ({ ...a, color: a.color || getArretColor(a, settings) })),
       week
     ));
-  }, [weeks, arrets]);
+  }, [weeks, arrets, settings]);
 
   // RE/CP are day states, NOT events - they should NOT have header bars
   // They only gray out the day cells (handled below in day rendering)
@@ -240,17 +241,23 @@ export function UnifiedCalendarGrid({
                   const astreinte = isAstreinteDay(day, astreintes);
                   const holiday = isHoliday(day);
                   const cancelled = isDateCancelled(day);
-                  const conflict = hasConflict(day, astreintes);
-                  const conflictDetails = conflict ? getConflictDetails(day, astreintes) : [];
                   const reDay = isREDay(day);
                   const cpDay = isCPDay(day);
                   const events = getNonREEventsForDate(day);
                   
-                  // Determine visual priority:
-                  // 1. Astreinte (normal or ponctuelle) takes visual priority
-                  // 2. If astreinte is cancelled, show RE/CP gray if applicable
-                  // 3. Otherwise RE/CP grays out the cell (CP darker than RE)
                   const hasActiveAstreinte = astreinte && !astreinte.isCancelled && !cancelled;
+                  
+                  const conflict = hasConflict(day, astreintes);
+                  // Event+astreinte conflict: active astreinte + non-RE/CP events = conflict
+                  const eventAstreinteConflict = hasActiveAstreinte && events.length > 0;
+                  const showConflict = (conflict || eventAstreinteConflict) && isCurrentMonth;
+                  const conflictDetails = conflict ? getConflictDetails(day, astreintes) : [];
+                  if (eventAstreinteConflict) {
+                    events.forEach(e => {
+                      conflictDetails.push(`${e.name} / Astreinte`);
+                    });
+                  }
+                  
                   const showCPBackground = cpDay && !hasActiveAstreinte;
                   const showREBackground = reDay && !hasActiveAstreinte && !showCPBackground;
 
@@ -289,7 +296,7 @@ export function UnifiedCalendarGrid({
                         </span>
                         
                         {/* Conflict indicator */}
-                        {conflict && isCurrentMonth && (
+                        {showConflict && (
                           <Popover>
                             <PopoverTrigger asChild>
                               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4 bg-destructive rounded-full flex items-center justify-center cursor-pointer animate-pulse">
