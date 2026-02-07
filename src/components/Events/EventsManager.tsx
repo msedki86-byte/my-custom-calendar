@@ -14,7 +14,7 @@ import { CalendarIcon, Trash2, X, Check, Plus, ArrowUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils';
 
 // Sort types
-type SortField = 'date' | 'name' | 'tranche';
+type SortField = 'date' | 'name' | 'tranche' | 'module';
 type SortDirection = 'asc' | 'desc';
 
 type NewEventType = 'event' | 're' | 'cp';
@@ -120,6 +120,8 @@ export function EventsManager({
           return direction * a.name.localeCompare(b.name);
         case 'tranche':
           return direction * a.tranche.localeCompare(b.tranche);
+        case 'module':
+          return direction * (a.module || '').localeCompare(b.module || '');
         default:
           return 0;
       }
@@ -735,6 +737,7 @@ export function EventsManager({
               <SortButton field="date" label="Date" currentSort={arretSort} setSort={setArretSort} />
               <SortButton field="name" label="Nom" currentSort={arretSort} setSort={setArretSort} />
               <SortButton field="tranche" label="Tranche" currentSort={arretSort} setSort={setArretSort} />
+              <SortButton field="module" label="Module" currentSort={arretSort} setSort={setArretSort} />
             </div>
           </div>
           {addingNew === 'arret' && (

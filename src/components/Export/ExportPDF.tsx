@@ -1,76 +1,78 @@
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export function ExportPDF() {
-  const handleExport = () => {
+  const handleExport = async () => {
     const content = document.querySelector('[data-calendar-print]');
     if (!content) return alert('Calendrier non visible');
 
-    const win = window.open('', '_blank');
-    if (!win) return alert('Pop-up bloquée');
+    // Also capture legend section
+    const legendSection = document.querySelector('[data-legend-print]');
 
-    // Collect all stylesheets from the current page
-    const styles: string[] = [];
-    for (const sheet of document.styleSheets) {
-      try {
-        for (const rule of sheet.cssRules) {
-          styles.push(rule.cssText);
-        }
-      } catch {
-        // Cross-origin stylesheets - skip
+    try {
+      // Create a temporary container with both calendar and legend
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '1400px';
+      container.style.background = 'white';
+      container.style.padding = '16px';
+      
+      const calClone = content.cloneNode(true) as HTMLElement;
+      container.appendChild(calClone);
+      
+      if (legendSection) {
+        const legendClone = legendSection.cloneNode(true) as HTMLElement;
+        legendClone.style.marginTop = '16px';
+        container.appendChild(legendClone);
       }
+      
+      document.body.appendChild(container);
+
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 1400,
+      });
+
+      document.body.removeChild(container);
+
+      // A4 landscape: 297mm x 210mm
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
+      const pageWidth = 297;
+      const pageHeight = 210;
+      const margin = 8;
+      const availableWidth = pageWidth - margin * 2;
+      const availableHeight = pageHeight - margin * 2;
+
+      const imgRatio = canvas.height / canvas.width;
+      let imgWidth = availableWidth;
+      let imgHeight = imgWidth * imgRatio;
+
+      if (imgHeight > availableHeight) {
+        imgHeight = availableHeight;
+        imgWidth = imgHeight / imgRatio;
+      }
+
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+      pdf.save(`calendrier-${new Date().getFullYear()}.pdf`);
+    } catch (err) {
+      console.error('PDF export error:', err);
+      alert("Erreur lors de l'export PDF. Veuillez réessayer.");
     }
-
-    const sanitizedHTML = DOMPurify.sanitize(content.outerHTML, {
-      WHOLE_DOCUMENT: false,
-      ALLOWED_TAGS: ['div', 'span', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'g', 'text', 'img', 'br', 'strong', 'em', 'b', 'i', 'small', 'section', 'header', 'footer', 'nav', 'main', 'article', 'aside', 'button'],
-      ALLOWED_ATTR: ['class', 'style', 'data-*', 'aria-*', 'role', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width', 'cx', 'cy', 'r', 'x', 'y', 'width', 'height', 'xmlns', 'src', 'alt', 'title', 'disabled'],
-      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'link'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
-    });
-
-    win.document.write(`
-      <html>
-        <head>
-          <title>Calendrier - Export</title>
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">
-          <style>
-            @page { size: A4 landscape; margin: 8mm; }
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { 
-              font-family: 'Inter', system-ui, sans-serif;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              color-adjust: exact !important;
-            }
-            /* Import all app styles for exact visual match */
-            ${styles.join('\n')}
-            /* Override for print */
-            [data-calendar-print] {
-              width: 100% !important;
-              max-width: none !important;
-            }
-            @media print {
-              body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            }
-          </style>
-        </head>
-        <body>
-          ${sanitizedHTML}
-          <script>
-            window.onload = () => { window.print(); window.close(); }
-          <\/script>
-        </body>
-      </html>
-    `);
-    win.document.close();
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleExport}>
-      <FileDown className="h-4 w-4 mr-1" />
-      PDF
+    <Button variant="outline" size="sm" onClick={handleExport} className="gap-1 h-8 text-xs sm:text-sm px-2 sm:px-3">
+      <FileDown className="h-3 w-3 sm:h-4 sm:w-4" />
+      <span className="hidden sm:inline">PDF</span>
+      <span className="sm:hidden">PDF</span>
     </Button>
   );
 }

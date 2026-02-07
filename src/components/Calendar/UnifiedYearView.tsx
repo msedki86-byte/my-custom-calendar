@@ -17,7 +17,6 @@ import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 import { useOrientation } from '@/hooks/useOrientation';
-import { getArretColor, getArretPattern } from '@/lib/trancheColors';
 
 interface UnifiedYearViewProps {
   year: number;
@@ -41,25 +40,13 @@ interface UnifiedYearViewProps {
 
 const WEEKDAYS_SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-// Pattern class map for mini version
-const patternMiniClasses: Record<string, string> = {
-  none: '',
-  stripes: 'pattern-stripes-mini',
-  dots: 'pattern-dots-mini',
-  crosshatch: 'pattern-crosshatch-mini',
-  waves: 'pattern-waves-mini',
-  diagonal: 'pattern-diagonal-mini',
-  grid: 'pattern-grid-mini',
-  zigzag: 'pattern-zigzag-mini',
-};
-
-// Helper: compute bar spans for a week of days
-function computeWeekBars(
-  items: Array<{ startDate: Date; endDate: Date; name: string; color: string; id?: string }>,
+// Helper: compute bar spans for a week of days (vacations only)
+function computeWeekVacationBars(
+  vacations: Array<{ startDate: Date; endDate: Date; name: string; color: string }>,
   weekDays: Date[]
-): Array<{ startCol: number; span: number; item: typeof items[0] }> {
-  const bars: Array<{ startCol: number; span: number; item: typeof items[0] }> = [];
-  items.forEach(item => {
+): Array<{ startCol: number; span: number; item: typeof vacations[0] }> {
+  const bars: Array<{ startCol: number; span: number; item: typeof vacations[0] }> = [];
+  vacations.forEach(item => {
     let startCol = -1;
     let span = 0;
     weekDays.forEach((day, index) => {
@@ -80,15 +67,11 @@ export function UnifiedYearView({
   settings,
   astreintes,
   vacations,
-  arrets,
   isAstreinteDay,
   hasConflict,
   isHoliday,
-  isVacationDay,
-  isArretDay,
   isREDay,
   isCPDay,
-  getEventsForDate,
   getNonREEventsForDate,
   isDateCancelled,
   onMonthClick,
@@ -115,7 +98,6 @@ export function UnifiedYearView({
           settings={settings}
           astreintes={astreintes}
           vacations={vacations}
-          arrets={arrets}
           isAstreinteDay={isAstreinteDay}
           hasConflict={hasConflict}
           isHoliday={isHoliday}
@@ -131,13 +113,11 @@ export function UnifiedYearView({
   );
 }
 
-// Extracted mini month card component
 function MonthMiniCard({
   month,
   settings,
   astreintes,
   vacations,
-  arrets,
   isAstreinteDay,
   hasConflict,
   isHoliday,
@@ -152,7 +132,6 @@ function MonthMiniCard({
   settings: CalendarSettings;
   astreintes: Astreinte[];
   vacations: Vacation[];
-  arrets: Arret[];
   isAstreinteDay: (date: Date, astreintes: Astreinte[]) => Astreinte | null;
   hasConflict: (date: Date, astreintes: Astreinte[]) => boolean;
   isHoliday: (date: Date) => Holiday | null;
@@ -169,25 +148,18 @@ function MonthMiniCard({
   const calendarEnd = endOfWeek(monthEnd, { locale: fr, weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
-  // Group days by weeks
   const weeks: Date[][] = [];
   for (let i = 0; i < days.length; i += 7) {
     weeks.push(days.slice(i, i + 7));
   }
 
-  // Compute vacation bars per week
+  // Only vacation bars (NO arrêt bars in annual view)
   const vacItems = vacations
     .filter(v => v.startDate <= monthEnd && v.endDate >= monthStart)
     .map(v => ({ ...v, color: v.color || settings.vacationColor }));
 
-  // Compute arret bars per week  
-  const arretItems = arrets
-    .filter(a => a.startDate <= monthEnd && a.endDate >= monthStart)
-    .map(a => ({ ...a, color: a.color || getArretColor(a, settings) }));
-
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-      {/* Month Header */}
       <button
         onClick={() => onMonthClick?.(month)}
         className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-primary/10 hover:bg-primary/20 transition-colors text-center touch-manipulation"
@@ -197,7 +169,6 @@ function MonthMiniCard({
         </span>
       </button>
 
-      {/* Weekday Headers */}
       <div className="grid grid-cols-7 bg-muted/30">
         {WEEKDAYS_SHORT.map((day, index) => (
           <div 
@@ -212,16 +183,13 @@ function MonthMiniCard({
         ))}
       </div>
 
-      {/* Weeks with context bars */}
       <div className="p-0.5 sm:p-1">
         {weeks.map((week, weekIndex) => {
-          const weekVacBars = computeWeekBars(vacItems, week);
-          const weekArretBars = computeWeekBars(arretItems, week);
-          const hasContextBars = weekVacBars.length > 0 || weekArretBars.length > 0;
+          const weekVacBars = computeWeekVacationBars(vacItems, week);
+          const hasContextBars = weekVacBars.length > 0;
 
           return (
             <div key={weekIndex}>
-              {/* Context bars above day cells - same as monthly view */}
               {hasContextBars && (
                 <div className="relative px-0.5 space-y-px py-px">
                   {weekVacBars.map((bar, idx) => (
@@ -236,30 +204,9 @@ function MonthMiniCard({
                       title={bar.item.name}
                     />
                   ))}
-                  {weekArretBars.map((bar, idx) => {
-                    const arret = arrets.find(a => a.id === bar.item.id);
-                    const pattern = arret ? getArretPattern(arret) : 'none';
-                    const patternClass = patternMiniClasses[pattern] || '';
-                    return (
-                      <div
-                        key={`arret-${idx}`}
-                        className={cn(
-                          "h-[5px] sm:h-[6px] rounded-sm text-[5px] text-white flex items-center justify-center truncate",
-                          patternClass
-                        )}
-                        style={{
-                          backgroundColor: bar.item.color,
-                          marginLeft: `${(bar.startCol / 7) * 100}%`,
-                          width: `${(bar.span / 7) * 100}%`,
-                        }}
-                        title={bar.item.name}
-                      />
-                    );
-                  })}
                 </div>
               )}
 
-              {/* Day cells */}
               <div className="grid grid-cols-7 gap-px">
                 {week.map((day, dayIndex) => {
                   const isCurrentMonth = isSameMonth(day, month);
@@ -308,7 +255,6 @@ function MonthMiniCard({
                     >
                       {format(day, 'd')}
                       
-                      {/* Indicators */}
                       {isCurrentMonth && (
                         <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-px pb-0.5">
                           {hasEvents && !hasActiveAstreinte && (
