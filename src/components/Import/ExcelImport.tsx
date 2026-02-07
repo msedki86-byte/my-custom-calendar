@@ -209,10 +209,10 @@ export function ExcelImport({
           <div>
             <label className="text-sm font-medium mb-2 block">Type de données à importer</label>
             <Select value={importType} onValueChange={(v) => setImportType(v as ImportType)}>
-              <SelectTrigger className="bg-background">
+              <SelectTrigger className="bg-background" onPointerDown={(e) => e.stopPropagation()}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-background z-50" position="popper" sideOffset={4}>
+              <SelectContent className="bg-popover z-[100]" position="popper" sideOffset={4}>
                 <SelectItem value="events">Événements</SelectItem>
                 <SelectItem value="vacations">Vacances scolaires</SelectItem>
                 <SelectItem value="arrets">Arrêts de tranches</SelectItem>

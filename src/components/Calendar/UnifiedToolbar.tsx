@@ -124,7 +124,7 @@ export function UnifiedToolbar({
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
               <DropdownMenuItem onClick={() => onTabChange('events')}>
                 <List className="w-4 h-4 mr-2" />
                 Gestion
@@ -134,18 +134,14 @@ export function UnifiedToolbar({
                 Conflits
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {onExportPDF && (
-                <DropdownMenuItem onClick={onExportPDF}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Exporter PDF
-                </DropdownMenuItem>
-              )}
-              {onImport && (
-                <DropdownMenuItem onClick={onImport}>
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Importer Excel
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={onExportPDF}>
+                <FileText className="w-4 h-4 mr-2" />
+                Exporter PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onImport}>
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Importer Excel
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onOpenSettings}>
                 <Settings className="w-4 h-4 mr-2" />
@@ -205,7 +201,7 @@ export function UnifiedToolbar({
             >
               <LayoutGrid className="w-3 h-3" />
               <span className="hidden sm:inline">Année</span>
-              <span className="sm:hidden">An</span>
+              <span className="sm:hidden" translate="no">Année</span>
             </Button>
             <Button 
               variant={viewMode === 'month' ? 'secondary' : 'ghost'} 

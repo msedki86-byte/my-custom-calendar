@@ -284,8 +284,8 @@ const Index = () => {
         {/* Calendar Tab Content */}
         {activeTab === 'calendar' && (
           <div className="mt-3 sm:mt-4">
-            {/* Export/Import buttons - Desktop only, mobile uses toolbar menu */}
-            <div className="hidden sm:flex items-center justify-end gap-2 mb-3">
+            {/* Export/Import buttons - Always visible */}
+            <div className="flex items-center justify-end gap-2 mb-3">
               <ExportPDF />
               <ExcelImport
                 onImportEvents={importEvents}
@@ -295,8 +295,23 @@ const Index = () => {
               />
             </div>
 
-            {/* Collapsible Info Bar - Arrets only */}
-            <div className="space-y-2 sm:space-y-3">
+            {/* Collapsible Legend - FIRST */}
+            <div className="space-y-2 sm:space-y-3" data-legend-print>
+              <UnifiedLegend 
+                settings={settings} 
+                defaultExpanded={defaultSectionsExpanded}
+                arrets={arrets}
+                vacations={vacations}
+                events={events}
+                holidays={holidays}
+                astreintes={yearAstreintes}
+                ponctualAstreintes={ponctualAstreintes}
+                cancelledAstreinteDates={cancelledAstreinteDates}
+              />
+            </div>
+
+            {/* Collapsible Arrêts - SECOND */}
+            <div className="mt-2 sm:mt-3">
               <UnifiedArretBar
                 arrets={arrets}
                 currentDate={currentDate}
@@ -354,14 +369,6 @@ const Index = () => {
                   showWeekNumbers={true}
                 />
               )}
-            </div>
-
-            {/* Collapsible Legend */}
-            <div className="mt-3 sm:mt-4">
-              <UnifiedLegend 
-                settings={settings} 
-                defaultExpanded={defaultSectionsExpanded}
-              />
             </div>
           </div>
         )}
