@@ -128,7 +128,7 @@ export function useCalendar() {
 
   const generateAstreintes = useCallback((startDate: Date, endDate: Date): Astreinte[] => {
     const astreintes: Astreinte[] = [];
-    const astreinteStartDate = new Date(settings.astreinteStartDate);
+    const astreinteStartDate = new Date(settings.astreinteStartDate || '2026-02-05T00:00:00.000Z');
     if (isNaN(astreinteStartDate.getTime())) return astreintes;
     
     let currentStart = astreinteStartDate;

@@ -55,7 +55,8 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
     }
   };
 
-  const astreinteDate = new Date(settings.astreinteStartDate);
+  const astreinteDate = new Date(settings.astreinteStartDate || '2026-02-05T00:00:00.000Z');
+  const isValidDate = !isNaN(astreinteDate.getTime());
 
   return (
     <div className="fixed inset-y-0 right-0 w-full sm:w-80 max-w-[90vw] bg-card border-l border-border shadow-card-elevated z-50 animate-slide-in">
@@ -127,7 +128,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Date initiale</Label>
                 <span className="text-sm font-mono text-muted-foreground">
-                  {format(astreinteDate, 'dd/MM/yyyy', { locale: fr })}
+                  {isValidDate ? format(astreinteDate, 'dd/MM/yyyy', { locale: fr }) : '05/02/2026'}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">Cycle de 6 semaines à partir de cette date.</p>
