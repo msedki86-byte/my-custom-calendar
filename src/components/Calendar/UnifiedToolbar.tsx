@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileDown, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileDown, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,6 +23,8 @@ interface UnifiedToolbarProps {
   onTabChange: (tab: string) => void;
   onExportPDF?: () => void;
   onImport?: () => void;
+  onICSImport?: () => void;
+  onICSExport?: () => void;
 }
 
 const years = Array.from({ length: 10 }, (_, i) => 2025 + i);
@@ -42,6 +44,8 @@ export function UnifiedToolbar({
   onTabChange,
   onExportPDF,
   onImport,
+  onICSImport,
+  onICSExport,
 }: UnifiedToolbarProps) {
   const weekNumberStart = getWeek(currentDate, { locale: fr, weekStartsOn: 1 });
   const monthEnd = endOfMonth(currentDate);
@@ -101,6 +105,16 @@ export function UnifiedToolbar({
                 <Upload className="w-4 h-4" />
               </Button>
             )}
+            {onICSImport && (
+              <Button variant="ghost" size="icon" onClick={onICSImport} className="h-8 w-8" title="Importer ICS">
+                <CalendarIcon className="w-4 h-4" />
+              </Button>
+            )}
+            {onICSExport && (
+              <Button variant="ghost" size="icon" onClick={onICSExport} className="h-8 w-8" title="Exporter ICS">
+                <Download className="w-4 h-4" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={onOpenSettings} className="h-8 w-8" title="Paramètres">
               <Settings className="w-4 h-4" />
             </Button>
@@ -130,6 +144,14 @@ export function UnifiedToolbar({
               <DropdownMenuItem onClick={onImport}>
                 <Upload className="w-4 h-4 mr-2" />
                 Importer Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onICSImport}>
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                Importer ICS
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onICSExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Exporter ICS
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onOpenSettings}>
