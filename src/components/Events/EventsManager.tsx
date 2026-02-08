@@ -128,7 +128,7 @@ export function EventsManager({
     });
   }, [arrets, arretSort]);
 
-  // Sorted events (excluding RE/CP which are managed in settings)
+  // Sorted events (excluding RE/CP)
   const sortedEvents = useMemo(() => {
     const filteredEvents = events.filter(e => e.type !== 're' && e.type !== 'cp');
     return [...filteredEvents].sort((a, b) => {
@@ -158,6 +158,22 @@ export function EventsManager({
       }
     });
   }, [vacations, vacationSort]);
+
+  // Sorted absences (RE + CP)
+  const [absenceSort, setAbsenceSort] = useState<{ field: SortField; direction: SortDirection }>({ field: 'date', direction: 'asc' });
+  const sortedAbsences = useMemo(() => {
+    return events.filter(e => e.type === 're' || e.type === 'cp').sort((a, b) => {
+      const direction = absenceSort.direction === 'asc' ? 1 : -1;
+      switch (absenceSort.field) {
+        case 'date':
+          return direction * (a.startDate.getTime() - b.startDate.getTime());
+        case 'name':
+          return direction * a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+  }, [events, absenceSort]);
 
   // Toggle sort helper
   const toggleSort = (
@@ -264,12 +280,13 @@ export function EventsManager({
       <h2 className="text-xl font-bold text-foreground">Gestion des Événements</h2>
       
       <Tabs defaultValue="events" className="w-full">
-        <TabsList className="grid grid-cols-5 w-full">
-          <TabsTrigger value="events">Événements</TabsTrigger>
-          <TabsTrigger value="astreintes">Astreintes</TabsTrigger>
-          <TabsTrigger value="vacations">Vacances</TabsTrigger>
-          <TabsTrigger value="arrets">Arrêts</TabsTrigger>
-          <TabsTrigger value="holidays">Fériés</TabsTrigger>
+        <TabsList className="grid grid-cols-6 w-full">
+          <TabsTrigger value="events" className="text-xs sm:text-sm">Événements</TabsTrigger>
+          <TabsTrigger value="absences" className="text-xs sm:text-sm">Absences</TabsTrigger>
+          <TabsTrigger value="astreintes" className="text-xs sm:text-sm">Astreintes</TabsTrigger>
+          <TabsTrigger value="vacations" className="text-xs sm:text-sm">Vacances</TabsTrigger>
+          <TabsTrigger value="arrets" className="text-xs sm:text-sm">Arrêts</TabsTrigger>
+          <TabsTrigger value="holidays" className="text-xs sm:text-sm">Fériés</TabsTrigger>
         </TabsList>
 
         {/* Events Tab */}
@@ -412,6 +429,129 @@ export function EventsManager({
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
                     Aucun événement (RE et CP sont gérés dans les paramètres)
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TabsContent>
+
+        {/* Absences Tab (RE/CP) */}
+        <TabsContent value="absences" className="mt-4">
+          {onAddEvent && (
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <Button size="sm" onClick={() => setAddingNew('absence')}>
+                <Plus className="h-4 w-4 mr-2" /> Ajouter une absence
+              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Trier par:</span>
+                <SortButton field="date" label="Date" currentSort={absenceSort} setSort={setAbsenceSort} />
+                <SortButton field="name" label="Nom" currentSort={absenceSort} setSort={setAbsenceSort} />
+              </div>
+            </div>
+          )}
+          
+          {addingNew === 'absence' && onAddEvent && (
+            <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
+              <div className="flex gap-4 flex-wrap">
+                <Input
+                  placeholder="Nom (optionnel)"
+                  value={newItem.name || ''}
+                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                  className="flex-1 min-w-[200px]"
+                />
+                <Select value={newItem.absenceType || 're'} onValueChange={(v) => setNewItem({ ...newItem, absenceType: v })}>
+                  <SelectTrigger className="w-32 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="re">RE (Repos)</SelectItem>
+                    <SelectItem value="cp">CP (Congés)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-4 flex-wrap">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-background">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {newItem.startDate ? formatDate(newItem.startDate) : "Début"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-background">
+                    <Calendar mode="single" selected={newItem.startDate} onSelect={(date) => setNewItem({ ...newItem, startDate: date, endDate: date })} />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-background">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {newItem.endDate ? formatDate(newItem.endDate) : "Fin"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-background">
+                    <Calendar mode="single" selected={newItem.endDate} onSelect={(date) => setNewItem({ ...newItem, endDate: date })} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => {
+                  if (onAddEvent) {
+                    const type = newItem.absenceType || 're';
+                    onAddEvent({
+                      type: type as 're' | 'cp',
+                      name: newItem.name || (type === 're' ? 'RE' : 'CP'),
+                      startDate: newItem.startDate || new Date(),
+                      endDate: newItem.endDate || new Date(),
+                      color: type === 're' ? '#d1d5db' : '#9ca3af',
+                    });
+                    setAddingNew(null);
+                    setNewItem({});
+                  }
+                }}>Ajouter</Button>
+                <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>Annuler</Button>
+              </div>
+            </div>
+          )}
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Type</TableHead>
+                <TableHead>Nom</TableHead>
+                <TableHead>Début</TableHead>
+                <TableHead>Fin</TableHead>
+                <TableHead className="w-20">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedAbsences.map(absence => (
+                <TableRow key={absence.id}>
+                  <TableCell>
+                    <Badge variant={absence.type === 'cp' ? 'default' : 'secondary'}>
+                      {absence.type === 'cp' ? 'CP' : 'RE'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <EditableText value={absence.name} onSave={(name) => onUpdateEvent(absence.id, { name })} />
+                  </TableCell>
+                  <TableCell>
+                    <DateEditor date={absence.startDate} onSave={(date) => onUpdateEvent(absence.id, { startDate: date })} />
+                  </TableCell>
+                  <TableCell>
+                    <DateEditor date={absence.endDate} onSave={(date) => onUpdateEvent(absence.id, { endDate: date })} />
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="ghost" onClick={() => onDeleteEvent(absence.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {sortedAbsences.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    Aucune absence (RE ou CP)
                   </TableCell>
                 </TableRow>
               )}

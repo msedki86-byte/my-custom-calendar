@@ -1,9 +1,9 @@
-import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, Download, Upload, List, AlertTriangle, MoreVertical, FileText, FileSpreadsheet } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileText, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { format, getWeek } from 'date-fns';
+import { format, getWeek, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface UnifiedToolbarProps {
@@ -41,7 +41,9 @@ export function UnifiedToolbar({
   onExportPDF,
   onImport,
 }: UnifiedToolbarProps) {
-  const weekNumber = getWeek(currentDate, { locale: fr, weekStartsOn: 1 });
+  const weekNumberStart = getWeek(currentDate, { locale: fr, weekStartsOn: 1 });
+  const monthEnd = endOfMonth(currentDate);
+  const weekNumberEnd = getWeek(monthEnd, { locale: fr, weekStartsOn: 1 });
 
   return (
     <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border pb-3 space-y-3">
@@ -60,7 +62,10 @@ export function UnifiedToolbar({
             </h1>
             {viewMode === 'month' && (
               <p className="text-[10px] sm:text-xs text-muted-foreground">
-                Semaine {weekNumber}
+                {weekNumberStart === weekNumberEnd
+                  ? `Semaine ${weekNumberStart}`
+                  : `Semaines ${weekNumberStart} – ${weekNumberEnd}`
+                }
               </p>
             )}
           </div>
@@ -85,34 +90,16 @@ export function UnifiedToolbar({
           {/* Desktop: Show all buttons */}
           <div className="hidden sm:flex items-center gap-1">
             {onExportPDF && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onExportPDF}
-                className="h-8 w-8"
-                title="Exporter PDF"
-              >
+              <Button variant="ghost" size="icon" onClick={onExportPDF} className="h-8 w-8" title="Exporter PDF">
                 <FileText className="w-4 h-4" />
               </Button>
             )}
             {onImport && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onImport}
-                className="h-8 w-8"
-                title="Importer Excel"
-              >
+              <Button variant="ghost" size="icon" onClick={onImport} className="h-8 w-8" title="Importer Excel">
                 <FileSpreadsheet className="w-4 h-4" />
               </Button>
             )}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onOpenSettings}
-              className="h-8 w-8"
-              title="Paramètres"
-            >
+            <Button variant="ghost" size="icon" onClick={onOpenSettings} className="h-8 w-8" title="Paramètres">
               <Settings className="w-4 h-4" />
             </Button>
           </div>
@@ -152,7 +139,7 @@ export function UnifiedToolbar({
         </div>
       </div>
       
-      {/* Tabs for Calendar/Events/Conflicts - Desktop only */}
+      {/* Tabs - Desktop */}
       <div className="hidden sm:block overflow-x-auto -mx-3 px-3">
         <Tabs value={activeTab} onValueChange={onTabChange}>
           <TabsList className="h-9 w-full grid grid-cols-3 sm:w-auto sm:inline-flex">
@@ -189,7 +176,7 @@ export function UnifiedToolbar({
         </div>
       </div>
 
-      {/* View Mode Toggle + Navigation (only show when on calendar tab) */}
+      {/* View Mode Toggle + Navigation */}
       {activeTab === 'calendar' && (
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center rounded-lg border border-border bg-muted/50 p-0.5">
@@ -200,8 +187,7 @@ export function UnifiedToolbar({
               className="h-7 px-2 text-xs rounded-md gap-1"
             >
               <LayoutGrid className="w-3 h-3" />
-              <span className="hidden sm:inline">Année</span>
-              <span className="sm:hidden" translate="no">Année</span>
+              <span translate="no">Année</span>
             </Button>
             <Button 
               variant={viewMode === 'month' ? 'secondary' : 'ghost'} 
@@ -214,41 +200,20 @@ export function UnifiedToolbar({
             </Button>
           </div>
 
-          {/* Month/Year Navigation */}
           <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onPrevMonth}
-              className="h-8 w-8 rounded-md"
-            >
+            <Button variant="ghost" size="icon" onClick={onPrevMonth} className="h-8 w-8 rounded-md">
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onToday}
-              className="h-8 px-2 rounded-md text-xs font-medium"
-            >
+            <Button variant="ghost" size="sm" onClick={onToday} className="h-8 px-2 rounded-md text-xs font-medium">
               <span className="hidden sm:inline">Aujourd'hui</span>
               <span className="sm:hidden">Auj.</span>
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onNextMonth}
-              className="h-8 w-8 rounded-md"
-            >
+            <Button variant="ghost" size="icon" onClick={onNextMonth} className="h-8 w-8 rounded-md">
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
 
-          {/* Add Event Button - Primary action always visible */}
-          <Button 
-            onClick={onAddEvent}
-            size="sm"
-            className="h-8 gap-1 rounded-lg shadow-sm text-xs"
-          >
+          <Button onClick={onAddEvent} size="sm" className="h-8 gap-1 rounded-lg shadow-sm text-xs">
             <Plus className="w-3 h-3" />
             <span className="hidden xs:inline">Ajouter</span>
           </Button>

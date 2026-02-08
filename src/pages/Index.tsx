@@ -4,7 +4,6 @@ import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { UnifiedToolbar } from '@/components/Calendar/UnifiedToolbar';
 import { UnifiedCalendarGrid } from '@/components/Calendar/UnifiedCalendarGrid';
 import { UnifiedYearView } from '@/components/Calendar/UnifiedYearView';
-
 import { UnifiedArretBar } from '@/components/Calendar/UnifiedArretBar';
 import { UnifiedLegend } from '@/components/Calendar/UnifiedLegend';
 import { DayDetails } from '@/components/Calendar/DayDetails';
@@ -77,48 +76,37 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'year' | 'month'>('month');
   const [activeTab, setActiveTab] = useState('calendar');
 
-  // Global error handler for unhandled promise rejections (prevents blank screen)
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent) => {
       console.error("Unhandled rejection:", event.reason);
       toast.error("Une erreur inattendue s'est produite.");
-      event.preventDefault(); // Prevent crash
+      event.preventDefault();
     };
-
     window.addEventListener("unhandledrejection", handleRejection);
     return () => window.removeEventListener("unhandledrejection", handleRejection);
   }, []);
 
-  // Collapsible sections - collapsed by default on mobile
   const defaultSectionsExpanded = !isMobile;
-
   const yearAstreintes = getAstreintesForYear(currentDate.getFullYear());
 
-  // Swipe navigation handlers - intelligently handles month/year changes
+  // Swipe navigation
   const handleSwipeNext = useCallback(() => {
     try {
       if (viewMode === 'year') {
         const nextYear = currentDate.getFullYear() + 1;
         if (isNaN(nextYear) || nextYear < 1900 || nextYear > 2100) return;
-        const safeDate = new Date(nextYear, 0, 1);
-        if (!isNaN(safeDate.getTime())) {
-          goToDate(safeDate);
-        }
+        goToDate(new Date(nextYear, 0, 1));
       } else {
         if (currentDate.getMonth() === 11) {
           const nextYear = currentDate.getFullYear() + 1;
           if (isNaN(nextYear) || nextYear < 1900 || nextYear > 2100) return;
-          const safeDate = new Date(nextYear, 0, 1);
-          if (!isNaN(safeDate.getTime())) {
-            goToDate(safeDate);
-          }
+          goToDate(new Date(nextYear, 0, 1));
         } else {
           goToNextMonth();
         }
       }
     } catch (error) {
       console.error("Navigation error:", error);
-      toast.error("Erreur de navigation.");
     }
   }, [viewMode, currentDate, goToDate, goToNextMonth]);
 
@@ -127,31 +115,23 @@ const Index = () => {
       if (viewMode === 'year') {
         const prevYear = currentDate.getFullYear() - 1;
         if (isNaN(prevYear) || prevYear < 1900 || prevYear > 2100) return;
-        const safeDate = new Date(prevYear, 0, 1);
-        if (!isNaN(safeDate.getTime())) {
-          goToDate(safeDate);
-        }
+        goToDate(new Date(prevYear, 0, 1));
       } else {
         if (currentDate.getMonth() === 0) {
           const prevYear = currentDate.getFullYear() - 1;
           if (isNaN(prevYear) || prevYear < 1900 || prevYear > 2100) return;
-          const safeDate = new Date(prevYear, 11, 1);
-          if (!isNaN(safeDate.getTime())) {
-            goToDate(safeDate);
-          }
+          goToDate(new Date(prevYear, 11, 1));
         } else {
           goToPrevMonth();
         }
       }
     } catch (error) {
       console.error("Navigation error:", error);
-      toast.error("Erreur de navigation.");
     }
   }, [viewMode, currentDate, goToDate, goToPrevMonth]);
 
   const swipeHandlers = useSwipeNavigation(handleSwipeNext, handleSwipePrev);
 
-  // Get data for selected day
   const selectedDayData = selectedDate ? {
     events: getEventsForDate(selectedDate),
     astreinte: isAstreinteDay(selectedDate, currentAstreintes),
@@ -180,29 +160,11 @@ const Index = () => {
     color: string;
   }) => {
     if (eventData.type === 'event') {
-      addEvent({
-        type: 'event',
-        name: eventData.name,
-        startDate: eventData.startDate,
-        endDate: eventData.endDate,
-        color: eventData.color,
-      });
+      addEvent({ type: 'event', name: eventData.name, startDate: eventData.startDate, endDate: eventData.endDate, color: eventData.color });
     } else if (eventData.type === 're') {
-      addEvent({
-        type: 're',
-        name: eventData.name || 'RE',
-        startDate: eventData.startDate,
-        endDate: eventData.endDate,
-        color: settings.reColor,
-      });
+      addEvent({ type: 're', name: eventData.name || 'RE', startDate: eventData.startDate, endDate: eventData.endDate, color: settings.reColor });
     } else if (eventData.type === 'cp') {
-      addEvent({
-        type: 'cp',
-        name: eventData.name || 'CP',
-        startDate: eventData.startDate,
-        endDate: eventData.endDate,
-        color: settings.cpColor,
-      });
+      addEvent({ type: 'cp', name: eventData.name || 'CP', startDate: eventData.startDate, endDate: eventData.endDate, color: settings.cpColor });
     } else if (eventData.type === 'astreinte-ponctuelle') {
       addPonctualAstreinte(eventData.startDate, eventData.endDate, eventData.name);
     } else if (eventData.type === 'astreinte-cancelled') {
@@ -211,27 +173,11 @@ const Index = () => {
   }, [addEvent, addPonctualAstreinte, cancelAstreinteDates, settings.reColor, settings.cpColor]);
 
   const handleYearChange = useCallback((year: number) => {
-    try {
-      // Validate year is a valid number
-      const numericYear = typeof year === 'string' ? parseInt(year, 10) : year;
-      if (isNaN(numericYear) || numericYear < 1900 || numericYear > 2100) {
-        console.warn("Invalid year:", year);
-        return;
-      }
-
-      const safeMonth = Math.min(Math.max(currentDate.getMonth(), 0), 11);
-      const safeDate = new Date(numericYear, safeMonth, 1);
-
-      if (isNaN(safeDate.getTime())) {
-        console.warn("Invalid date created from year:", year);
-        return;
-      }
-
-      goToDate(safeDate);
-    } catch (error) {
-      console.error("Year change error:", error);
-      toast.error("Erreur lors du changement d'année.");
-    }
+    const numericYear = typeof year === 'string' ? parseInt(year, 10) : year;
+    if (isNaN(numericYear) || numericYear < 1900 || numericYear > 2100) return;
+    const safeMonth = Math.min(Math.max(currentDate.getMonth(), 0), 11);
+    const safeDate = new Date(numericYear, safeMonth, 1);
+    if (!isNaN(safeDate.getTime())) goToDate(safeDate);
   }, [currentDate, goToDate]);
 
   const openAddEventFromDetails = useCallback(() => {
@@ -239,52 +185,37 @@ const Index = () => {
     setAddEventOpen(true);
   }, []);
 
-  // Validate currentDate before rendering
   if (!(currentDate instanceof Date) || isNaN(currentDate.getTime())) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        Chargement du calendrier…
-      </div>
-    );
+    return <div className="p-4 text-center text-muted-foreground">Chargement du calendrier…</div>;
   }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="px-2 sm:px-4 lg:px-6 py-2 sm:py-4 max-w-7xl mx-auto">
-        {/* Unified Toolbar - Same options everywhere */}
         <UnifiedToolbar
           currentDate={currentDate}
           currentYear={currentDate.getFullYear()}
           viewMode={viewMode}
           activeTab={activeTab}
           onPrevMonth={viewMode === 'year' 
-            ? () => {
-                const y = currentDate.getFullYear() - 1;
-                if (y >= 1900 && y <= 2100) goToDate(new Date(y, 0, 1));
-              }
+            ? () => { const y = currentDate.getFullYear() - 1; if (y >= 1900 && y <= 2100) goToDate(new Date(y, 0, 1)); }
             : goToPrevMonth
           }
           onNextMonth={viewMode === 'year'
-            ? () => {
-                const y = currentDate.getFullYear() + 1;
-                if (y >= 1900 && y <= 2100) goToDate(new Date(y, 0, 1));
-              }
+            ? () => { const y = currentDate.getFullYear() + 1; if (y >= 1900 && y <= 2100) goToDate(new Date(y, 0, 1)); }
             : goToNextMonth
           }
           onToday={goToToday}
-          onAddEvent={() => {
-            setSelectedDate(new Date());
-            setAddEventOpen(true);
-          }}
+          onAddEvent={() => { setSelectedDate(new Date()); setAddEventOpen(true); }}
           onOpenSettings={() => setSettingsOpen(true)}
           onViewModeChange={setViewMode}
           onYearChange={handleYearChange}
           onTabChange={setActiveTab}
         />
 
-        {/* Calendar Tab Content */}
         {activeTab === 'calendar' && (
           <div className="mt-3 sm:mt-4">
-            {/* Export/Import buttons - Always visible */}
+            {/* Export/Import */}
             <div className="flex items-center justify-end gap-2 mb-3">
               <ExportPDF />
               <ExcelImport
@@ -295,38 +226,8 @@ const Index = () => {
               />
             </div>
 
-            {/* Collapsible Legend - FIRST */}
-            <div className="space-y-2 sm:space-y-3" data-legend-print>
-              <UnifiedLegend 
-                settings={settings} 
-                defaultExpanded={defaultSectionsExpanded}
-                arrets={arrets}
-                vacations={vacations}
-                events={events}
-                holidays={holidays}
-                astreintes={yearAstreintes}
-                ponctualAstreintes={ponctualAstreintes}
-                cancelledAstreinteDates={cancelledAstreinteDates}
-              />
-            </div>
-
-            {/* Collapsible Arrêts - SECOND */}
-            <div className="mt-2 sm:mt-3">
-              <UnifiedArretBar
-                arrets={arrets}
-                currentDate={currentDate}
-                settings={settings}
-                viewMode={viewMode}
-                defaultExpanded={defaultSectionsExpanded}
-              />
-            </div>
-
-            {/* Calendar View - Year or Month with swipe navigation */}
-            <div 
-              className="mt-3 sm:mt-4" 
-              data-calendar-print
-              {...swipeHandlers}
-            >
+            {/* Calendar View with swipe */}
+            <div className="mt-3 sm:mt-4" data-calendar-print {...swipeHandlers}>
               {viewMode === 'year' ? (
                 <UnifiedYearView
                   year={currentDate.getFullYear()}
@@ -370,10 +271,37 @@ const Index = () => {
                 />
               )}
             </div>
+
+            {/* Collapsible Arrêts - BELOW calendar */}
+            <div className="mt-2 sm:mt-3">
+              <UnifiedArretBar
+                arrets={arrets}
+                currentDate={currentDate}
+                settings={settings}
+                viewMode={viewMode}
+                defaultExpanded={defaultSectionsExpanded}
+              />
+            </div>
+
+            {/* Collapsible Legend - BELOW arrêts */}
+            <div className="mt-2 sm:mt-3 space-y-2 sm:space-y-3" data-legend-print>
+              <UnifiedLegend 
+                settings={settings} 
+                defaultExpanded={defaultSectionsExpanded}
+                viewMode={viewMode}
+                currentDate={currentDate}
+                arrets={arrets}
+                vacations={vacations}
+                events={events}
+                holidays={holidays}
+                astreintes={yearAstreintes}
+                ponctualAstreintes={ponctualAstreintes}
+                cancelledAstreinteDates={cancelledAstreinteDates}
+              />
+            </div>
           </div>
         )}
 
-        {/* Events Management Tab */}
         {activeTab === 'events' && (
           <div className="mt-3 sm:mt-4">
             <EventsManager
@@ -404,7 +332,6 @@ const Index = () => {
           </div>
         )}
 
-        {/* Conflicts Tab */}
         {activeTab === 'conflicts' && (
           <div className="mt-3 sm:mt-4">
             <ConflictsList
@@ -418,7 +345,6 @@ const Index = () => {
         )}
       </div>
 
-      {/* Day Details Drawer - Works on all screen sizes */}
       <DayDetails
         date={selectedDate || null}
         isOpen={dayDetailsOpen}
@@ -433,7 +359,6 @@ const Index = () => {
         settings={settings}
       />
 
-      {/* Settings Panel - Full functionality */}
       <SettingsPanel
         settings={settings}
         onUpdateSettings={updateSettings}
@@ -441,7 +366,6 @@ const Index = () => {
         onClose={() => setSettingsOpen(false)}
       />
 
-      {/* Add Event Dialog - Full functionality */}
       <AddEventDialog
         isOpen={addEventOpen}
         onClose={() => setAddEventOpen(false)}
@@ -450,12 +374,8 @@ const Index = () => {
         existingEvents={events.map(e => ({ name: e.name, startDate: e.startDate, endDate: e.endDate }))}
       />
 
-      {/* Backdrop for settings */}
       {settingsOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 z-40"
-          onClick={() => setSettingsOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setSettingsOpen(false)} />
       )}
     </div>
   );

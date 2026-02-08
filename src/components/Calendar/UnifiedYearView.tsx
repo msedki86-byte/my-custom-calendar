@@ -17,6 +17,7 @@ import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 import { useOrientation } from '@/hooks/useOrientation';
+import { getArretColor } from '@/lib/trancheColors';
 
 interface UnifiedYearViewProps {
   year: number;
@@ -40,13 +41,12 @@ interface UnifiedYearViewProps {
 
 const WEEKDAYS_SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-// Helper: compute bar spans for a week of days (vacations only)
-function computeWeekVacationBars(
-  vacations: Array<{ startDate: Date; endDate: Date; name: string; color: string }>,
+function computeWeekBars(
+  items: Array<{ startDate: Date; endDate: Date; name: string; color: string }>,
   weekDays: Date[]
-): Array<{ startCol: number; span: number; item: typeof vacations[0] }> {
-  const bars: Array<{ startCol: number; span: number; item: typeof vacations[0] }> = [];
-  vacations.forEach(item => {
+): Array<{ startCol: number; span: number; item: typeof items[0] }> {
+  const bars: Array<{ startCol: number; span: number; item: typeof items[0] }> = [];
+  items.forEach(item => {
     let startCol = -1;
     let span = 0;
     weekDays.forEach((day, index) => {
@@ -67,6 +67,7 @@ export function UnifiedYearView({
   settings,
   astreintes,
   vacations,
+  arrets,
   isAstreinteDay,
   hasConflict,
   isHoliday,
@@ -98,6 +99,7 @@ export function UnifiedYearView({
           settings={settings}
           astreintes={astreintes}
           vacations={vacations}
+          arrets={arrets}
           isAstreinteDay={isAstreinteDay}
           hasConflict={hasConflict}
           isHoliday={isHoliday}
@@ -118,6 +120,7 @@ function MonthMiniCard({
   settings,
   astreintes,
   vacations,
+  arrets,
   isAstreinteDay,
   hasConflict,
   isHoliday,
@@ -132,6 +135,7 @@ function MonthMiniCard({
   settings: CalendarSettings;
   astreintes: Astreinte[];
   vacations: Vacation[];
+  arrets: Arret[];
   isAstreinteDay: (date: Date, astreintes: Astreinte[]) => Astreinte | null;
   hasConflict: (date: Date, astreintes: Astreinte[]) => boolean;
   isHoliday: (date: Date) => Holiday | null;
@@ -153,10 +157,15 @@ function MonthMiniCard({
     weeks.push(days.slice(i, i + 7));
   }
 
-  // Only vacation bars (NO arrêt bars in annual view)
+  // Vacation bars
   const vacItems = vacations
     .filter(v => v.startDate <= monthEnd && v.endDate >= monthStart)
     .map(v => ({ ...v, color: v.color || settings.vacationColor }));
+
+  // Arrêt bars (AT only, NO prépa)
+  const arretATItems = arrets
+    .filter(a => a.type === 'arret' && a.startDate <= monthEnd && a.endDate >= monthStart)
+    .map(a => ({ ...a, color: a.color || getArretColor(a, settings) }));
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -185,8 +194,9 @@ function MonthMiniCard({
 
       <div className="p-0.5 sm:p-1">
         {weeks.map((week, weekIndex) => {
-          const weekVacBars = computeWeekVacationBars(vacItems, week);
-          const hasContextBars = weekVacBars.length > 0;
+          const weekVacBars = computeWeekBars(vacItems, week);
+          const weekArretBars = computeWeekBars(arretATItems, week);
+          const hasContextBars = weekVacBars.length > 0 || weekArretBars.length > 0;
 
           return (
             <div key={weekIndex}>
@@ -195,6 +205,18 @@ function MonthMiniCard({
                   {weekVacBars.map((bar, idx) => (
                     <div
                       key={`vac-${idx}`}
+                      className="h-[5px] sm:h-[6px] rounded-sm text-[5px] text-white flex items-center justify-center truncate"
+                      style={{
+                        backgroundColor: bar.item.color,
+                        marginLeft: `${(bar.startCol / 7) * 100}%`,
+                        width: `${(bar.span / 7) * 100}%`,
+                      }}
+                      title={bar.item.name}
+                    />
+                  ))}
+                  {weekArretBars.map((bar, idx) => (
+                    <div
+                      key={`arret-${idx}`}
                       className="h-[5px] sm:h-[6px] rounded-sm text-[5px] text-white flex items-center justify-center truncate"
                       style={{
                         backgroundColor: bar.item.color,

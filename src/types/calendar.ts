@@ -124,27 +124,27 @@ export const TRANCHE_COLORS = {
 } as const;
 
 export const defaultSettings: CalendarSettings = {
-  titleWeekColor: '#3b82f6',
-  titleWeekendColor: '#6366f1',
-  weekNumbersColor: '#64748b',
-  weekdaysColor: '#1e293b',
-  weekendDaysColor: '#94a3b8',
-  emptyCellsColor: '#f8fafc',
+  titleWeekColor: '#003A8F',
+  titleWeekendColor: '#E30613',
+  weekNumbersColor: '#4A4A4A',
+  weekdaysColor: '#003A8F',
+  weekendDaysColor: '#E6E6E6',
+  emptyCellsColor: '#FFFFFF',
   holidayPattern: 'stripes',
-  astreinteColor: '#f59e0b',
-  astreinteCancelledColor: '#9ca3af',
+  astreinteColor: '#FFCC00',
+  astreinteCancelledColor: '#4A4A4A',
   astreinteCancelledPattern: 'crosshatch',
-  astreintePonctuelleColor: '#ea580c',
-  eventColor: '#0ea5e9',
-  vacationColor: '#a855f7',
-  reColor: '#d1d5db',   // Gris clair pour RE
-  cpColor: '#9ca3af',   // Gris plus foncé pour CP
+  astreintePonctuelleColor: '#E30613',
+  eventColor: '#00AEEF',
+  vacationColor: '#4CAF50',
+  reColor: '#E6E6E6',
+  cpColor: '#4A4A4A',
   // Couleurs par tranche - Arrêts (obligatoires)
   arretTr2Color: TRANCHE_COLORS.Tr2,
   arretTr3Color: TRANCHE_COLORS.Tr3,
   arretTr4Color: TRANCHE_COLORS.Tr4,
   arretTr5Color: TRANCHE_COLORS.Tr5,
-  // Couleurs par tranche - Préparations (mêmes que AT, patterns différencient)
+  // Couleurs par tranche - Préparations
   prepaTr2Color: TRANCHE_COLORS.Tr2,
   prepaTr3Color: TRANCHE_COLORS.Tr3,
   prepaTr4Color: TRANCHE_COLORS.Tr4,
