@@ -2,11 +2,13 @@ import { useMemo } from 'react';
 import { CalendarSettings, modulePatterns, PatternType, Arret, Vacation, CalendarEvent, Holiday, Astreinte, CancelledAstreinteDate } from '@/types/calendar';
 import { CollapsibleSection } from './CollapsibleSection';
 import { cn } from '@/lib/utils';
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, isSameDay } from 'date-fns';
 
 interface UnifiedLegendProps {
   settings: CalendarSettings;
   defaultExpanded?: boolean;
   viewMode?: 'year' | 'month';
+  currentDate?: Date;
   arrets?: Arret[];
   vacations?: Vacation[];
   events?: CalendarEvent[];
@@ -30,6 +32,8 @@ const patternClasses: Record<PatternType, string> = {
 export function UnifiedLegend({ 
   settings, 
   defaultExpanded = true,
+  viewMode = 'year',
+  currentDate,
   arrets = [],
   vacations = [],
   events = [],
@@ -38,19 +42,41 @@ export function UnifiedLegend({
   ponctualAstreintes = [],
   cancelledAstreinteDates = [],
 }: UnifiedLegendProps) {
-  // Build legend dynamically based on what's present
+  // Compute the visible date range for contextual filtering
   const { mainItems, trancheItems, moduleItems } = useMemo(() => {
+    let rangeStart: Date;
+    let rangeEnd: Date;
+
+    if (currentDate) {
+      if (viewMode === 'year') {
+        rangeStart = startOfYear(currentDate);
+        rangeEnd = endOfYear(currentDate);
+      } else {
+        rangeStart = startOfMonth(currentDate);
+        rangeEnd = endOfMonth(currentDate);
+      }
+    } else {
+      // Fallback: show everything
+      rangeStart = new Date(1900, 0, 1);
+      rangeEnd = new Date(2200, 0, 1);
+    }
+
+    const inRange = (start: Date, end: Date) =>
+      start <= rangeEnd && end >= rangeStart;
+    const dateInRange = (d: Date) =>
+      d >= rangeStart && d <= rangeEnd;
+
     const main: Array<{ label: string; color: string; pattern: PatternType }> = [];
-    
-    // Check what types are present
-    const hasRegularAstreinte = astreintes.some(a => !a.isPonctuelle && !a.isCancelled);
-    const hasPonctuelle = ponctualAstreintes.length > 0;
-    const hasCancelled = cancelledAstreinteDates.length > 0;
-    const hasEvents = events.some(e => e.type === 'event');
-    const hasRE = events.some(e => e.type === 're');
-    const hasCP = events.some(e => e.type === 'cp');
-    const hasVacations = vacations.length > 0;
-    const hasHolidays = holidays.length > 0;
+
+    // Check what's visible in current range
+    const hasRegularAstreinte = astreintes.some(a => !a.isPonctuelle && !a.isCancelled && inRange(a.startDate, a.endDate));
+    const hasPonctuelle = ponctualAstreintes.some(a => inRange(a.startDate, a.endDate));
+    const hasCancelled = cancelledAstreinteDates.some(c => dateInRange(c.date));
+    const hasEvents = events.some(e => e.type === 'event' && inRange(e.startDate, e.endDate));
+    const hasRE = events.some(e => e.type === 're' && inRange(e.startDate, e.endDate));
+    const hasCP = events.some(e => e.type === 'cp' && inRange(e.startDate, e.endDate));
+    const hasVacations = vacations.some(v => inRange(v.startDate, v.endDate));
+    const hasHolidays = holidays.some(h => dateInRange(h.date));
 
     if (hasRegularAstreinte) main.push({ label: 'Astreinte', color: settings.astreinteColor, pattern: 'none' });
     if (hasPonctuelle) main.push({ label: 'Astr. ponctuelle', color: settings.astreintePonctuelleColor, pattern: 'none' });
@@ -61,16 +87,17 @@ export function UnifiedLegend({
     if (hasVacations) main.push({ label: 'Vacances', color: settings.vacationColor, pattern: 'none' });
     if (hasHolidays) main.push({ label: 'Jour férié', color: '#ef4444', pattern: 'stripes' });
 
-    // Tranche colors - only show tranches that have arrets
-    const presentTranches = new Set(arrets.map(a => a.tranche));
+    // Tranche colors - only show tranches visible in range
+    const visibleArrets = arrets.filter(a => inRange(a.startDate, a.endDate));
+    const presentTranches = new Set(visibleArrets.map(a => a.tranche));
     const tranches: Array<{ label: string; color: string }> = [];
     if (presentTranches.has('Tr2')) tranches.push({ label: 'AT Tr2', color: settings.arretTr2Color });
     if (presentTranches.has('Tr3')) tranches.push({ label: 'AT Tr3', color: settings.arretTr3Color });
     if (presentTranches.has('Tr4')) tranches.push({ label: 'AT Tr4', color: settings.arretTr4Color });
     if (presentTranches.has('Tr5')) tranches.push({ label: 'AT Tr5', color: settings.arretTr5Color });
 
-    // Module patterns - only show modules that have prepas
-    const presentModules = new Set(arrets.filter(a => a.type === 'prepa' && a.module).map(a => a.module!));
+    // Module patterns - only show modules visible in range
+    const presentModules = new Set(visibleArrets.filter(a => a.type === 'prepa' && a.module).map(a => a.module!));
     const modules: Array<{ label: string; pattern: PatternType }> = [];
     if (presentModules.has('M0')) modules.push({ label: 'M0', pattern: modulePatterns.M0 });
     if (presentModules.has('M1')) modules.push({ label: 'M1', pattern: modulePatterns.M1 });
@@ -80,9 +107,8 @@ export function UnifiedLegend({
     if (presentModules.has('M4')) modules.push({ label: 'M4', pattern: modulePatterns.M4 });
 
     return { mainItems: main, trancheItems: tranches, moduleItems: modules };
-  }, [settings, arrets, vacations, events, holidays, astreintes, ponctualAstreintes, cancelledAstreinteDates]);
+  }, [settings, arrets, vacations, events, holidays, astreintes, ponctualAstreintes, cancelledAstreinteDates, viewMode, currentDate]);
 
-  // Don't render if nothing to show
   if (mainItems.length === 0 && trancheItems.length === 0 && moduleItems.length === 0) return null;
 
   return (
@@ -92,7 +118,6 @@ export function UnifiedLegend({
       defaultExpanded={defaultExpanded}
     >
       <div className="p-3 sm:p-4 space-y-3">
-        {/* Main event types */}
         {mainItems.length > 0 && (
           <div>
             <h4 className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-2">Événements</h4>
@@ -113,7 +138,6 @@ export function UnifiedLegend({
           </div>
         )}
 
-        {/* Tranche colors */}
         {trancheItems.length > 0 && (
           <div>
             <h4 className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-2">Arrêts de Tranches</h4>
@@ -131,7 +155,6 @@ export function UnifiedLegend({
           </div>
         )}
 
-        {/* Module patterns */}
         {moduleItems.length > 0 && (
           <div>
             <h4 className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-2">Modules de préparation</h4>
