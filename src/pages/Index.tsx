@@ -13,7 +13,7 @@ import { SettingsPanel } from '@/components/Settings/SettingsPanel';
 import { AddEventDialog } from '@/components/Dialogs/AddEventDialog';
 import { EventsManager } from '@/components/Events/EventsManager';
 import { ConflictsList } from '@/components/Conflicts/ConflictsList';
-import { ExportPDF } from '@/components/Export/ExportPDF';
+import { exportPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { startOfWeek, getWeek } from 'date-fns';
@@ -75,6 +75,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'year' | 'month' | 'week'>('month');
@@ -244,22 +245,12 @@ const Index = () => {
           onViewModeChange={setViewMode}
           onYearChange={handleYearChange}
           onTabChange={setActiveTab}
+          onExportPDF={() => exportPDF(viewMode)}
+          onImport={() => setImportOpen(true)}
         />
 
         {activeTab === 'calendar' && (
-          <div className="mt-3 sm:mt-4">
-            {/* Export/Import */}
-            <div className="flex items-center justify-end gap-2 mb-3">
-              <ExportPDF viewMode={viewMode} />
-              <ExcelImport
-                onImportEvents={importEvents}
-                onImportVacations={importVacations}
-                onImportArrets={importArrets}
-                onImportHolidays={importHolidays}
-              />
-            </div>
-
-            {/* Collapsible Legend - ABOVE calendar */}
+          <div className="mt-2 sm:mt-3">
             <div className="mb-2 sm:mb-3" data-legend-print>
               <UnifiedLegend 
                 settings={settings} 
@@ -423,6 +414,15 @@ const Index = () => {
         onAdd={handleAddEvent}
         initialDate={selectedDate}
         existingEvents={events.map(e => ({ name: e.name, startDate: e.startDate, endDate: e.endDate }))}
+      />
+
+      <ExcelImport
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportEvents={importEvents}
+        onImportVacations={importVacations}
+        onImportArrets={importArrets}
+        onImportHolidays={importHolidays}
       />
 
       {settingsOpen && (

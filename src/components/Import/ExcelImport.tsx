@@ -12,6 +12,8 @@ interface ExcelImportProps {
   onImportVacations: (data: any[]) => void;
   onImportArrets: (data: any[]) => void;
   onImportHolidays: (data: any[]) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ExcelImport({
@@ -19,8 +21,16 @@ export function ExcelImport({
   onImportVacations,
   onImportArrets,
   onImportHolidays,
+  open: controlledOpen,
+  onOpenChange,
 }: ExcelImportProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (onOpenChange) onOpenChange(v);
+    if (!isControlled) setInternalOpen(v);
+  };
   const [importType, setImportType] = useState<ImportType>('events');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileText, FileSpreadsheet } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileDown, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,7 +48,7 @@ export function UnifiedToolbar({
   const weekNumberEnd = getWeek(monthEnd, { locale: fr, weekStartsOn: 1 });
 
   return (
-    <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border pb-3 space-y-3">
+    <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border pb-2 space-y-1.5">
       {/* Title Row with Year Selector */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -93,12 +93,12 @@ export function UnifiedToolbar({
           <div className="hidden sm:flex items-center gap-1">
             {onExportPDF && (
               <Button variant="ghost" size="icon" onClick={onExportPDF} className="h-8 w-8" title="Exporter PDF">
-                <FileText className="w-4 h-4" />
+                <FileDown className="w-4 h-4" />
               </Button>
             )}
             {onImport && (
               <Button variant="ghost" size="icon" onClick={onImport} className="h-8 w-8" title="Importer Excel">
-                <FileSpreadsheet className="w-4 h-4" />
+                <Upload className="w-4 h-4" />
               </Button>
             )}
             <Button variant="ghost" size="icon" onClick={onOpenSettings} className="h-8 w-8" title="Paramètres">
@@ -124,11 +124,11 @@ export function UnifiedToolbar({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onExportPDF}>
-                <FileText className="w-4 h-4 mr-2" />
+                <FileDown className="w-4 h-4 mr-2" />
                 Exporter PDF
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onImport}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                <Upload className="w-4 h-4 mr-2" />
                 Importer Excel
               </DropdownMenuItem>
               <DropdownMenuSeparator />
