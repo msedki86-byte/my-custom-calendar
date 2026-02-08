@@ -7,6 +7,7 @@ import { UnifiedYearView } from '@/components/Calendar/UnifiedYearView';
 import { UnifiedArretBar } from '@/components/Calendar/UnifiedArretBar';
 import { UnifiedLegend } from '@/components/Calendar/UnifiedLegend';
 import { DayDetails } from '@/components/Calendar/DayDetails';
+import { WeekTimeline } from '@/components/Calendar/WeekTimeline';
 import { SettingsPanel } from '@/components/Settings/SettingsPanel';
 import { AddEventDialog } from '@/components/Dialogs/AddEventDialog';
 import { EventsManager } from '@/components/Events/EventsManager';
@@ -14,6 +15,8 @@ import { ConflictsList } from '@/components/Conflicts/ConflictsList';
 import { ExportPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { startOfWeek, getWeek } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -73,9 +76,9 @@ const Index = () => {
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'year' | 'month'>('month');
+  const [viewMode, setViewMode] = useState<'year' | 'month' | 'week'>('month');
   const [activeTab, setActiveTab] = useState('calendar');
-
+  const [weekViewDate, setWeekViewDate] = useState<Date>(new Date());
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent) => {
       console.error("Unhandled rejection:", event.reason);
@@ -157,10 +160,12 @@ const Index = () => {
     name: string;
     startDate: Date;
     endDate: Date;
+    startTime?: string;
+    endTime?: string;
     color: string;
   }) => {
     if (eventData.type === 'event') {
-      addEvent({ type: 'event', name: eventData.name, startDate: eventData.startDate, endDate: eventData.endDate, color: eventData.color });
+      addEvent({ type: 'event', name: eventData.name, startDate: eventData.startDate, endDate: eventData.endDate, startTime: eventData.startTime, endTime: eventData.endTime, color: eventData.color });
     } else if (eventData.type === 're') {
       addEvent({ type: 're', name: eventData.name || 'RE', startDate: eventData.startDate, endDate: eventData.endDate, color: settings.reColor });
     } else if (eventData.type === 'cp') {
@@ -265,6 +270,17 @@ const Index = () => {
                   onMonthClick={handleMonthClick}
                   onDayClick={handleDayClick}
                 />
+              ) : viewMode === 'week' ? (
+                <WeekTimeline
+                  weekStartDate={weekViewDate}
+                  settings={settings}
+                  astreintes={currentAstreintes}
+                  isAstreinteDay={isAstreinteDay}
+                  isHoliday={isHoliday}
+                  getEventsForDate={getEventsForDate}
+                  isDateCancelled={isDateCancelled}
+                  onDayClick={handleDayClick}
+                />
               ) : (
                 <UnifiedCalendarGrid
                   currentDate={currentDate}
@@ -284,6 +300,10 @@ const Index = () => {
                   getNonREEventsForDate={getNonREEventsForDate}
                   isDateCancelled={isDateCancelled}
                   onDayClick={handleDayClick}
+                  onWeekNumberClick={(weekDate: Date) => {
+                    setWeekViewDate(weekDate);
+                    setViewMode('week');
+                  }}
                   showWeekNumbers={true}
                 />
               )}

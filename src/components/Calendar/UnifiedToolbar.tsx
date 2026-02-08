@@ -6,17 +6,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { format, getWeek, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+type ViewMode = 'year' | 'month' | 'week';
+
 interface UnifiedToolbarProps {
   currentDate: Date;
   currentYear: number;
-  viewMode: 'year' | 'month';
+  viewMode: ViewMode;
   activeTab: string;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
   onAddEvent: () => void;
   onOpenSettings: () => void;
-  onViewModeChange: (mode: 'year' | 'month') => void;
+  onViewModeChange: (mode: ViewMode) => void;
   onYearChange: (year: number) => void;
   onTabChange: (tab: string) => void;
   onExportPDF?: () => void;
@@ -197,6 +199,15 @@ export function UnifiedToolbar({
             >
               <CalendarIcon className="w-3 h-3" />
               Mois
+            </Button>
+            <Button 
+              variant={viewMode === 'week' ? 'secondary' : 'ghost'} 
+              size="sm"
+              onClick={() => onViewModeChange('week')}
+              className="h-7 px-2 text-xs rounded-md gap-1"
+            >
+              <List className="w-3 h-3" />
+              Sem.
             </Button>
           </div>
 

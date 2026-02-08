@@ -38,6 +38,8 @@ export interface CalendarEvent {
   name: string;
   startDate: Date;
   endDate: Date;
+  startTime?: string; // HH:mm format, e.g. "05:00"
+  endTime?: string;   // HH:mm format, e.g. "21:00"
   color: string;
   pattern?: PatternType;
   isRecurring?: boolean;

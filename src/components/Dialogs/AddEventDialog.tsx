@@ -28,6 +28,8 @@ interface AddEventDialogProps {
     name: string;
     startDate: Date;
     endDate: Date;
+    startTime?: string;
+    endTime?: string;
     color: string;
   }) => void;
   initialDate?: Date;
@@ -39,6 +41,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>(initialDate || new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(initialDate || new Date());
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime] = useState('17:00');
   const [color, setColor] = useState('#00AEEF');
   const [startPopoverOpen, setStartPopoverOpen] = useState(false);
   const [endPopoverOpen, setEndPopoverOpen] = useState(false);
@@ -98,6 +102,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
       name: name.trim(),
       startDate,
       endDate,
+      startTime: showTimePicker ? startTime : undefined,
+      endTime: showTimePicker ? endTime : undefined,
       color,
     });
     
@@ -105,6 +111,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
     setName('');
     setType('event');
     setColor('#00AEEF');
+    setStartTime('08:00');
+    setEndTime('17:00');
     setShowDuplicateWarning(false);
     onClose();
   };
@@ -126,6 +134,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
 
   // RE and CP don't need color picker - they use settings colors
   const showColorPicker = type === 'event';
+  // Show time picker for events and astreintes
+  const showTimePicker = type === 'event' || type === 'astreinte-ponctuelle';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -247,6 +257,33 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
               </Popover>
             </div>
           </div>
+          
+          {showTimePicker && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Heure début</Label>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  min="05:00"
+                  max="21:00"
+                  className="h-9"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Heure fin</Label>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  min="05:00"
+                  max="21:00"
+                  className="h-9"
+                />
+              </div>
+            </div>
+          )}
           
           {showColorPicker && (
             <div className="grid gap-2">
