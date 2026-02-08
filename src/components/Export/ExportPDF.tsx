@@ -3,7 +3,11 @@ import { FileDown } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-export function ExportPDF() {
+interface ExportPDFProps {
+  viewMode: 'year' | 'month';
+}
+
+export function ExportPDF({ viewMode }: ExportPDFProps) {
   const handleExport = async () => {
     const content = document.querySelector('[data-calendar-print]');
     if (!content) return alert('Calendrier non visible');
@@ -16,58 +20,69 @@ export function ExportPDF() {
       container.style.position = 'absolute';
       container.style.left = '-9999px';
       container.style.top = '0';
-      container.style.width = '1600px';
+      container.style.width = viewMode === 'year' ? '1800px' : '1600px';
       container.style.background = 'white';
-      container.style.padding = '12px';
+      container.style.padding = '16px';
 
-      // Legend first (above calendar)
+      // Clone calendar
+      const calClone = content.cloneNode(true) as HTMLElement;
+
+      // For year view: force 3 cols x 4 rows grid
+      if (viewMode === 'year') {
+        // The year view root is a grid div
+        calClone.style.display = 'grid';
+        calClone.style.gridTemplateColumns = 'repeat(4, 1fr)';
+        calClone.style.gap = '12px';
+        // Remove any grid class overrides
+        calClone.className = calClone.className
+          .replace(/grid-cols-\d/g, '')
+          .replace(/sm:grid-cols-\d/g, '')
+          .replace(/lg:grid-cols-\d/g, '');
+      }
+
+      // Legend clone - force expanded
       if (legendSection) {
         const legendClone = legendSection.cloneNode(true) as HTMLElement;
-        legendClone.style.marginBottom = '12px';
-        // Force expand any collapsed sections
-        const collapsedContent = legendClone.querySelectorAll('[data-state="closed"]');
-        collapsedContent.forEach(el => {
+        legendClone.style.marginBottom = '16px';
+        // Force expand all collapsed sections
+        legendClone.querySelectorAll('[data-state="closed"]').forEach(el => {
           (el as HTMLElement).setAttribute('data-state', 'open');
         });
-        const hiddenSections = legendClone.querySelectorAll('[class*="max-h-0"], [class*="hidden"]');
-        hiddenSections.forEach(el => {
-          (el as HTMLElement).style.maxHeight = '2000px';
-          (el as HTMLElement).style.opacity = '1';
-          (el as HTMLElement).style.overflow = 'visible';
-          (el as HTMLElement).style.display = 'block';
-          (el as HTMLElement).classList.remove('hidden');
-        });
-        // Also force overflow visible on all children
         legendClone.querySelectorAll('*').forEach(el => {
-          const style = getComputedStyle(el as Element);
-          if (style.maxHeight === '0px' || style.display === 'none') {
-            (el as HTMLElement).style.maxHeight = '2000px';
-            (el as HTMLElement).style.display = 'block';
-            (el as HTMLElement).style.opacity = '1';
+          const htmlEl = el as HTMLElement;
+          const style = getComputedStyle(htmlEl);
+          if (style.maxHeight === '0px' || style.display === 'none' || style.height === '0px') {
+            htmlEl.style.maxHeight = '2000px';
+            htmlEl.style.height = 'auto';
+            htmlEl.style.display = 'block';
+            htmlEl.style.opacity = '1';
+            htmlEl.style.overflow = 'visible';
+          }
+          if (htmlEl.classList.contains('hidden')) {
+            htmlEl.classList.remove('hidden');
+            htmlEl.style.display = 'block';
           }
         });
         container.appendChild(legendClone);
       }
 
-      const calClone = content.cloneNode(true) as HTMLElement;
       container.appendChild(calClone);
-
       document.body.appendChild(container);
 
       const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        width: 1600,
+        width: viewMode === 'year' ? 1800 : 1600,
       });
 
       document.body.removeChild(container);
 
-      // A4 landscape - fill entire page
+      // A4 landscape
       const pdf = new jsPDF('landscape', 'mm', 'a4');
       const pageWidth = 297;
       const pageHeight = 210;
-      const margin = 3;
+      const margin = 4;
       const availableWidth = pageWidth - margin * 2;
       const availableHeight = pageHeight - margin * 2;
 
@@ -75,19 +90,19 @@ export function ExportPDF() {
       let imgWidth = availableWidth;
       let imgHeight = imgWidth * imgRatio;
 
-      // If too tall, scale to fit height and stretch width to fill
       if (imgHeight > availableHeight) {
         imgHeight = availableHeight;
         imgWidth = imgHeight / imgRatio;
       }
 
-      // Center horizontally
       const xOffset = margin + (availableWidth - imgWidth) / 2;
       const yOffset = margin;
 
       const imgData = canvas.toDataURL('image/png');
       pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
-      pdf.save(`calendrier-${new Date().getFullYear()}.pdf`);
+      
+      const suffix = viewMode === 'year' ? 'annuel' : 'mensuel';
+      pdf.save(`calendrier-${suffix}-${new Date().getFullYear()}.pdf`);
     } catch (err) {
       console.error('PDF export error:', err);
       alert("Erreur lors de l'export PDF. Veuillez réessayer.");

@@ -126,6 +126,11 @@ export function useCalendar() {
 
   /* ================= ASTREINTES ================= */
 
+  // Check if a date is a holiday
+  const isHolidayDate = useCallback((date: Date): boolean => {
+    return holidays.some(h => isSameDay(date, h.date));
+  }, [holidays]);
+
   const generateAstreintes = useCallback((startDate: Date, endDate: Date): Astreinte[] => {
     const astreintes: Astreinte[] = [];
     const astreinteStartDate = new Date(settings.astreinteStartDate || '2026-02-05T00:00:00.000Z');
@@ -142,11 +147,23 @@ export function useCalendar() {
     currentStart = addWeeks(currentStart, -ASTREINTE_CYCLE_WEEKS);
 
     while (currentStart <= endDate) {
-      const astreinteEnd = addDays(currentStart, 7);
+      let astStart = new Date(currentStart);
+      let astEnd = addDays(currentStart, 7);
+
+      // Holiday boundary rule:
+      // If start Thursday is a holiday, start one day earlier (Wednesday)
+      if (isHolidayDate(astStart)) {
+        astStart = addDays(astStart, -1);
+      }
+      // If end Thursday is a holiday, end one day earlier (Wednesday)
+      if (isHolidayDate(astEnd)) {
+        astEnd = addDays(astEnd, -1);
+      }
+
       astreintes.push({
         id: `astreinte-${format(currentStart, 'yyyy-MM-dd')}`,
-        startDate: new Date(currentStart),
-        endDate: astreinteEnd,
+        startDate: astStart,
+        endDate: astEnd,
         isCancelled: false,
         isPonctuelle: false,
       });
@@ -160,7 +177,7 @@ export function useCalendar() {
     });
 
     return astreintes;
-  }, [ponctualAstreintes, settings.astreinteStartDate]);
+  }, [ponctualAstreintes, settings.astreinteStartDate, isHolidayDate]);
 
   /* ================= NAVIGATION ================= */
 
