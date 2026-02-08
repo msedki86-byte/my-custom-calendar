@@ -61,6 +61,8 @@ export interface CancelledAstreinteDate {
   date: Date;
   name: string;
   astreinteId: string; // Reference to the parent astreinte
+  startTime?: string; // HH:mm format, e.g. "00:00"
+  endTime?: string;   // HH:mm format, e.g. "23:59"
 }
 
 export interface Vacation {
