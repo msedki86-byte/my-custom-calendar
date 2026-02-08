@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarEvent, Vacation, Arret, Holiday, Astreinte, CancelledAstreinteDate, PatternType } from '@/types/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
+import { isWeekend, eachDayOfInterval } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
@@ -63,7 +65,7 @@ interface EventsManagerProps {
   onAddArret: (arret: Omit<Arret, 'id'>) => void;
   onAddHoliday: (holiday: Holiday) => void;
   onAddPonctualAstreinte: (startDate: Date, endDate: Date, name?: string) => void;
-  onCancelAstreinteDates: (startDate: Date, endDate: Date, name: string) => void;
+  onCancelAstreinteDates: (startDate: Date, endDate: Date, name: string, startTime?: string, endTime?: string) => void;
   onAddEvent?: (event: Omit<CalendarEvent, 'id'>) => void;
 }
 
@@ -250,18 +252,35 @@ export function EventsManager({
       );
     } else if (type === 'cancelled') {
       if (newItem.startDate && newItem.endDate && newItem.name) {
-        onCancelAstreinteDates(newItem.startDate, newItem.endDate, newItem.name);
+        onCancelAstreinteDates(newItem.startDate, newItem.endDate, newItem.name, newItem.startTime || '00:00', newItem.endTime || '23:59');
       }
     } else if (type === 'event' && onAddEvent) {
-      onAddEvent({
-        type: (newItem.eventType as 'event' | 're' | 'cp') || 'event',
-        name: newItem.name || 'Nouvel événement',
-        startDate: newItem.startDate || new Date(),
-        endDate: newItem.endDate || new Date(),
-        color: newItem.color || '#0ea5e9',
-        startTime: newItem.startTime || undefined,
-        endTime: newItem.endTime || undefined,
-      });
+      const eventType = (newItem.eventType as 'event' | 're' | 'cp') || 'event';
+      const eventName = newItem.name || 'Nouvel événement';
+      const startDate = newItem.startDate || new Date();
+      const endDate = newItem.endDate || new Date();
+      const color = newItem.color || '#0ea5e9';
+      
+      if (newItem.excludeWeekends && startDate.getTime() !== endDate.getTime()) {
+        const days = eachDayOfInterval({ start: startDate, end: endDate });
+        const weekdays = days.filter(d => !isWeekend(d));
+        let rangeStart: Date | null = null;
+        let rangeEnd: Date | null = null;
+        weekdays.forEach((day, i) => {
+          if (!rangeStart) { rangeStart = day; rangeEnd = day; return; }
+          const prevDay = weekdays[i - 1];
+          const diff = (day.getTime() - prevDay.getTime()) / (1000 * 60 * 60 * 24);
+          if (diff === 1) { rangeEnd = day; } else {
+            onAddEvent({ type: eventType, name: eventName, startDate: rangeStart, endDate: rangeEnd!, color, startTime: newItem.startTime, endTime: newItem.endTime });
+            rangeStart = day; rangeEnd = day;
+          }
+        });
+        if (rangeStart && rangeEnd) {
+          onAddEvent({ type: eventType, name: eventName, startDate: rangeStart, endDate: rangeEnd, color, startTime: newItem.startTime, endTime: newItem.endTime });
+        }
+      } else {
+        onAddEvent({ type: eventType, name: eventName, startDate, endDate, color, startTime: newItem.startTime, endTime: newItem.endTime });
+      }
     }
     setAddingNew(null);
     setNewItem({});
@@ -387,6 +406,19 @@ export function EventsManager({
                       placeholder="HH:mm"
                     />
                   </div>
+                </div>
+              )}
+              {/* Weekend exclusion checkbox */}
+              {newItem.startDate && newItem.endDate && newItem.startDate.getTime() !== newItem.endDate.getTime() && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="exclude-weekends-event"
+                    checked={newItem.excludeWeekends || false}
+                    onCheckedChange={(checked) => setNewItem({ ...newItem, excludeWeekends: !!checked })}
+                  />
+                  <label htmlFor="exclude-weekends-event" className="text-sm text-muted-foreground cursor-pointer">
+                    Exclure les week-ends
+                  </label>
                 </div>
               )}
               <div className="flex gap-2">
@@ -538,17 +570,48 @@ export function EventsManager({
                   </PopoverContent>
                 </Popover>
               </div>
+              {/* Weekend exclusion for absences */}
+              {newItem.startDate && newItem.endDate && newItem.startDate.getTime() !== newItem.endDate.getTime() && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="exclude-weekends-absence"
+                    checked={newItem.excludeWeekends || false}
+                    onCheckedChange={(checked) => setNewItem({ ...newItem, excludeWeekends: !!checked })}
+                  />
+                  <label htmlFor="exclude-weekends-absence" className="text-sm text-muted-foreground cursor-pointer">
+                    Exclure les week-ends
+                  </label>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => {
                   if (onAddEvent) {
-                    const type = newItem.absenceType || 're';
-                    onAddEvent({
-                      type: type as 're' | 'cp',
-                      name: newItem.name || (type === 're' ? 'RE' : 'CP'),
-                      startDate: newItem.startDate || new Date(),
-                      endDate: newItem.endDate || new Date(),
-                      color: type === 're' ? '#d1d5db' : '#9ca3af',
-                    });
+                    const type = (newItem.absenceType || 're') as 're' | 'cp';
+                    const name = newItem.name || (type === 're' ? 'RE' : 'CP');
+                    const startDate = newItem.startDate || new Date();
+                    const endDate = newItem.endDate || new Date();
+                    const color = type === 're' ? '#d1d5db' : '#9ca3af';
+                    
+                    if (newItem.excludeWeekends && startDate.getTime() !== endDate.getTime()) {
+                      const days = eachDayOfInterval({ start: startDate, end: endDate });
+                      const weekdays = days.filter(d => !isWeekend(d));
+                      let rangeStart: Date | null = null;
+                      let rangeEnd: Date | null = null;
+                      weekdays.forEach((day, i) => {
+                        if (!rangeStart) { rangeStart = day; rangeEnd = day; return; }
+                        const prevDay = weekdays[i - 1];
+                        const diff = (day.getTime() - prevDay.getTime()) / (1000 * 60 * 60 * 24);
+                        if (diff === 1) { rangeEnd = day; } else {
+                          onAddEvent({ type, name, startDate: rangeStart, endDate: rangeEnd!, color });
+                          rangeStart = day; rangeEnd = day;
+                        }
+                      });
+                      if (rangeStart && rangeEnd) {
+                        onAddEvent({ type, name, startDate: rangeStart, endDate: rangeEnd, color });
+                      }
+                    } else {
+                      onAddEvent({ type, name, startDate, endDate, color });
+                    }
                     setAddingNew(null);
                     setNewItem({});
                   }
@@ -763,6 +826,26 @@ export function EventsManager({
                       </PopoverContent>
                     </Popover>
                   </div>
+                  <div className="flex gap-4 flex-wrap items-center">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-muted-foreground whitespace-nowrap">De</label>
+                      <Input
+                        type="time"
+                        value={newItem.startTime ?? '00:00'}
+                        onChange={(e) => setNewItem({ ...newItem, startTime: e.target.value })}
+                        className="w-28 h-8 text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-muted-foreground whitespace-nowrap">À</label>
+                      <Input
+                        type="time"
+                        value={newItem.endTime ?? '23:59'}
+                        onChange={(e) => setNewItem({ ...newItem, endTime: e.target.value })}
+                        className="w-28 h-8 text-sm"
+                      />
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleAddNew('cancelled')}>{"Annuler ces jours"}</Button>
                     <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>{"Annuler"}</Button>
@@ -775,6 +858,7 @@ export function EventsManager({
                   <TableRow>
                     <TableHead>Remplaçant</TableHead>
                     <TableHead>Date(s)</TableHead>
+                    <TableHead>Horaires</TableHead>
                     <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -783,6 +867,11 @@ export function EventsManager({
                     <TableRow key={name}>
                       <TableCell>
                         <Badge variant="secondary">{name}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {dates[0]?.startTime || '00:00'} — {dates[0]?.endTime || '23:59'}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
@@ -807,7 +896,7 @@ export function EventsManager({
                   ))}
                   {cancelledAstreinteDates.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
                         Aucun jour annulé
                       </TableCell>
                     </TableRow>

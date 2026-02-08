@@ -115,6 +115,7 @@ export interface CalendarSettings {
   astreintePonctuelleColor: string;
   // Vacances scolaires
   vacationColor: string;
+  vacationTextColor: string;
   // RE / CP
   reColor: string;
   cpColor: string;
@@ -165,6 +166,7 @@ export const defaultSettings: CalendarSettings = {
   astreintePonctuelleColor: '#E30613',
   // Vacances
   vacationColor: '#4CAF50',
+  vacationTextColor: '#2D2A00',
   // RE / CP
   reColor: '#E6E6E6',
   cpColor: '#4A4A4A',
