@@ -214,12 +214,40 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
           {/* Arrêts par tranche */}
           <section>
             <h3 className="text-sm font-semibold text-foreground mb-3">Arrêts par tranche</h3>
-            <div className="space-y-3">
-              <ColorPicker label="Arrêt Tr2" value={settings.arretTr2Color} onChange={(v) => onUpdateSettings({ arretTr2Color: v })} />
-              <ColorPicker label="Arrêt Tr3" value={settings.arretTr3Color} onChange={(v) => onUpdateSettings({ arretTr3Color: v })} />
-              <ColorPicker label="Arrêt Tr4" value={settings.arretTr4Color} onChange={(v) => onUpdateSettings({ arretTr4Color: v })} />
-              <ColorPicker label="Arrêt Tr5" value={settings.arretTr5Color} onChange={(v) => onUpdateSettings({ arretTr5Color: v })} />
-            </div>
+            {!pinUnlocked ? (
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Protégé par code PIN (identique à la récurrence)</span>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    maxLength={4}
+                    placeholder="Code PIN (4 chiffres)"
+                    value={pinInput}
+                    onChange={(e) => { setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(false); }}
+                    className="h-8 text-sm flex-1"
+                  />
+                  <Button size="sm" className="h-8" onClick={handlePinSubmit}>
+                    <Unlock className="w-3 h-3" />
+                  </Button>
+                </div>
+                {pinError && <p className="text-xs text-destructive">Code incorrect</p>}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-2 bg-primary/5 rounded border border-primary/20">
+                  <p className="text-xs text-primary mb-2">🔓 Déverrouillé</p>
+                  <div className="space-y-3">
+                    <ColorPicker label="Arrêt Tr2" value={settings.arretTr2Color} onChange={(v) => onUpdateSettings({ arretTr2Color: v })} />
+                    <ColorPicker label="Arrêt Tr3" value={settings.arretTr3Color} onChange={(v) => onUpdateSettings({ arretTr3Color: v })} />
+                    <ColorPicker label="Arrêt Tr4" value={settings.arretTr4Color} onChange={(v) => onUpdateSettings({ arretTr4Color: v })} />
+                    <ColorPicker label="Arrêt Tr5" value={settings.arretTr5Color} onChange={(v) => onUpdateSettings({ arretTr5Color: v })} />
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Info */}

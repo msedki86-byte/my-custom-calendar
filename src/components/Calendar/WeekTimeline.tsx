@@ -116,9 +116,27 @@ export function WeekTimeline({
                 />
               ))}
 
+              {/* Separator lines at 8h, 12h, 12h45, 16h45 */}
+              {[
+                { time: '08:00', color: 'hsl(var(--primary))', width: 2 },
+                { time: '12:00', color: 'hsl(var(--destructive))', width: 1.5 },
+                { time: '12:45', color: 'hsl(var(--destructive))', width: 1.5 },
+                { time: '16:45', color: 'hsl(var(--primary))', width: 2 },
+              ].map(({ time, color, width }) => {
+                const minutes = parseInt(time.split(':')[0]) * 60 + parseInt(time.split(':')[1]);
+                const top = ((minutes - START_HOUR * 60) / (TOTAL_HOURS * 60)) * (TOTAL_HOURS * HOUR_HEIGHT);
+                return (
+                  <div
+                    key={time}
+                    className="absolute left-0 right-0 z-[5]"
+                    style={{ top, height: width, backgroundColor: color, opacity: 0.5 }}
+                  />
+                );
+              })}
+
               {/* Astreinte background */}
               {hasActiveAstreinte && (() => {
-                const pos = getTopAndHeight('08:00', '21:00');
+                const pos = getTopAndHeight('05:00', '21:00'); // Astreintes are 24h
                 return (
                   <div
                     className="absolute inset-x-0.5 rounded-sm opacity-15"
@@ -135,7 +153,7 @@ export function WeekTimeline({
 
               {/* Cancelled background */}
               {cancelled && !hasActiveAstreinte && (() => {
-                const pos = getTopAndHeight('08:00', '21:00');
+                const pos = getTopAndHeight('05:00', '21:00');
                 return (
                   <div
                     className="absolute inset-x-0.5 rounded-sm opacity-20 pattern-crosshatch"
