@@ -7,7 +7,7 @@ import { startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, isS
 interface UnifiedLegendProps {
   settings: CalendarSettings;
   defaultExpanded?: boolean;
-  viewMode?: 'year' | 'month';
+  viewMode?: 'year' | 'month' | 'week';
   currentDate?: Date;
   arrets?: Arret[];
   vacations?: Vacation[];

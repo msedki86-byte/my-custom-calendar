@@ -37,6 +37,7 @@ interface UnifiedCalendarGridProps {
   getNonREEventsForDate: (date: Date) => CalendarEvent[];
   isDateCancelled: (date: Date) => CancelledAstreinteDate | null;
   onDayClick?: (date: Date) => void;
+  onWeekNumberClick?: (weekStartDate: Date) => void;
   showWeekNumbers?: boolean;
 }
 
@@ -88,6 +89,7 @@ export function UnifiedCalendarGrid({
   getNonREEventsForDate,
   isDateCancelled,
   onDayClick,
+  onWeekNumberClick,
   showWeekNumbers = true,
 }: UnifiedCalendarGridProps) {
   const { isMobileLandscape } = useOrientation();
@@ -238,9 +240,13 @@ export function UnifiedCalendarGrid({
               )}>
                 {/* Week number */}
                 {showWeekNumbers && (
-                  <div className="flex items-center justify-center text-[8px] sm:text-[10px] lg:text-xs font-medium border-r border-border min-h-[50px] sm:min-h-[60px] lg:min-h-[80px]" style={{ backgroundColor: settings.weekNumberBgColor, color: settings.weekNumberTextColor }}>
+                  <button 
+                    onClick={() => onWeekNumberClick?.(week[0])}
+                    className="flex items-center justify-center text-[8px] sm:text-[10px] lg:text-xs font-medium border-r border-border min-h-[50px] sm:min-h-[60px] lg:min-h-[80px] hover:bg-accent/30 transition-colors cursor-pointer" 
+                    style={{ backgroundColor: settings.weekNumberBgColor, color: settings.weekNumberTextColor }}
+                  >
                     {weekNumber}
-                  </div>
+                  </button>
                 )}
                 
                 {week.map((day, dayIndex) => {
@@ -272,7 +278,9 @@ export function UnifiedCalendarGrid({
 
                   // Determine background color
                   let cellBgColor = undefined;
-                  if (showCPBackground && isCurrentMonth) {
+                  if (cancelled && isCurrentMonth && !hasActiveAstreinte) {
+                    cellBgColor = settings.astreinteCancelledColor;
+                  } else if (showCPBackground && isCurrentMonth) {
                     cellBgColor = settings.cpColor;
                   } else if (showREBackground && isCurrentMonth) {
                     cellBgColor = settings.reColor;
@@ -382,27 +390,37 @@ export function UnifiedCalendarGrid({
                           </div>
                         )}
                         
-                        {/* Event bars (non-RE/CP) - only if no full-cell astreinte */}
-                        {!hasActiveAstreinte && !cancelled && (
-                          <div className="space-y-0.5">
-                            {events.slice(0, 2).map((event, idx) => (
-                              <div 
-                                key={event.id || idx}
-                                className="h-2.5 sm:h-3 lg:h-4 rounded text-[6px] sm:text-[7px] lg:text-[9px] text-white font-medium flex items-center px-0.5 truncate"
-                                style={{ backgroundColor: event.color }}
-                              >
-                                {event.name}
-                              </div>
-                            ))}
-                            
-                            {/* More events indicator */}
-                            {events.length > 2 && isCurrentMonth && (
-                              <div className="text-[6px] sm:text-[8px] text-muted-foreground">
-                                +{events.length - 2} autres
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        {/* Event bars (non-RE/CP) - sorted by time for approximate positioning */}
+                        {!hasActiveAstreinte && !cancelled && (() => {
+                          // Sort events: those with startTime first (by time), then without
+                          const sortedEvents = [...events].sort((a, b) => {
+                            const aMin = a.startTime ? parseInt(a.startTime.split(':')[0]) * 60 + parseInt(a.startTime.split(':')[1] || '0') : 0;
+                            const bMin = b.startTime ? parseInt(b.startTime.split(':')[0]) * 60 + parseInt(b.startTime.split(':')[1] || '0') : 0;
+                            return aMin - bMin;
+                          });
+                          return (
+                            <div className="space-y-0.5">
+                              {sortedEvents.slice(0, 2).map((event, idx) => (
+                                <div 
+                                  key={event.id || idx}
+                                  className="h-2.5 sm:h-3 lg:h-4 rounded text-[6px] sm:text-[7px] lg:text-[9px] text-white font-medium flex items-center px-0.5 truncate"
+                                  style={{ backgroundColor: event.color }}
+                                  title={`${event.name}${event.startTime ? ` (${event.startTime}-${event.endTime})` : ''}`}
+                                >
+                                  {event.startTime && <span className="mr-0.5 opacity-70">{event.startTime}</span>}
+                                  {event.name}
+                                </div>
+                              ))}
+                              
+                              {/* More events indicator */}
+                              {sortedEvents.length > 2 && isCurrentMonth && (
+                                <div className="text-[6px] sm:text-[8px] text-muted-foreground">
+                                  +{sortedEvents.length - 2} autres
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </button>
                   );

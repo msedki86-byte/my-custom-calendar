@@ -9,7 +9,7 @@ interface UnifiedArretBarProps {
   arrets: Arret[];
   currentDate: Date;
   settings: CalendarSettings;
-  viewMode: 'year' | 'month';
+  viewMode: 'year' | 'month' | 'week';
   defaultExpanded?: boolean;
 }
 
