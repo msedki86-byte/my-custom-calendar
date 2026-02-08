@@ -57,7 +57,8 @@ export function DayTimeline({
   // Astreinte positioning (default 8h-8h but clamped to view)
   const astreintePosition = useMemo(() => {
     if (!hasActiveAstreinte) return null;
-    return getTopAndHeight('08:00', '21:00'); // Show from 8h to end of visible range
+    // Astreintes run 24h (jeudi 8h → jeudi suivant 7h59), so cover full visible range
+    return getTopAndHeight('05:00', '21:00');
   }, [hasActiveAstreinte]);
 
   return (
@@ -107,6 +108,27 @@ export function DayTimeline({
             </span>
           </div>
         ))}
+
+        {/* Separator lines at 8h, 12h, 12h45, 16h45 */}
+        {[
+          { time: '08:00', label: '8h', color: 'hsl(var(--primary))', width: 2 },
+          { time: '12:00', label: '12h', color: 'hsl(var(--destructive))', width: 1.5 },
+          { time: '12:45', label: '12h45', color: 'hsl(var(--destructive))', width: 1.5 },
+          { time: '16:45', label: '16h45', color: 'hsl(var(--primary))', width: 2 },
+        ].map(({ time, label, color, width }) => {
+          const minutes = parseInt(time.split(':')[0]) * 60 + parseInt(time.split(':')[1]);
+          const top = ((minutes - START_HOUR * 60) / (TOTAL_HOURS * 60)) * (TOTAL_HOURS * HOUR_HEIGHT);
+          return (
+            <div
+              key={time}
+              className="absolute left-10 right-0 z-[5] flex items-center"
+              style={{ top }}
+            >
+              <div className="flex-1" style={{ height: width, backgroundColor: color, opacity: 0.5 }} />
+              <span className="text-[8px] font-mono ml-1 -mt-[6px]" style={{ color }}>{label}</span>
+            </div>
+          );
+        })}
 
         {/* Astreinte background band */}
         {astreintePosition && (

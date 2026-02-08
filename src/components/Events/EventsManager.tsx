@@ -259,6 +259,8 @@ export function EventsManager({
         startDate: newItem.startDate || new Date(),
         endDate: newItem.endDate || new Date(),
         color: newItem.color || '#0ea5e9',
+        startTime: newItem.startTime || undefined,
+        endTime: newItem.endTime || undefined,
       });
     }
     setAddingNew(null);
@@ -363,6 +365,30 @@ export function EventsManager({
                   />
                 )}
               </div>
+              {newItem.eventType !== 're' && newItem.eventType !== 'cp' && (
+                <div className="flex gap-4 flex-wrap items-center">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">Début</label>
+                    <Input
+                      type="time"
+                      value={newItem.startTime || ''}
+                      onChange={(e) => setNewItem({ ...newItem, startTime: e.target.value })}
+                      className="w-28 h-8 text-sm"
+                      placeholder="HH:mm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">Fin</label>
+                    <Input
+                      type="time"
+                      value={newItem.endTime || ''}
+                      onChange={(e) => setNewItem({ ...newItem, endTime: e.target.value })}
+                      className="w-28 h-8 text-sm"
+                      placeholder="HH:mm"
+                    />
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleAddNew('event')}>{"Ajouter"}</Button>
                 <Button size="sm" variant="outline" onClick={() => { setAddingNew(null); setNewItem({}); }}>{"Annuler"}</Button>
@@ -383,6 +409,7 @@ export function EventsManager({
                 <TableHead>Nom</TableHead>
                 <TableHead>Début</TableHead>
                 <TableHead>Fin</TableHead>
+                <TableHead>Horaires</TableHead>
                 <TableHead>Couleur</TableHead>
                 <TableHead className="w-20">Actions</TableHead>
               </TableRow>
@@ -409,6 +436,23 @@ export function EventsManager({
                     />
                   </TableCell>
                   <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="time"
+                        value={event.startTime || ''}
+                        onChange={(e) => onUpdateEvent(event.id, { startTime: e.target.value || undefined })}
+                        className="w-24 h-7 text-xs"
+                      />
+                      <span className="text-xs text-muted-foreground">—</span>
+                      <Input
+                        type="time"
+                        value={event.endTime || ''}
+                        onChange={(e) => onUpdateEvent(event.id, { endTime: e.target.value || undefined })}
+                        className="w-24 h-7 text-xs"
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <div 
                       className="w-6 h-6 rounded-full border cursor-pointer"
                       style={{ backgroundColor: event.color }}
@@ -427,7 +471,7 @@ export function EventsManager({
               ))}
               {sortedEvents.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     Aucun événement (RE et CP sont gérés dans les paramètres)
                   </TableCell>
                 </TableRow>
@@ -623,6 +667,7 @@ export function EventsManager({
                     <TableHead>Nom</TableHead>
                     <TableHead>Début</TableHead>
                     <TableHead>Fin</TableHead>
+                    <TableHead>Horaires</TableHead>
                     <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -648,6 +693,11 @@ export function EventsManager({
                         />
                       </TableCell>
                       <TableCell>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {format(astreinte.startDate, 'EEEE', { locale: fr })} 08:00 → {format(astreinte.endDate, 'EEEE', { locale: fr })} 07:59
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <Button size="sm" variant="ghost" onClick={() => onRemovePonctualAstreinte(astreinte.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -656,7 +706,7 @@ export function EventsManager({
                   ))}
                   {ponctualAstreintes.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
                         Aucune astreinte ponctuelle
                       </TableCell>
                     </TableRow>
