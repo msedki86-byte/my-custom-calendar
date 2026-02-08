@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { isWeekend, eachDayOfInterval } from 'date-fns';
 import { useCalendar } from '@/hooks/useCalendar';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { UnifiedToolbar } from '@/components/Calendar/UnifiedToolbar';
@@ -163,17 +164,44 @@ const Index = () => {
     startTime?: string;
     endTime?: string;
     color: string;
+    excludeWeekends?: boolean;
   }) => {
-    if (eventData.type === 'event') {
-      addEvent({ type: 'event', name: eventData.name, startDate: eventData.startDate, endDate: eventData.endDate, startTime: eventData.startTime, endTime: eventData.endTime, color: eventData.color });
-    } else if (eventData.type === 're') {
-      addEvent({ type: 're', name: eventData.name || 'RE', startDate: eventData.startDate, endDate: eventData.endDate, color: settings.reColor });
-    } else if (eventData.type === 'cp') {
-      addEvent({ type: 'cp', name: eventData.name || 'CP', startDate: eventData.startDate, endDate: eventData.endDate, color: settings.cpColor });
+    const shouldExcludeWeekends = eventData.excludeWeekends;
+    
+    if (eventData.type === 'event' || eventData.type === 're' || eventData.type === 'cp') {
+      const eventColor = eventData.type === 're' ? settings.reColor : eventData.type === 'cp' ? settings.cpColor : eventData.color;
+      const eventType = eventData.type;
+      const eventName = eventData.type === 're' ? (eventData.name || 'RE') : eventData.type === 'cp' ? (eventData.name || 'CP') : eventData.name;
+      
+      if (shouldExcludeWeekends) {
+        // Create individual events for each non-weekend day
+        const days = eachDayOfInterval({ start: eventData.startDate, end: eventData.endDate });
+        const weekdays = days.filter(d => !isWeekend(d));
+        // Group consecutive weekdays into ranges
+        let rangeStart: Date | null = null;
+        let rangeEnd: Date | null = null;
+        weekdays.forEach((day, i) => {
+          if (!rangeStart) { rangeStart = day; rangeEnd = day; return; }
+          const prevDay = weekdays[i - 1];
+          const diff = (day.getTime() - prevDay.getTime()) / (1000 * 60 * 60 * 24);
+          if (diff === 1) {
+            rangeEnd = day;
+          } else {
+            addEvent({ type: eventType, name: eventName, startDate: rangeStart, endDate: rangeEnd!, startTime: eventData.startTime, endTime: eventData.endTime, color: eventColor });
+            rangeStart = day;
+            rangeEnd = day;
+          }
+        });
+        if (rangeStart && rangeEnd) {
+          addEvent({ type: eventType, name: eventName, startDate: rangeStart, endDate: rangeEnd, startTime: eventData.startTime, endTime: eventData.endTime, color: eventColor });
+        }
+      } else {
+        addEvent({ type: eventType, name: eventName, startDate: eventData.startDate, endDate: eventData.endDate, startTime: eventData.startTime, endTime: eventData.endTime, color: eventColor });
+      }
     } else if (eventData.type === 'astreinte-ponctuelle') {
       addPonctualAstreinte(eventData.startDate, eventData.endDate, eventData.name);
     } else if (eventData.type === 'astreinte-cancelled') {
-      cancelAstreinteDates(eventData.startDate, eventData.endDate, eventData.name);
+      cancelAstreinteDates(eventData.startDate, eventData.endDate, eventData.name, eventData.startTime, eventData.endTime);
     }
   }, [addEvent, addPonctualAstreinte, cancelAstreinteDates, settings.reColor, settings.cpColor]);
 

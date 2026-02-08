@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -31,6 +32,7 @@ interface AddEventDialogProps {
     startTime?: string;
     endTime?: string;
     color: string;
+    excludeWeekends?: boolean;
   }) => void;
   initialDate?: Date;
   existingEvents?: Array<{ name: string; startDate: Date; endDate: Date }>;
@@ -46,6 +48,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
   const [color, setColor] = useState('#00AEEF');
   const [startPopoverOpen, setStartPopoverOpen] = useState(false);
   const [endPopoverOpen, setEndPopoverOpen] = useState(false);
+  const [excludeWeekends, setExcludeWeekends] = useState(false);
 
   // Synchronize dates when initialDate changes or dialog opens
   useEffect(() => {
@@ -70,12 +73,20 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
     setEndPopoverOpen(false);
   };
 
-  // Auto-set name for RE/CP types
+  // Auto-set name and times for specific types
   useEffect(() => {
     if (type === 're' && name === '') {
       setName('RE');
     } else if (type === 'cp' && name === '') {
       setName('CP');
+    }
+    // Default times for cancellations
+    if (type === 'astreinte-cancelled') {
+      setStartTime('00:00');
+      setEndTime('23:59');
+    } else if (type === 'event' || type === 'astreinte-ponctuelle') {
+      setStartTime('08:00');
+      setEndTime('17:00');
     }
   }, [type]);
 
@@ -105,6 +116,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
       startTime: showTimePicker ? startTime : undefined,
       endTime: showTimePicker ? endTime : undefined,
       color,
+      excludeWeekends: excludeWeekends || undefined,
     });
     
     // Reset form
@@ -114,6 +126,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
     setStartTime('08:00');
     setEndTime('17:00');
     setShowDuplicateWarning(false);
+    setExcludeWeekends(false);
     onClose();
   };
 
@@ -134,8 +147,11 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
 
   // RE and CP don't need color picker - they use settings colors
   const showColorPicker = type === 'event';
-  // Show time picker for events and astreintes
-  const showTimePicker = type === 'event' || type === 'astreinte-ponctuelle';
+  // Show time picker for events, astreintes, and cancellations
+  const showTimePicker = type === 'event' || type === 'astreinte-ponctuelle' || type === 'astreinte-cancelled';
+  // Show exclude weekends for multi-day events
+  const isMultiDay = startDate && endDate && startDate.getTime() !== endDate.getTime();
+  const showExcludeWeekends = isMultiDay && (type === 'event' || type === 're' || type === 'cp');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -266,8 +282,8 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  min="05:00"
-                  max="21:00"
+                  min={type === 'astreinte-cancelled' ? '00:00' : '05:00'}
+                  max={type === 'astreinte-cancelled' ? '23:59' : '21:00'}
                   className="h-9"
                 />
               </div>
@@ -277,11 +293,24 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  min="05:00"
-                  max="21:00"
+                  min={type === 'astreinte-cancelled' ? '00:00' : '05:00'}
+                  max={type === 'astreinte-cancelled' ? '23:59' : '21:00'}
                   className="h-9"
                 />
               </div>
+            </div>
+          )}
+
+          {showExcludeWeekends && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="excludeWeekends"
+                checked={excludeWeekends}
+                onCheckedChange={(checked) => setExcludeWeekends(checked === true)}
+              />
+              <Label htmlFor="excludeWeekends" className="text-sm cursor-pointer">
+                Exclure les week-ends (sam/dim)
+              </Label>
             </div>
           )}
           

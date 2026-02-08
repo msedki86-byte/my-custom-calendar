@@ -329,13 +329,15 @@ export function useCalendar() {
     return conflicting.map(a => a.name || `Astreinte ${format(a.startDate, 'dd/MM')}`);
   }, [cancelledAstreinteDates]);
 
-  const cancelAstreinteDates = useCallback((startDate: Date, endDate: Date, name: string) => {
+  const cancelAstreinteDates = useCallback((startDate: Date, endDate: Date, name: string, startTime?: string, endTime?: string) => {
     const days = eachDayOfInterval({ start: startDate, end: endDate });
     const newCancellations: CancelledAstreinteDate[] = days.map((day, index) => ({
       id: `cancelled-${Date.now()}-${index}`,
       date: day,
       name,
       astreinteId: '',
+      startTime: startTime || '00:00',
+      endTime: endTime || '23:59',
     }));
     setCancelledAstreinteDates(prev => [...prev, ...newCancellations]);
   }, []);
