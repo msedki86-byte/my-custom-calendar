@@ -44,6 +44,9 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
     const d = new Date(newStartDate);
     if (!isNaN(d.getTime())) {
       onUpdateSettings({ astreinteStartDate: d.toISOString() });
+      // Re-lock after date change
+      setPinUnlocked(false);
+      setPinInput('');
     }
   };
 
@@ -52,6 +55,9 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
       onUpdateSettings({ settingsPin: newPin });
       setShowPinChange(false);
       setNewPin('');
+      // Re-lock after PIN change
+      setPinUnlocked(false);
+      setPinInput('');
     }
   };
 

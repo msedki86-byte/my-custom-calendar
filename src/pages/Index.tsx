@@ -217,7 +217,7 @@ const Index = () => {
           <div className="mt-3 sm:mt-4">
             {/* Export/Import */}
             <div className="flex items-center justify-end gap-2 mb-3">
-              <ExportPDF />
+              <ExportPDF viewMode={viewMode} />
               <ExcelImport
                 onImportEvents={importEvents}
                 onImportVacations={importVacations}
