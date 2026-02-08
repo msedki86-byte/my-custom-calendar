@@ -160,7 +160,7 @@ function MonthMiniCard({
   // Vacation bars
   const vacItems = vacations
     .filter(v => v.startDate <= monthEnd && v.endDate >= monthStart)
-    .map(v => ({ ...v, color: v.color || settings.vacationColor }));
+    .map(v => ({ ...v, color: settings.vacationColor }));
 
   // Arrêt bars (AT only, NO prépa)
   const arretATItems = arrets
