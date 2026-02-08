@@ -1,155 +1,118 @@
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { Button } from '@/components/ui/button';
+import { FileDown } from 'lucide-react';
 
 interface ExportPDFProps {
-  viewMode: 'year' | 'month' | 'week';
+  viewMode: 'year' | 'month';
+  year: number;
+  month?: number;
 }
 
-export async function exportPDF(viewMode: 'year' | 'month' | 'week') {
-  const content = document.querySelector('[data-calendar-print]');
-  if (!content) return alert('Calendrier non visible');
+export function ExportPDF({ viewMode, year, month }: ExportPDFProps) {
+  const handleExport = () => {
+    const calendar = document.querySelector('[data-calendar-print]');
+    const legend = document.querySelector('[data-calendar-legend]');
 
-  const legendSection = document.querySelector('[data-legend-print]');
-  const arretSection = document.querySelector('[data-arret-print]');
-
-  try {
-    // Use a wider container for year view (6 cols layout needs space)
-    const containerWidth = viewMode === 'year' ? 3200 : 2200;
-
-    const container = document.createElement('div');
-    container.style.cssText = `position:absolute;left:-9999px;top:0;width:${containerWidth}px;background:white;padding:16px;font-family:Arial,Helvetica,sans-serif`;
-
-    // Clone calendar
-    const calClone = content.cloneNode(true) as HTMLElement;
-    calClone.style.setProperty('print-color-adjust', 'exact');
-    calClone.style.setProperty('-webkit-print-color-adjust', 'exact');
-
-    // Boost small text
-    calClone.querySelectorAll('*').forEach(el => {
-      const htmlEl = el as HTMLElement;
-      htmlEl.style.setProperty('print-color-adjust', 'exact');
-      htmlEl.style.setProperty('-webkit-print-color-adjust', 'exact');
-      const fontSize = parseFloat(getComputedStyle(htmlEl).fontSize);
-      if (fontSize < 10) {
-        htmlEl.style.fontSize = viewMode === 'year' ? '11px' : '12px';
-      }
-    });
-
-    // Year view: 2 rows × 6 months, scale up cells x1.8
-    if (viewMode === 'year') {
-      calClone.style.display = 'grid';
-      calClone.style.gridTemplateColumns = 'repeat(6, 1fr)';
-      calClone.style.gap = '16px';
-      calClone.className = calClone.className
-        .replace(/grid-cols-\d/g, '')
-        .replace(/sm:grid-cols-\d/g, '')
-        .replace(/lg:grid-cols-\d/g, '');
-
-      // Scale up month cards
-      calClone.querySelectorAll(':scope > *').forEach(child => {
-        const el = child as HTMLElement;
-        el.style.transform = 'scale(1)';
-        el.style.minWidth = '0';
-        // Increase inner font sizes for readability
-        el.querySelectorAll('*').forEach(inner => {
-          const innerEl = inner as HTMLElement;
-          const fs = parseFloat(getComputedStyle(innerEl).fontSize);
-          if (fs < 14) {
-            innerEl.style.fontSize = `${Math.max(fs * 1.4, 11)}px`;
-          }
-        });
-      });
+    if (!calendar) {
+      alert('Calendrier introuvable pour export PDF.');
+      return;
     }
 
-    // Legend clone - force expanded
-    if (legendSection) {
-      const legendClone = legendSection.cloneNode(true) as HTMLElement;
-      legendClone.style.marginBottom = '12px';
-      forceExpandClone(legendClone);
-      container.appendChild(legendClone);
-    }
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
 
-    container.appendChild(calClone);
+    const title =
+      viewMode === 'year'
+        ? `Calendrier ${year}`
+        : `Calendrier ${new Date(year, month ?? 0).toLocaleDateString('fr-FR', {
+            month: 'long',
+            year: 'numeric',
+          })}`;
 
-    // Arret bar clone
-    if (arretSection) {
-      const arretClone = arretSection.cloneNode(true) as HTMLElement;
-      arretClone.style.marginTop = '12px';
-      forceExpandClone(arretClone);
-      container.appendChild(arretClone);
-    }
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8" />
+          <title>${title}</title>
+          <style>
+            @page {
+              size: A4 landscape;
+              margin: 10mm;
+            }
 
-    document.body.appendChild(container);
+            body {
+              font-family: system-ui, -apple-system, sans-serif;
+              background: white;
+              color: #111;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
 
-    // Minimal wait for layout
-    await new Promise(r => setTimeout(r, 100));
+            h1 {
+              text-align: center;
+              margin-bottom: 12px;
+              font-size: 18px;
+            }
 
-    const canvas = await html2canvas(container, {
-      scale: 1.5,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      width: containerWidth,
-      logging: false,
-    });
+            .print-wrapper {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            }
 
-    document.body.removeChild(container);
+            .calendar-wrapper {
+              transform: scale(0.9);
+              transform-origin: top left;
+            }
 
-    // A4 landscape
-    const pdf = new jsPDF('landscape', 'mm', 'a4');
-    const pageWidth = 297;
-    const pageHeight = 210;
-    const margin = 4;
-    const availableWidth = pageWidth - margin * 2;
-    const availableHeight = pageHeight - margin * 2;
+            .legend-wrapper {
+              font-size: 11px;
+            }
 
-    const imgRatio = canvas.height / canvas.width;
-    let imgWidth = availableWidth;
-    let imgHeight = imgWidth * imgRatio;
+            * {
+              box-sizing: border-box;
+            }
 
-    if (imgHeight > availableHeight) {
-      imgHeight = availableHeight;
-      imgWidth = imgHeight / imgRatio;
-    }
+            /* Désactiver scroll / overflow écran */
+            [style*="overflow"] {
+              overflow: visible !important;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
 
-    const xOffset = margin + (availableWidth - imgWidth) / 2;
-    const yOffset = margin + (availableHeight - imgHeight) / 2;
+          <div class="print-wrapper">
+            <div class="calendar-wrapper">
+              ${calendar.outerHTML}
+            </div>
 
-    // JPEG is much faster than PNG
-    const imgData = canvas.toDataURL('image/jpeg', 0.92);
-    pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
+            ${
+              legend
+                ? `<div class="legend-wrapper">${legend.outerHTML}</div>`
+                : ''
+            }
+          </div>
 
-    const suffix = viewMode === 'year' ? 'annuel' : 'mensuel';
-    pdf.save(`calendrier-${suffix}-${new Date().getFullYear()}.pdf`);
-  } catch (err) {
-    console.error('PDF export error:', err);
-    alert("Erreur lors de l'export PDF. Veuillez réessayer.");
-  }
-}
+          <script>
+            window.onload = () => {
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 300);
+            };
+          </script>
+        </body>
+      </html>
+    `);
 
-/** Force-expand all collapsed/hidden sections in a cloned DOM node */
-function forceExpandClone(clone: HTMLElement) {
-  clone.querySelectorAll('[data-state="closed"]').forEach(el => {
-    (el as HTMLElement).setAttribute('data-state', 'open');
-  });
-  clone.querySelectorAll('*').forEach(el => {
-    const htmlEl = el as HTMLElement;
-    htmlEl.style.setProperty('print-color-adjust', 'exact');
-    htmlEl.style.setProperty('-webkit-print-color-adjust', 'exact');
-    const style = getComputedStyle(htmlEl);
-    if (style.maxHeight === '0px' || style.display === 'none' || style.height === '0px') {
-      htmlEl.style.maxHeight = '2000px';
-      htmlEl.style.height = 'auto';
-      htmlEl.style.display = 'block';
-      htmlEl.style.opacity = '1';
-      htmlEl.style.overflow = 'visible';
-    }
-    if (htmlEl.classList.contains('hidden')) {
-      htmlEl.classList.remove('hidden');
-      htmlEl.style.display = 'block';
-    }
-    const fontSize = parseFloat(getComputedStyle(htmlEl).fontSize);
-    if (fontSize < 10) {
-      htmlEl.style.fontSize = '10px';
-    }
-  });
+    printWindow.document.close();
+  };
+
+  return (
+    <Button variant="outline" size="sm" onClick={handleExport}>
+      <FileDown className="h-4 w-4 mr-2" />
+      Exporter PDF
+    </Button>
+  );
 }
