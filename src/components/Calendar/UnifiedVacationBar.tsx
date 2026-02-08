@@ -91,11 +91,12 @@ export function UnifiedVacationBar({
             {vacationSegments.map(vac => (
               <div
                 key={vac.id}
-                className="absolute h-full flex items-center justify-center px-1 sm:px-2 text-[9px] sm:text-[11px] font-medium text-white shadow-sm overflow-hidden rounded-full transition-transform hover:scale-[1.02] hover:z-10"
+                className="absolute h-full flex items-center justify-center px-1 sm:px-2 text-[9px] sm:text-[11px] font-medium shadow-sm overflow-hidden rounded-full transition-transform hover:scale-[1.02] hover:z-10"
                 style={{
                   left: `${vac.leftPercent}%`,
                   width: `${vac.widthPercent}%`,
                   backgroundColor: settings.vacationColor,
+                  color: settings.vacationTextColor || '#2D2A00',
                   minWidth: '16px',
                 }}
                 title={`${vac.name} (${format(vac.startDate, 'dd/MM')} - ${format(vac.endDate, 'dd/MM')})`}

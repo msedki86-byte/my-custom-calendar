@@ -78,7 +78,7 @@ export function DayTimeline({
       {/* Context badges */}
       <div className="flex gap-2 mb-3 px-2">
         {vacation && (
-          <span className="text-xs px-2 py-0.5 rounded text-white font-medium" style={{ backgroundColor: settings.vacationColor }}>
+          <span className="text-xs px-2 py-0.5 rounded font-medium" style={{ backgroundColor: settings.vacationColor, color: settings.vacationTextColor || '#2D2A00' }}>
             {vacation.name}
           </span>
         )}

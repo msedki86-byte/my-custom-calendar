@@ -31,7 +31,6 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
     if (pinInput === (settings.settingsPin || '0000')) {
       setPinUnlocked(true);
       setPinError(false);
-      // Pre-fill date input
       const d = new Date(settings.astreinteStartDate);
       setNewStartDate(format(d, 'yyyy-MM-dd'));
     } else {
@@ -44,7 +43,6 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
     const d = new Date(newStartDate);
     if (!isNaN(d.getTime())) {
       onUpdateSettings({ astreinteStartDate: d.toISOString() });
-      // Re-lock after date change
       setPinUnlocked(false);
       setPinInput('');
     }
@@ -55,7 +53,6 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
       onUpdateSettings({ settingsPin: newPin });
       setShowPinChange(false);
       setNewPin('');
-      // Re-lock after PIN change
       setPinUnlocked(false);
       setPinInput('');
     }
@@ -63,6 +60,29 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
 
   const astreinteDate = new Date(settings.astreinteStartDate || '2026-02-05T00:00:00.000Z');
   const isValidDate = !isNaN(astreinteDate.getTime());
+
+  const PinLockUI = () => (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Lock className="w-4 h-4 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Protégé par code PIN</span>
+      </div>
+      <div className="flex gap-2">
+        <Input
+          type="password"
+          maxLength={4}
+          placeholder="Code PIN (4 chiffres)"
+          value={pinInput}
+          onChange={(e) => { setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(false); }}
+          className="h-8 text-sm flex-1"
+        />
+        <Button size="sm" className="h-8" onClick={handlePinSubmit}>
+          <Unlock className="w-3 h-3" />
+        </Button>
+      </div>
+      {pinError && <p className="text-xs text-destructive">Code incorrect</p>}
+    </div>
+  );
 
   return (
     <div className="fixed inset-y-0 right-0 w-full sm:w-80 max-w-[90vw] bg-card border-l border-border shadow-card-elevated z-50 animate-slide-in">
@@ -116,7 +136,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
             </div>
           </section>
 
-          {/* Astreintes */}
+          {/* Astreintes (couleurs libres) */}
           <section>
             <h3 className="text-sm font-semibold text-foreground mb-3">Astreintes</h3>
             <div className="space-y-3">
@@ -127,43 +147,42 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
             </div>
           </section>
 
-          {/* Date récurrence astreinte */}
+          {/* Événements & états */}
           <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Récurrence astreinte</h3>
-            <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Date initiale</Label>
-                <span className="text-sm font-mono text-muted-foreground">
-                  {isValidDate ? format(astreinteDate, 'dd/MM/yyyy', { locale: fr }) : '05/02/2026'}
-                </span>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Événements & états</h3>
+            <div className="space-y-3">
+              <ColorPicker label="RE (Repos)" value={settings.reColor} onChange={(v) => onUpdateSettings({ reColor: v })} />
+              <ColorPicker label="CP (Congés Payés)" value={settings.cpColor} onChange={(v) => onUpdateSettings({ cpColor: v })} />
+              <ColorPicker label="Vacances scolaires (fond)" value={settings.vacationColor} onChange={(v) => onUpdateSettings({ vacationColor: v })} />
+              <ColorPicker label="Vacances scolaires (texte)" value={settings.vacationTextColor} onChange={(v) => onUpdateSettings({ vacationTextColor: v })} />
+            </div>
+          </section>
+
+          {/* ====== SECTION PIN-PROTECTED ====== */}
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Lock className="w-4 h-4" /> Paramètres protégés par PIN
+            </h3>
+            
+            {!pinUnlocked ? (
+              <div className="bg-muted/50 rounded-lg p-3">
+                <PinLockUI />
               </div>
-              <p className="text-xs text-muted-foreground">Cycle de 6 semaines à partir de cette date.</p>
-              
-              {!pinUnlocked ? (
-                <div className="mt-2 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Protégé par code PIN</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      type="password"
-                      maxLength={4}
-                      placeholder="Code PIN (4 chiffres)"
-                      value={pinInput}
-                      onChange={(e) => { setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(false); }}
-                      className="h-8 text-sm flex-1"
-                    />
-                    <Button size="sm" className="h-8" onClick={handlePinSubmit}>
-                      <Unlock className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  {pinError && <p className="text-xs text-destructive">Code incorrect</p>}
-                </div>
-              ) : (
-                <div className="mt-2 space-y-3">
-                  <div className="p-2 bg-primary/5 rounded border border-primary/20 space-y-2">
-                    <p className="text-xs text-primary">🔓 Déverrouillé</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-2 bg-primary/5 rounded border border-primary/20">
+                  <p className="text-xs text-primary mb-3">🔓 Déverrouillé</p>
+
+                  {/* Récurrence astreinte */}
+                  <div className="space-y-2 mb-4">
+                    <Label className="text-sm font-semibold">Récurrence astreinte</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Date initiale</Label>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {isValidDate ? format(astreinteDate, 'dd/MM/yyyy', { locale: fr }) : '05/02/2026'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Cycle de 6 semaines à partir de cette date.</p>
                     <div className="flex gap-2 items-end">
                       <div className="flex-1">
                         <Label className="text-xs">Nouvelle date</Label>
@@ -177,7 +196,19 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                       <Button size="sm" className="h-8" onClick={handleDateChange}>OK</Button>
                     </div>
                   </div>
-                  
+
+                  {/* Arrêts par tranche */}
+                  <div className="space-y-2 mb-4">
+                    <Label className="text-sm font-semibold">Arrêts par tranche</Label>
+                    <div className="space-y-3">
+                      <ColorPicker label="Arrêt Tr2" value={settings.arretTr2Color} onChange={(v) => onUpdateSettings({ arretTr2Color: v })} />
+                      <ColorPicker label="Arrêt Tr3" value={settings.arretTr3Color} onChange={(v) => onUpdateSettings({ arretTr3Color: v })} />
+                      <ColorPicker label="Arrêt Tr4" value={settings.arretTr4Color} onChange={(v) => onUpdateSettings({ arretTr4Color: v })} />
+                      <ColorPicker label="Arrêt Tr5" value={settings.arretTr5Color} onChange={(v) => onUpdateSettings({ arretTr5Color: v })} />
+                    </div>
+                  </div>
+
+                  {/* Changer le PIN */}
                   {!showPinChange ? (
                     <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={() => setShowPinChange(true)}>
                       <KeyRound className="w-3 h-3 mr-1" /> Changer le code PIN
@@ -195,56 +226,6 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                       <Button size="sm" className="h-8" onClick={handlePinChange} disabled={newPin.length !== 4}>OK</Button>
                     </div>
                   )}
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Événements & états */}
-          <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Événements & états</h3>
-            <div className="space-y-3">
-              <ColorPicker label="RE (Repos)" value={settings.reColor} onChange={(v) => onUpdateSettings({ reColor: v })} />
-              <ColorPicker label="CP (Congés Payés)" value={settings.cpColor} onChange={(v) => onUpdateSettings({ cpColor: v })} />
-              <ColorPicker label="Vacances scolaires" value={settings.vacationColor} onChange={(v) => onUpdateSettings({ vacationColor: v })} />
-              
-            </div>
-          </section>
-
-          {/* Arrêts par tranche */}
-          <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Arrêts par tranche</h3>
-            {!pinUnlocked ? (
-              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Protégé par code PIN (identique à la récurrence)</span>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    type="password"
-                    maxLength={4}
-                    placeholder="Code PIN (4 chiffres)"
-                    value={pinInput}
-                    onChange={(e) => { setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(false); }}
-                    className="h-8 text-sm flex-1"
-                  />
-                  <Button size="sm" className="h-8" onClick={handlePinSubmit}>
-                    <Unlock className="w-3 h-3" />
-                  </Button>
-                </div>
-                {pinError && <p className="text-xs text-destructive">Code incorrect</p>}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="p-2 bg-primary/5 rounded border border-primary/20">
-                  <p className="text-xs text-primary mb-2">🔓 Déverrouillé</p>
-                  <div className="space-y-3">
-                    <ColorPicker label="Arrêt Tr2" value={settings.arretTr2Color} onChange={(v) => onUpdateSettings({ arretTr2Color: v })} />
-                    <ColorPicker label="Arrêt Tr3" value={settings.arretTr3Color} onChange={(v) => onUpdateSettings({ arretTr3Color: v })} />
-                    <ColorPicker label="Arrêt Tr4" value={settings.arretTr4Color} onChange={(v) => onUpdateSettings({ arretTr4Color: v })} />
-                    <ColorPicker label="Arrêt Tr5" value={settings.arretTr5Color} onChange={(v) => onUpdateSettings({ arretTr5Color: v })} />
-                  </div>
                 </div>
               </div>
             )}

@@ -338,7 +338,7 @@ const Index = () => {
             </div>
 
             {/* Collapsible Arrêts - BELOW calendar */}
-            <div className="mt-2 sm:mt-3">
+            <div className="mt-2 sm:mt-3" data-arret-print>
               <UnifiedArretBar
                 arrets={arrets}
                 currentDate={currentDate}
