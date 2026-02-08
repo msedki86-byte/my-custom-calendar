@@ -15,6 +15,8 @@ import { EventsManager } from '@/components/Events/EventsManager';
 import { ConflictsList } from '@/components/Conflicts/ConflictsList';
 import { exportPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
+import { ICSImportDialog } from '@/components/Import/ICSImportDialog';
+import { ICSExportDialog } from '@/components/Export/ICSExportDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { startOfWeek, getWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -76,6 +78,8 @@ const Index = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [icsImportOpen, setIcsImportOpen] = useState(false);
+  const [icsExportOpen, setIcsExportOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'year' | 'month' | 'week'>('month');
@@ -247,6 +251,8 @@ const Index = () => {
           onTabChange={setActiveTab}
           onExportPDF={() => exportPDF(viewMode)}
           onImport={() => setImportOpen(true)}
+          onICSImport={() => setIcsImportOpen(true)}
+          onICSExport={() => setIcsExportOpen(true)}
         />
 
         {activeTab === 'calendar' && (
@@ -423,6 +429,21 @@ const Index = () => {
         onImportVacations={importVacations}
         onImportArrets={importArrets}
         onImportHolidays={importHolidays}
+      />
+
+      <ICSImportDialog
+        open={icsImportOpen}
+        onOpenChange={setIcsImportOpen}
+        existingEvents={events}
+        onImportEvents={importEvents}
+        onUpdateEvent={updateEvent}
+        onDeleteEvent={removeEvent}
+      />
+
+      <ICSExportDialog
+        open={icsExportOpen}
+        onOpenChange={setIcsExportOpen}
+        events={events}
       />
 
       {settingsOpen && (

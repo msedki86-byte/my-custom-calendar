@@ -10,6 +10,9 @@ export type EventType =
   | 're'  // Repos / Récupération
   | 'cp'; // Congés Payés
 
+// Source of an event (for future external calendar sync)
+export type EventSource = 'internal' | 'outlook' | 'ios' | 'ics';
+
 export type PatternType = 
   | 'none'
   | 'stripes'
@@ -44,6 +47,9 @@ export interface CalendarEvent {
   pattern?: PatternType;
   isRecurring?: boolean;
   recurringWeeks?: number;
+  source?: EventSource; // Origin of the event (default: 'internal')
+  externalId?: string;  // UID from external calendar (ICS VEVENT UID)
+  readonly?: boolean;   // If true, event cannot be edited (external events)
 }
 
 export interface Astreinte {

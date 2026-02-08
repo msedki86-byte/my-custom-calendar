@@ -450,45 +450,71 @@ export function EventsManager({
               {sortedEvents.map(event => (
                 <TableRow key={event.id}>
                   <TableCell>
-                    <EditableText
-                      value={event.name}
-                      onSave={(name) => onUpdateEvent(event.id, { name })}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <DateEditor
-                      date={event.startDate}
-                      onSave={(date) => onUpdateEvent(event.id, { startDate: date })}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <DateEditor
-                      date={event.endDate}
-                      onSave={(date) => onUpdateEvent(event.id, { endDate: date })}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="time"
-                        value={event.startTime || ''}
-                        onChange={(e) => onUpdateEvent(event.id, { startTime: e.target.value || undefined })}
-                        className="w-24 h-7 text-xs"
-                      />
-                      <span className="text-xs text-muted-foreground">—</span>
-                      <Input
-                        type="time"
-                        value={event.endTime || ''}
-                        onChange={(e) => onUpdateEvent(event.id, { endTime: e.target.value || undefined })}
-                        className="w-24 h-7 text-xs"
-                      />
+                    <div className="flex items-center gap-2">
+                      {event.readonly ? (
+                        <>
+                          <span>{event.name}</span>
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                            {event.source || 'ext'}
+                          </Badge>
+                        </>
+                      ) : (
+                        <EditableText
+                          value={event.name}
+                          onSave={(name) => onUpdateEvent(event.id, { name })}
+                        />
+                      )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {event.readonly ? (
+                      formatDate(event.startDate)
+                    ) : (
+                      <DateEditor
+                        date={event.startDate}
+                        onSave={(date) => onUpdateEvent(event.id, { startDate: date })}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {event.readonly ? (
+                      formatDate(event.endDate)
+                    ) : (
+                      <DateEditor
+                        date={event.endDate}
+                        onSave={(date) => onUpdateEvent(event.id, { endDate: date })}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {event.readonly ? (
+                      <span className="text-xs text-muted-foreground">
+                        {event.startTime && event.endTime ? `${event.startTime} — ${event.endTime}` : '—'}
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="time"
+                          value={event.startTime || ''}
+                          onChange={(e) => onUpdateEvent(event.id, { startTime: e.target.value || undefined })}
+                          className="w-24 h-7 text-xs"
+                        />
+                        <span className="text-xs text-muted-foreground">—</span>
+                        <Input
+                          type="time"
+                          value={event.endTime || ''}
+                          onChange={(e) => onUpdateEvent(event.id, { endTime: e.target.value || undefined })}
+                          className="w-24 h-7 text-xs"
+                        />
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div 
                       className="w-6 h-6 rounded-full border cursor-pointer"
                       style={{ backgroundColor: event.color }}
                       onClick={() => {
+                        if (event.readonly) return;
                         const color = prompt('Nouvelle couleur (hex):', event.color);
                         if (color) onUpdateEvent(event.id, { color });
                       }}
