@@ -150,10 +150,10 @@ export function UnifiedCalendarGrid({
           "grid",
           showWeekNumbers ? "grid-cols-8" : "grid-cols-7"
         )}
-        style={{ backgroundColor: settings.titleWeekColor }}
+        style={{ backgroundColor: settings.monthHeaderBgColor }}
       >
         {showWeekNumbers && (
-          <div className="py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold border-r border-white/20" style={{ color: '#FFFFFF' }}>
+          <div className="py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold border-r border-white/20" style={{ color: settings.monthHeaderTextColor }}>
             S.
           </div>
         )}
@@ -161,7 +161,7 @@ export function UnifiedCalendarGrid({
           <div 
             key={`${day}-${index}`} 
             className="py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold"
-            style={{ color: index >= 5 ? settings.titleWeekendColor : '#FFFFFF' }}
+            style={{ color: settings.monthHeaderTextColor }}
           >
             {day}
           </div>
@@ -238,7 +238,7 @@ export function UnifiedCalendarGrid({
               )}>
                 {/* Week number */}
                 {showWeekNumbers && (
-                  <div className="flex items-center justify-center text-[8px] sm:text-[10px] lg:text-xs font-medium text-muted-foreground bg-muted/30 border-r border-border min-h-[50px] sm:min-h-[60px] lg:min-h-[80px]">
+                  <div className="flex items-center justify-center text-[8px] sm:text-[10px] lg:text-xs font-medium border-r border-border min-h-[50px] sm:min-h-[60px] lg:min-h-[80px]" style={{ backgroundColor: settings.weekNumberBgColor, color: settings.weekNumberTextColor }}>
                     {weekNumber}
                   </div>
                 )}
@@ -293,10 +293,10 @@ export function UnifiedCalendarGrid({
                       style={{
                         ...(cellBgColor ? { backgroundColor: cellBgColor } : {}),
                         ...(isWeekendDay && isCurrentMonth && !showREBackground && !showCPBackground && !cellBgColor
-                          ? { backgroundColor: settings.weekendDaysColor }
+                          ? { backgroundColor: settings.weekendDaysBgColor, color: settings.weekendDaysTextColor }
                           : {}),
                         ...(isCurrentMonth && !isWeekendDay && !showREBackground && !showCPBackground && !cellBgColor
-                          ? { backgroundColor: settings.emptyCellsColor }
+                          ? { backgroundColor: settings.dayCellBgColor, color: settings.dayCellTextColor }
                           : {}),
                       }}
                     >

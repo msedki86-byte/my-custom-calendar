@@ -73,7 +73,7 @@ export function CalendarGrid({
             {/* Week number */}
             <div 
               className="w-10 flex items-center justify-center text-xs font-medium border-r border-calendar-grid"
-              style={{ backgroundColor: settings.weekNumbersColor, color: '#fff' }}
+              style={{ backgroundColor: settings.weekNumberBgColor, color: settings.weekNumberTextColor }}
             >
               S{getWeek(week[0], { locale: fr, weekStartsOn: 1 })}
             </div>
@@ -88,7 +88,7 @@ export function CalendarGrid({
                     <div 
                       key={dayIndex} 
                       className="min-h-[100px] bg-muted/30 border-r border-calendar-grid last:border-r-0"
-                      style={{ backgroundColor: settings.emptyCellsColor }}
+                      style={{ backgroundColor: settings.dayCellBgColor }}
                     />
                   );
                 }

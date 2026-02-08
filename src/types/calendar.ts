@@ -88,31 +88,45 @@ export interface Arret {
 }
 
 export interface CalendarSettings {
-  titleWeekColor: string;
-  titleWeekendColor: string;
-  weekNumbersColor: string;
-  weekdaysColor: string;
-  weekendDaysColor: string;
-  emptyCellsColor: string;
+  // Vue annuelle - Bandeau mois
+  yearMonthBgColor: string;
+  yearMonthTextColor: string;
+  // Vue mensuelle - Bandeau supérieur (Lun-Dim)
+  monthHeaderBgColor: string;
+  monthHeaderTextColor: string;
+  // Vue mensuelle - Bandeau gauche (n° semaine)
+  weekNumberBgColor: string;
+  weekNumberTextColor: string;
+  // Vue mensuelle - Cases jours
+  dayCellBgColor: string;
+  dayCellTextColor: string;
+  weekendDaysBgColor: string;
+  weekendDaysTextColor: string;
+  // Jours fériés
   holidayPattern: PatternType;
+  // Astreintes
   astreinteColor: string;
   astreinteCancelledColor: string;
   astreinteCancelledPattern: PatternType;
   astreintePonctuelleColor: string;
-  eventColor: string;
+  // Vacances scolaires
   vacationColor: string;
-  reColor: string;  // Couleur RE (repos/récupération) - grisage case
-  cpColor: string;  // Couleur CP (congés payés) - plus foncée que RE
+  // RE / CP
+  reColor: string;
+  cpColor: string;
   // Couleurs par tranche - Arrêts
   arretTr2Color: string;
   arretTr3Color: string;
   arretTr4Color: string;
   arretTr5Color: string;
-  // Couleurs par tranche - Préparations (mêmes couleurs, patterns différencient)
+  // Couleurs par tranche - Préparations
   prepaTr2Color: string;
   prepaTr3Color: string;
   prepaTr4Color: string;
   prepaTr5Color: string;
+  // Astreinte start date & PIN
+  astreinteStartDate: string; // ISO string
+  settingsPin: string;
 }
 
 // Mandatory tranche colors as per specification
@@ -124,29 +138,42 @@ export const TRANCHE_COLORS = {
 } as const;
 
 export const defaultSettings: CalendarSettings = {
-  titleWeekColor: '#003A8F',
-  titleWeekendColor: '#E30613',
-  weekNumbersColor: '#4A4A4A',
-  weekdaysColor: '#003A8F',
-  weekendDaysColor: '#E6E6E6',
-  emptyCellsColor: '#FFFFFF',
+  // Vue annuelle
+  yearMonthBgColor: '#003A8F',
+  yearMonthTextColor: '#FFFFFF',
+  // Vue mensuelle - header
+  monthHeaderBgColor: '#003A8F',
+  monthHeaderTextColor: '#FFFFFF',
+  // Vue mensuelle - n° semaine
+  weekNumberBgColor: '#E6E6E6',
+  weekNumberTextColor: '#4A4A4A',
+  // Vue mensuelle - cases jours
+  dayCellBgColor: '#FFFFFF',
+  dayCellTextColor: '#333333',
+  weekendDaysBgColor: '#E6E6E6',
+  weekendDaysTextColor: '#4A4A4A',
+  // Jours fériés
   holidayPattern: 'stripes',
+  // Astreintes
   astreinteColor: '#FFCC00',
   astreinteCancelledColor: '#4A4A4A',
   astreinteCancelledPattern: 'crosshatch',
   astreintePonctuelleColor: '#E30613',
-  eventColor: '#00AEEF',
+  // Vacances
   vacationColor: '#4CAF50',
+  // RE / CP
   reColor: '#E6E6E6',
   cpColor: '#4A4A4A',
-  // Couleurs par tranche - Arrêts (obligatoires)
+  // Tranches
   arretTr2Color: TRANCHE_COLORS.Tr2,
   arretTr3Color: TRANCHE_COLORS.Tr3,
   arretTr4Color: TRANCHE_COLORS.Tr4,
   arretTr5Color: TRANCHE_COLORS.Tr5,
-  // Couleurs par tranche - Préparations
   prepaTr2Color: TRANCHE_COLORS.Tr2,
   prepaTr3Color: TRANCHE_COLORS.Tr3,
   prepaTr4Color: TRANCHE_COLORS.Tr4,
   prepaTr5Color: TRANCHE_COLORS.Tr5,
+  // Astreinte
+  astreinteStartDate: new Date(2026, 1, 5).toISOString(),
+  settingsPin: '0000',
 };

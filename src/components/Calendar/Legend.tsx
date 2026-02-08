@@ -9,7 +9,7 @@ export function Legend({ settings }: LegendProps) {
     { label: 'Astreinte', color: settings.astreinteColor, pattern: false },
     { label: 'Astreinte ponctuelle', color: settings.astreintePonctuelleColor, pattern: false },
     { label: 'Astreinte annulée', color: settings.astreinteCancelledColor, pattern: true, patternClass: 'pattern-crosshatch' },
-    { label: 'Événement', color: settings.eventColor, pattern: false },
+    { label: 'Événement', color: '#00AEEF', pattern: false },
     { label: 'Vacances scolaires', color: settings.vacationColor, pattern: false },
     { label: 'Jour férié', color: settings.holidayPattern === 'none' ? '#ef4444' : '#ef4444', pattern: true, patternClass: 'pattern-stripes' },
     { label: 'Arrêt Tr2', color: settings.arretTr2Color, pattern: false },

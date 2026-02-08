@@ -81,7 +81,7 @@ export function UnifiedLegend({
     if (hasRegularAstreinte) main.push({ label: 'Astreinte', color: settings.astreinteColor, pattern: 'none' });
     if (hasPonctuelle) main.push({ label: 'Astr. ponctuelle', color: settings.astreintePonctuelleColor, pattern: 'none' });
     if (hasCancelled) main.push({ label: 'Astr. annulée', color: settings.astreinteCancelledColor, pattern: 'crosshatch' });
-    if (hasEvents) main.push({ label: 'Événement', color: settings.eventColor, pattern: 'none' });
+    if (hasEvents) main.push({ label: 'Événement', color: '#00AEEF', pattern: 'none' });
     if (hasRE) main.push({ label: 'RE (Repos)', color: settings.reColor, pattern: 'none' });
     if (hasCP) main.push({ label: 'CP (Congés)', color: settings.cpColor, pattern: 'none' });
     if (hasVacations) main.push({ label: 'Vacances', color: settings.vacationColor, pattern: 'none' });

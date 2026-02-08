@@ -171,9 +171,10 @@ function MonthMiniCard({
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       <button
         onClick={() => onMonthClick?.(month)}
-        className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-primary/10 hover:bg-primary/20 transition-colors text-center touch-manipulation"
+        className="w-full px-2 sm:px-3 py-1.5 sm:py-2 hover:opacity-90 transition-colors text-center touch-manipulation"
+        style={{ backgroundColor: settings.yearMonthBgColor, color: settings.yearMonthTextColor }}
       >
-        <span className="text-xs sm:text-sm font-semibold text-primary capitalize">
+        <span className="text-xs sm:text-sm font-semibold capitalize">
           {format(month, 'MMMM', { locale: fr })}
         </span>
       </button>
@@ -268,12 +269,18 @@ function MonthMiniCard({
                         "touch-manipulation active:scale-95",
                         !isCurrentMonth && "opacity-20",
                         isCurrentMonth && !showREBackground && !showCPBackground && !hasActiveAstreinte && "hover:bg-accent/50",
-                        isWeekendDay && isCurrentMonth && !showREBackground && !showCPBackground && !hasActiveAstreinte && "bg-muted/40",
                         isTodayDate && "ring-1 ring-primary font-bold",
-                        holiday && isCurrentMonth && !hasActiveAstreinte && "text-destructive",
                         hasActiveAstreinte && isCurrentMonth && "text-white"
                       )}
-                      style={cellBgColor ? { backgroundColor: cellBgColor } : undefined}
+                      style={{
+                        ...(cellBgColor ? { backgroundColor: cellBgColor } : {}),
+                        ...(!cellBgColor && isCurrentMonth && (isWeekendDay || (holiday != null))
+                          ? { backgroundColor: settings.weekendDaysBgColor, color: settings.weekendDaysTextColor }
+                          : {}),
+                        ...(holiday && isCurrentMonth && !hasActiveAstreinte && !cellBgColor
+                          ? { color: settings.weekendDaysTextColor }
+                          : {}),
+                      }}
                     >
                       {format(day, 'd')}
                       

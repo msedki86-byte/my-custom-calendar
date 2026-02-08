@@ -168,7 +168,7 @@ export function YearView({
             {/* Month header */}
             <div 
               className="px-2 sm:px-3 py-1.5 sm:py-2 text-center font-semibold text-white text-xs sm:text-sm"
-              style={{ backgroundColor: settings.titleWeekColor }}
+              style={{ backgroundColor: settings.yearMonthBgColor, color: settings.yearMonthTextColor }}
             >
               {format(date, 'MMM', { locale: fr })}
               <span className="hidden sm:inline">{format(date, 'MMM', { locale: fr }).length < 4 ? '' : ''}</span>

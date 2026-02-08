@@ -128,12 +128,15 @@ export function useCalendar() {
 
   const generateAstreintes = useCallback((startDate: Date, endDate: Date): Astreinte[] => {
     const astreintes: Astreinte[] = [];
-    let currentStart = ASTREINTE_START_DATE;
+    const astreinteStartDate = new Date(settings.astreinteStartDate);
+    if (isNaN(astreinteStartDate.getTime())) return astreintes;
+    
+    let currentStart = astreinteStartDate;
 
-    const weeksDiff = differenceInWeeks(startDate, ASTREINTE_START_DATE);
+    const weeksDiff = differenceInWeeks(startDate, astreinteStartDate);
     const cyclesBefore = Math.floor(weeksDiff / ASTREINTE_CYCLE_WEEKS);
     if (cyclesBefore > 0) {
-      currentStart = addWeeks(ASTREINTE_START_DATE, cyclesBefore * ASTREINTE_CYCLE_WEEKS);
+      currentStart = addWeeks(astreinteStartDate, cyclesBefore * ASTREINTE_CYCLE_WEEKS);
     }
 
     currentStart = addWeeks(currentStart, -ASTREINTE_CYCLE_WEEKS);
@@ -157,7 +160,7 @@ export function useCalendar() {
     });
 
     return astreintes;
-  }, [ponctualAstreintes]);
+  }, [ponctualAstreintes, settings.astreinteStartDate]);
 
   /* ================= NAVIGATION ================= */
 
