@@ -14,8 +14,8 @@ export function WeekHeader({ settings }: WeekHeaderProps) {
           key={day}
           className="py-3 text-center text-sm font-semibold border-r border-calendar-grid last:border-r-0"
           style={{
-            backgroundColor: index >= 5 ? settings.titleWeekendColor : settings.titleWeekColor,
-            color: '#fff',
+            backgroundColor: settings.monthHeaderBgColor,
+            color: settings.monthHeaderTextColor,
           }}
         >
           {day}

@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, X, Lock, Unlock } from 'lucide-react';
-import { ASTREINTE_START_DATE } from '@/data/initialData';
+import { Settings, X, Lock, Unlock, KeyRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -18,23 +17,45 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
-const SETTINGS_PIN = '1234';
-
 export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: SettingsPanelProps) {
   const [pinInput, setPinInput] = useState('');
   const [pinUnlocked, setPinUnlocked] = useState(false);
   const [pinError, setPinError] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [showPinChange, setShowPinChange] = useState(false);
+  const [newStartDate, setNewStartDate] = useState('');
 
   if (!isOpen) return null;
 
   const handlePinSubmit = () => {
-    if (pinInput === SETTINGS_PIN) {
+    if (pinInput === settings.settingsPin) {
       setPinUnlocked(true);
       setPinError(false);
+      // Pre-fill date input
+      const d = new Date(settings.astreinteStartDate);
+      setNewStartDate(format(d, 'yyyy-MM-dd'));
     } else {
       setPinError(true);
     }
   };
+
+  const handleDateChange = () => {
+    if (!newStartDate) return;
+    const d = new Date(newStartDate);
+    if (!isNaN(d.getTime())) {
+      onUpdateSettings({ astreinteStartDate: d.toISOString() });
+    }
+  };
+
+  const handlePinChange = () => {
+    if (newPin.length === 4) {
+      onUpdateSettings({ settingsPin: newPin });
+      setShowPinChange(false);
+      setNewPin('');
+    }
+  };
+
+  const astreinteDate = new Date(settings.astreinteStartDate);
 
   return (
     <div className="fixed inset-y-0 right-0 w-full sm:w-80 max-w-[90vw] bg-card border-l border-border shadow-card-elevated z-50 animate-slide-in">
@@ -50,31 +71,41 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
       
       <ScrollArea className="h-[calc(100vh-65px)]">
         <div className="p-4 space-y-6">
-          {/* En-tête mois */}
+          {/* Vue annuelle */}
           <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">En-tête mois</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Vue annuelle — Bandeau mois</h3>
             <div className="space-y-3">
-              <ColorPicker label="Fond mois" value={settings.titleWeekColor} onChange={(v) => onUpdateSettings({ titleWeekColor: v })} />
-              <ColorPicker label="Texte mois" value={settings.weekNumbersColor} onChange={(v) => onUpdateSettings({ weekNumbersColor: v })} />
+              <ColorPicker label="Fond" value={settings.yearMonthBgColor} onChange={(v) => onUpdateSettings({ yearMonthBgColor: v })} />
+              <ColorPicker label="Texte" value={settings.yearMonthTextColor} onChange={(v) => onUpdateSettings({ yearMonthTextColor: v })} />
             </div>
           </section>
 
-          {/* Jours de la semaine (lun-dim header) */}
+          {/* Vue mensuelle - header */}
           <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Jours de la semaine</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Vue mensuelle — Bandeau Lun-Dim</h3>
             <div className="space-y-3">
-              <ColorPicker label="Titre semaine (Lun-Ven)" value={settings.weekdaysColor} onChange={(v) => onUpdateSettings({ weekdaysColor: v })} />
-              <ColorPicker label="Titre week-end (Sam-Dim)" value={settings.titleWeekendColor} onChange={(v) => onUpdateSettings({ titleWeekendColor: v })} />
+              <ColorPicker label="Fond" value={settings.monthHeaderBgColor} onChange={(v) => onUpdateSettings({ monthHeaderBgColor: v })} />
+              <ColorPicker label="Texte" value={settings.monthHeaderTextColor} onChange={(v) => onUpdateSettings({ monthHeaderTextColor: v })} />
             </div>
           </section>
 
-          {/* Cases jours */}
+          {/* Vue mensuelle - n° semaine */}
           <section>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Cases jours</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Vue mensuelle — N° semaine</h3>
             <div className="space-y-3">
-              <ColorPicker label="Fond semaine" value={settings.emptyCellsColor} onChange={(v) => onUpdateSettings({ emptyCellsColor: v })} />
-              <ColorPicker label="Fond week-end" value={settings.weekendDaysColor} onChange={(v) => onUpdateSettings({ weekendDaysColor: v })} />
-              <ColorPicker label="N° semaines" value={settings.weekNumbersColor} onChange={(v) => onUpdateSettings({ weekNumbersColor: v })} />
+              <ColorPicker label="Fond" value={settings.weekNumberBgColor} onChange={(v) => onUpdateSettings({ weekNumberBgColor: v })} />
+              <ColorPicker label="Texte" value={settings.weekNumberTextColor} onChange={(v) => onUpdateSettings({ weekNumberTextColor: v })} />
+            </div>
+          </section>
+
+          {/* Vue mensuelle - cases jours */}
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Vue mensuelle — Cases jours</h3>
+            <div className="space-y-3">
+              <ColorPicker label="Fond semaine" value={settings.dayCellBgColor} onChange={(v) => onUpdateSettings({ dayCellBgColor: v })} />
+              <ColorPicker label="Texte semaine" value={settings.dayCellTextColor} onChange={(v) => onUpdateSettings({ dayCellTextColor: v })} />
+              <ColorPicker label="Fond week-end" value={settings.weekendDaysBgColor} onChange={(v) => onUpdateSettings({ weekendDaysBgColor: v })} />
+              <ColorPicker label="Texte week-end" value={settings.weekendDaysTextColor} onChange={(v) => onUpdateSettings({ weekendDaysTextColor: v })} />
             </div>
           </section>
 
@@ -96,7 +127,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Date initiale</Label>
                 <span className="text-sm font-mono text-muted-foreground">
-                  {format(ASTREINTE_START_DATE, 'dd/MM/yyyy', { locale: fr })}
+                  {format(astreinteDate, 'dd/MM/yyyy', { locale: fr })}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">Cycle de 6 semaines à partir de cette date.</p>
@@ -123,18 +154,49 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                   {pinError && <p className="text-xs text-destructive">Code incorrect</p>}
                 </div>
               ) : (
-                <div className="mt-2 p-2 bg-primary/5 rounded border border-primary/20">
-                  <p className="text-xs text-primary mb-1">🔓 Déverrouillé — Modification possible dans les données initiales.</p>
+                <div className="mt-2 space-y-3">
+                  <div className="p-2 bg-primary/5 rounded border border-primary/20 space-y-2">
+                    <p className="text-xs text-primary">🔓 Déverrouillé</p>
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <Label className="text-xs">Nouvelle date</Label>
+                        <Input
+                          type="date"
+                          value={newStartDate}
+                          onChange={(e) => setNewStartDate(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <Button size="sm" className="h-8" onClick={handleDateChange}>OK</Button>
+                    </div>
+                  </div>
+                  
+                  {!showPinChange ? (
+                    <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={() => setShowPinChange(true)}>
+                      <KeyRound className="w-3 h-3 mr-1" /> Changer le code PIN
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        maxLength={4}
+                        placeholder="Nouveau PIN"
+                        value={newPin}
+                        onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        className="h-8 text-sm flex-1"
+                      />
+                      <Button size="sm" className="h-8" onClick={handlePinChange} disabled={newPin.length !== 4}>OK</Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </section>
 
-          {/* Événements et états */}
+          {/* Événements & états */}
           <section>
             <h3 className="text-sm font-semibold text-foreground mb-3">Événements & états</h3>
             <div className="space-y-3">
-              <ColorPicker label="Événement par défaut" value={settings.eventColor} onChange={(v) => onUpdateSettings({ eventColor: v })} />
               <ColorPicker label="RE (Repos)" value={settings.reColor} onChange={(v) => onUpdateSettings({ reColor: v })} />
               <ColorPicker label="CP (Congés Payés)" value={settings.cpColor} onChange={(v) => onUpdateSettings({ cpColor: v })} />
               <ColorPicker label="Vacances scolaires" value={settings.vacationColor} onChange={(v) => onUpdateSettings({ vacationColor: v })} />
@@ -158,7 +220,6 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
             <p className="text-xs text-muted-foreground">
               <strong>RE</strong> et <strong>CP</strong> grisent la case jour entière. 
               Les astreintes actives restent prioritaires sur le grisage.
-              Les patterns de préparation (M0-M4) sont définis en dur.
             </p>
           </section>
         </div>

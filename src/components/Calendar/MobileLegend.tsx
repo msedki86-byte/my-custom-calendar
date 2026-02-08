@@ -15,7 +15,7 @@ export function MobileLegend({ settings, expanded: initialExpanded = false }: Mo
     { label: 'Astreinte', color: settings.astreinteColor },
     { label: 'Astr. ponctuelle', color: settings.astreintePonctuelleColor },
     { label: 'Astr. annulée', color: settings.astreinteCancelledColor, pattern: true },
-    { label: 'Événement', color: settings.eventColor },
+    { label: 'Événement', color: '#00AEEF' },
     { label: 'Vacances', color: settings.vacationColor },
     { label: 'Jour férié', color: '#ef4444', pattern: true },
     { label: 'Arrêt Tr2', color: settings.arretTr2Color },

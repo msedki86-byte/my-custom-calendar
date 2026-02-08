@@ -39,7 +39,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>(initialDate || new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(initialDate || new Date());
-  const [color, setColor] = useState('#0ea5e9');
+  const [color, setColor] = useState('#00AEEF');
   const [startPopoverOpen, setStartPopoverOpen] = useState(false);
   const [endPopoverOpen, setEndPopoverOpen] = useState(false);
 
@@ -104,7 +104,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
     // Reset form
     setName('');
     setType('event');
-    setColor('#0ea5e9');
+    setColor('#00AEEF');
     setShowDuplicateWarning(false);
     onClose();
   };
@@ -182,7 +182,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
                   setShowDuplicateWarning(false);
                   if (startDate && endDate && name.trim()) {
                     onAdd({ type, name: name.trim(), startDate, endDate, color });
-                    setName(''); setType('event'); setColor('#0ea5e9'); setShowDuplicateWarning(false); onClose();
+                    setName(''); setType('event'); setColor('#00AEEF'); setShowDuplicateWarning(false); onClose();
                   }
                 }}>Valider quand même</Button>
                 <Button size="sm" variant="outline" onClick={() => setShowDuplicateWarning(false)}>Modifier</Button>
