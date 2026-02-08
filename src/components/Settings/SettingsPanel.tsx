@@ -28,7 +28,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
   if (!isOpen) return null;
 
   const handlePinSubmit = () => {
-    if (pinInput === settings.settingsPin) {
+    if (pinInput === (settings.settingsPin || '0000')) {
       setPinUnlocked(true);
       setPinError(false);
       // Pre-fill date input
@@ -201,7 +201,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
               <ColorPicker label="RE (Repos)" value={settings.reColor} onChange={(v) => onUpdateSettings({ reColor: v })} />
               <ColorPicker label="CP (Congés Payés)" value={settings.cpColor} onChange={(v) => onUpdateSettings({ cpColor: v })} />
               <ColorPicker label="Vacances scolaires" value={settings.vacationColor} onChange={(v) => onUpdateSettings({ vacationColor: v })} />
-              <PatternPicker label="Motif jours fériés" value={settings.holidayPattern} onChange={(v) => onUpdateSettings({ holidayPattern: v })} />
+              
             </div>
           </section>
 

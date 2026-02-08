@@ -123,7 +123,7 @@ export function UnifiedCalendarGrid({
   // Compute vacation bars for header
   const vacationBars = useMemo(() => {
     return weeks.map(week => computeBarSpans(
-      vacations.map(v => ({ ...v, color: v.color || settings.vacationColor })),
+      vacations.map(v => ({ ...v, color: settings.vacationColor })),
       week
     ));
   }, [weeks, vacations, settings.vacationColor]);
@@ -186,7 +186,7 @@ export function UnifiedCalendarGrid({
                   "grid bg-muted/20",
                   showWeekNumbers ? "grid-cols-8" : "grid-cols-7"
                 )}>
-                  {showWeekNumbers && <div className="border-r border-border" />}
+                  {showWeekNumbers && <div className="border-r border-border" style={{ backgroundColor: settings.weekNumberBgColor }} />}
                   <div className="col-span-7 relative py-1 px-0.5 space-y-0.5">
                     {/* Vacation bars */}
                     {weekVacationBars.map((bar, idx) => (
@@ -292,10 +292,10 @@ export function UnifiedCalendarGrid({
                       )}
                       style={{
                         ...(cellBgColor ? { backgroundColor: cellBgColor } : {}),
-                        ...(isWeekendDay && isCurrentMonth && !showREBackground && !showCPBackground && !cellBgColor
+                        ...((isWeekendDay || holiday) && isCurrentMonth && !showREBackground && !showCPBackground && !cellBgColor
                           ? { backgroundColor: settings.weekendDaysBgColor, color: settings.weekendDaysTextColor }
                           : {}),
-                        ...(isCurrentMonth && !isWeekendDay && !showREBackground && !showCPBackground && !cellBgColor
+                        ...(isCurrentMonth && !isWeekendDay && !holiday && !showREBackground && !showCPBackground && !cellBgColor
                           ? { backgroundColor: settings.dayCellBgColor, color: settings.dayCellTextColor }
                           : {}),
                       }}
