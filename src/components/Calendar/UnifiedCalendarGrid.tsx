@@ -145,22 +145,23 @@ export function UnifiedCalendarGrid({
       isMobileLandscape && "text-xs"
     )}>
       {/* Weekday Headers */}
-      <div className={cn(
-        "grid bg-muted/50",
-        showWeekNumbers ? "grid-cols-8" : "grid-cols-7"
-      )}>
+      <div 
+        className={cn(
+          "grid",
+          showWeekNumbers ? "grid-cols-8" : "grid-cols-7"
+        )}
+        style={{ backgroundColor: settings.titleWeekColor }}
+      >
         {showWeekNumbers && (
-          <div className="py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold text-muted-foreground border-r border-border">
+          <div className="py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold border-r border-white/20" style={{ color: '#FFFFFF' }}>
             S.
           </div>
         )}
         {(isMobileView ? WEEKDAYS_SHORT : WEEKDAYS).map((day, index) => (
           <div 
             key={`${day}-${index}`} 
-            className={cn(
-              "py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold text-muted-foreground",
-              index >= 5 && "text-primary/70"
-            )}
+            className="py-1 sm:py-2 lg:py-3 text-center text-[9px] sm:text-[10px] lg:text-xs font-semibold"
+            style={{ color: index >= 5 ? settings.titleWeekendColor : '#FFFFFF' }}
           >
             {day}
           </div>
@@ -287,10 +288,17 @@ export function UnifiedCalendarGrid({
                         "active:scale-[0.98] touch-manipulation",
                         !isCurrentMonth && "opacity-30 bg-muted/20",
                         isCurrentMonth && !showREBackground && !showCPBackground && "hover:bg-accent/30",
-                        isWeekendDay && isCurrentMonth && !showREBackground && !showCPBackground && "bg-muted/20",
                         isTodayDate && "ring-2 ring-primary ring-inset"
                       )}
-                      style={cellBgColor ? { backgroundColor: cellBgColor } : undefined}
+                      style={{
+                        ...(cellBgColor ? { backgroundColor: cellBgColor } : {}),
+                        ...(isWeekendDay && isCurrentMonth && !showREBackground && !showCPBackground && !cellBgColor
+                          ? { backgroundColor: settings.weekendDaysColor }
+                          : {}),
+                        ...(isCurrentMonth && !isWeekendDay && !showREBackground && !showCPBackground && !cellBgColor
+                          ? { backgroundColor: settings.emptyCellsColor }
+                          : {}),
+                      }}
                     >
                       {/* Day Number Header */}
                       <div className="flex items-center justify-between w-full mb-0.5">

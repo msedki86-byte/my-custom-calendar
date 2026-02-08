@@ -226,6 +226,23 @@ const Index = () => {
               />
             </div>
 
+            {/* Collapsible Legend - ABOVE calendar */}
+            <div className="mb-2 sm:mb-3" data-legend-print>
+              <UnifiedLegend 
+                settings={settings} 
+                defaultExpanded={defaultSectionsExpanded}
+                viewMode={viewMode}
+                currentDate={currentDate}
+                arrets={arrets}
+                vacations={vacations}
+                events={events}
+                holidays={holidays}
+                astreintes={yearAstreintes}
+                ponctualAstreintes={ponctualAstreintes}
+                cancelledAstreinteDates={cancelledAstreinteDates}
+              />
+            </div>
+
             {/* Calendar View with swipe */}
             <div className="mt-3 sm:mt-4" data-calendar-print {...swipeHandlers}>
               {viewMode === 'year' ? (
@@ -283,22 +300,8 @@ const Index = () => {
               />
             </div>
 
-            {/* Collapsible Legend - BELOW arrêts */}
-            <div className="mt-2 sm:mt-3 space-y-2 sm:space-y-3" data-legend-print>
-              <UnifiedLegend 
-                settings={settings} 
-                defaultExpanded={defaultSectionsExpanded}
-                viewMode={viewMode}
-                currentDate={currentDate}
-                arrets={arrets}
-                vacations={vacations}
-                events={events}
-                holidays={holidays}
-                astreintes={yearAstreintes}
-                ponctualAstreintes={ponctualAstreintes}
-                cancelledAstreinteDates={cancelledAstreinteDates}
-              />
-            </div>
+
+
           </div>
         )}
 
