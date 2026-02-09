@@ -176,7 +176,7 @@ export function UnifiedLegend({
       {/* ✅ MARQUEUR PDF */}
       <div
         data-calendar-legend
-        className="p-3 sm:p-4 space-y-3"
+        className="p-3 sm:p-4 space-y-3 print-visible"
       >
         {mainItems.length > 0 && (
           <div>
