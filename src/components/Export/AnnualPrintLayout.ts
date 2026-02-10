@@ -61,21 +61,40 @@ function isCancelledDate(date: Date, cancelled: CancelledAstreinteDate[]): boole
   return cancelled.some(c => isSameDay(new Date(c.date), date));
 }
 
-// Build arret context bars for a given week row
-function buildArretBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrintData): string {
+// Build context bars (vacations + arrets) for a given week row
+function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrintData): string {
   const s = data.settings;
-  if (data.arrets.length === 0) return '';
-
-  // For each arret, find which columns of this week it covers
   const bars: string[] = [];
-  const processedArrets = new Set<string>();
 
+  // Vacation bars
+  for (const vac of data.vacations) {
+    const vacStart = new Date(vac.startDate);
+    const vacEnd = new Date(vac.endDate);
+    let firstCol = -1, lastCol = -1;
+    for (let i = 0; i < 7; i++) {
+      const day = week[i];
+      if (!isSameMonth(day, monthDate)) continue;
+      const d = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+      if (d >= new Date(vacStart.getFullYear(), vacStart.getMonth(), vacStart.getDate()) &&
+          d <= new Date(vacEnd.getFullYear(), vacEnd.getMonth(), vacEnd.getDate())) {
+        if (firstCol === -1) firstCol = i;
+        lastCol = i;
+      }
+    }
+    if (firstCol !== -1) {
+      const left = ((firstCol + 1) / 8 * 100);
+      const width = ((lastCol - firstCol + 1) / 8 * 100);
+      bars.push(`<div style="position:absolute;top:0;left:${left}%;width:${width}%;height:2px;background:${vac.color || s.vacationColor};border-radius:1px;z-index:1;"></div>`);
+    }
+  }
+
+  // Arret bars
+  const processedArrets = new Set<string>();
   for (const arret of data.arrets) {
     if (processedArrets.has(arret.id)) continue;
     const arretStart = new Date(arret.startDate);
     const arretEnd = new Date(arret.endDate);
     const color = getArretColor(arret, s);
-
     let firstCol = -1, lastCol = -1;
     for (let i = 0; i < 7; i++) {
       const day = week[i];
@@ -87,18 +106,16 @@ function buildArretBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrintD
         lastCol = i;
       }
     }
-
     if (firstCol !== -1) {
       processedArrets.add(arret.id);
-      // +1 col offset for week number column
       const left = ((firstCol + 1) / 8 * 100);
       const width = ((lastCol - firstCol + 1) / 8 * 100);
-      bars.push(`<div style="position:absolute;top:0;left:${left}%;width:${width}%;height:3px;background:${color};border-radius:1px;z-index:2;"></div>`);
+      bars.push(`<div style="position:absolute;top:2px;left:${left}%;width:${width}%;height:2px;background:${color};border-radius:1px;z-index:2;"></div>`);
     }
   }
 
   if (bars.length === 0) return '';
-  return `<tr><td colspan="8" style="position:relative;height:4px;padding:0;border:none;">${bars.join('')}</td></tr>`;
+  return `<tr><td colspan="8" style="position:relative;height:5px;padding:0;border:none;">${bars.join('')}</td></tr>`;
 }
 
 function buildMonthHTML(year: number, month: number, data: AnnualPrintData): string {
@@ -124,15 +141,16 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
   html += `</tr></thead><tbody>`;
 
   for (const week of weeks) {
-    // Arret context bars above the week
-    html += buildArretBarsForWeek(week, monthDate, data);
+    // Context bars (vacations + arrets) above the week
+    html += buildContextBarsForWeek(week, monthDate, data);
 
     const wn = getWeek(week[0], { locale: fr, weekStartsOn: 1 });
     html += `<tr><td class="wk-col" style="background:${s.weekNumberBgColor};color:${s.weekNumberTextColor}">${wn}</td>`;
 
     for (const day of week) {
       if (!isSameMonth(day, monthDate)) {
-        html += `<td class="day empty"></td>`;
+        // Empty cell with week number bg color to fill gaps
+        html += `<td class="day empty" style="background:${s.weekNumberBgColor}"></td>`;
         continue;
       }
 
@@ -153,12 +171,8 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
       if (cpEvt) { bg = s.cpColor; fg = '#FFF'; }
       if (ast && !cancelled) { bg = s.astreinteColor; fg = '#333'; }
 
-      // Event lines (bars instead of dots)
+      // Event lines centered in cell
       let linesHTML = '';
-
-      if (vac) {
-        linesHTML += `<span class="ev-line" style="background:${s.vacationColor}"></span>`;
-      }
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
       for (const evt of otherEvts.slice(0, 2)) {
         linesHTML += `<span class="ev-line" style="background:${evt.color}"></span>`;
@@ -180,15 +194,10 @@ function buildLegendHTML(data: AnnualPrintData): string {
     { label: 'CP', bg: s.cpColor },
   ];
 
-  const uniqueVacs = new Map<string, Vacation>();
-  data.vacations.forEach(v => uniqueVacs.set(v.name, v));
-  uniqueVacs.forEach(v => items.push({ label: v.name, bg: v.color || s.vacationColor }));
-
-  const tranches = new Set(data.arrets.map(a => a.tranche));
-  tranches.forEach(tr => {
-    const color = s[`arretTr${tr.replace('Tr', '')}Color` as keyof CalendarSettings] as string;
-    items.push({ label: `AT ${tr}`, bg: color });
-  });
+  // Single "Vacances scolaires" entry
+  if (data.vacations.length > 0) {
+    items.push({ label: 'Vacances scolaires', bg: s.vacationColor });
+  }
 
   let html = `<div class="legend">`;
   items.forEach(it => {
@@ -211,20 +220,33 @@ function buildArretBarHTML(data: AnnualPrintData): string {
     byTranche.set(a.tranche, list);
   });
 
+  // Legend swatches for tranches
+  const trancheSwatches: string[] = [];
   byTranche.forEach((arretList, tranche) => {
     const color = getArretColor(arretList[0], s);
-    html += `<div class="arret-tranche"><span class="arret-tranche-label" style="background:${color};color:#FFF">${tranche}</span>`;
+    trancheSwatches.push(`<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span><span class="legend-label">${tranche}</span></div>`);
+  });
+
+  // Detail chips
+  const chips: string[] = [];
+  byTranche.forEach((arretList, tranche) => {
+    const color = getArretColor(arretList[0], s);
+    let trancheHTML = `<div class="arret-tranche"><span class="arret-tranche-label" style="background:${color};color:#FFF">${tranche}</span>`;
     arretList.forEach(a => {
       const start = format(new Date(a.startDate), 'dd/MM', { locale: fr });
       const end = format(new Date(a.endDate), 'dd/MM', { locale: fr });
       const label = a.type === 'prepa' && a.module ? `${a.module}` : 'AT';
-      html += `<span class="arret-chip" style="border-color:${color}">${label}: ${start}–${end}</span>`;
+      trancheHTML += `<span class="arret-chip" style="border-color:${color}">${label}: ${start}–${end}</span>`;
     });
-    html += `</div>`;
+    trancheHTML += `</div>`;
+    chips.push(trancheHTML);
   });
 
+  html += chips.join('');
   html += `</div></div>`;
-  return html;
+
+  // Return both the legend line and the detail bar
+  return `<div class="arret-legend-line">${trancheSwatches.join('')}</div>${html}`;
 }
 
 export function generateAnnualPrintHTML(data: AnnualPrintData): string {
@@ -233,7 +255,7 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   for (let m = 0; m < 12; m++) months += buildMonthHTML(year, m, data);
 
   const legend = buildLegendHTML(data);
-  const arretBar = buildArretBarHTML(data);
+  const arretSection = buildArretBarHTML(data);
 
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <title>Calendrier ${year}</title>
@@ -245,13 +267,18 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 
   .page { width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; }
 
-  .page-title { text-align: center; font-size: 11pt; font-weight: 700; margin-bottom: 1.5mm; }
+  .page-title { text-align: center; font-size: 11pt; font-weight: 700; margin-bottom: 1mm; }
 
   /* Legend */
-  .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; }
+  .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1mm; }
   .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6pt; }
-  .legend-swatch { width: 10px; height: 4px; border-radius: 1px; flex-shrink: 0; }
+  .legend-swatch { width: 12px; height: 8px; border-radius: 1px; flex-shrink: 0; }
   .legend-label { white-space: nowrap; }
+
+  /* Arret legend line (between legend and calendar) */
+  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1mm; }
+  .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6pt; }
+  .arret-legend-line .legend-swatch { width: 12px; height: 8px; border-radius: 1px; flex-shrink: 0; }
 
   /* Grid 4x3 with gaps */
   .months-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr);
@@ -271,15 +298,15 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 
   /* Day cells */
   .day { position: relative; vertical-align: middle; }
-  .day.empty { background: #f9f9f9 !important; }
+  .day.empty { }
   .day-num { position: relative; z-index: 1; }
 
-  /* Event lines (bars) */
-  .ev-lines { position: absolute; bottom: 0; left: 1px; right: 1px; display: flex; flex-direction: column; gap: 0; }
+  /* Event lines centered in cell */
+  .ev-lines { position: absolute; top: 50%; left: 1px; right: 1px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; margin-top: 3px; }
   .ev-line { display: block; height: 2px; width: 100%; border-radius: 0.5px; }
 
   /* Arret bar */
-  .arret-bar { margin-top: 1.5mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1mm 2mm; }
+  .arret-bar { margin-top: 1mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1mm 2mm; }
   .arret-bar-title { font-size: 6.5pt; font-weight: 700; margin-bottom: 1mm; }
   .arret-items { display: flex; flex-wrap: wrap; gap: 1mm 3mm; }
   .arret-tranche { display: flex; align-items: center; gap: 1mm; }
@@ -290,8 +317,8 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 <div class="page">
   <div class="page-title">Calendrier ${year}</div>
   ${legend}
+  ${arretSection}
   <div class="months-grid">${months}</div>
-  ${arretBar}
 </div>
 <script>window.onload=()=>{setTimeout(()=>{window.print();window.close();},400);};<\/script>
 </body></html>`;

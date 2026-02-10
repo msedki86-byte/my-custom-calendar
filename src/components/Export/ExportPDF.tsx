@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { generateAnnualPrintHTML } from './AnnualPrintLayout';
+import { generateMonthlyPrintHTML } from './MonthlyPrintLayout';
 import { CalendarSettings, CalendarEvent, Astreinte, Vacation, Arret, Holiday, CancelledAstreinteDate } from '@/types/calendar';
 
 export interface AnnualExportData {
@@ -15,18 +16,37 @@ export interface AnnualExportData {
   cancelledDates: CancelledAstreinteDate[];
 }
 
-// Annual PDF: dedicated layout
-export function exportAnnualPDF(data: AnnualExportData) {
-  const rawHTML = generateAnnualPrintHTML(data);
-  const cleanHTML = DOMPurify.sanitize(rawHTML, { WHOLE_DOCUMENT: true, ADD_TAGS: ['style', 'meta'], ADD_ATTR: ['onload'] });
+export interface MonthlyExportData {
+  year: number;
+  month: number;
+  settings: CalendarSettings;
+  events: CalendarEvent[];
+  astreintes: Astreinte[];
+  vacations: Vacation[];
+  arrets: Arret[];
+  holidays: Holiday[];
+  cancelledDates: CancelledAstreinteDate[];
+}
 
+function openPrintWindow(rawHTML: string) {
+  const cleanHTML = DOMPurify.sanitize(rawHTML, { WHOLE_DOCUMENT: true, ADD_TAGS: ['style', 'meta'], ADD_ATTR: ['onload'] });
   const printWindow = window.open('', '_blank');
   if (!printWindow) { alert('Popup bloquée. Autorisez les popups pour exporter.'); return; }
   printWindow.document.write(cleanHTML);
   printWindow.document.close();
 }
 
-// Month/week PDF: clone screen
+// Annual PDF: dedicated layout
+export function exportAnnualPDF(data: AnnualExportData) {
+  openPrintWindow(generateAnnualPrintHTML(data));
+}
+
+// Monthly PDF: dedicated layout
+export function exportMonthlyPDF(data: MonthlyExportData) {
+  openPrintWindow(generateMonthlyPrintHTML(data));
+}
+
+// Week PDF: clone screen (fallback)
 export function exportPDF(viewMode: 'year' | 'month' | 'week') {
   const calendar = document.querySelector('[data-calendar-print]');
   const legend = document.querySelector('[data-legend-print]');
