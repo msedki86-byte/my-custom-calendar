@@ -1,17 +1,39 @@
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
+import DOMPurify from 'dompurify';
+import { generateAnnualPrintHTML } from './AnnualPrintLayout';
+import { CalendarSettings, CalendarEvent, Astreinte, Vacation, Arret, Holiday, CancelledAstreinteDate } from '@/types/calendar';
 
-// Standalone function for toolbar usage
+export interface AnnualExportData {
+  year: number;
+  settings: CalendarSettings;
+  events: CalendarEvent[];
+  astreintes: Astreinte[];
+  vacations: Vacation[];
+  arrets: Arret[];
+  holidays: Holiday[];
+  cancelledDates: CancelledAstreinteDate[];
+}
+
+// Annual PDF: dedicated layout
+export function exportAnnualPDF(data: AnnualExportData) {
+  const rawHTML = generateAnnualPrintHTML(data);
+  const cleanHTML = DOMPurify.sanitize(rawHTML, { WHOLE_DOCUMENT: true, ADD_TAGS: ['style', 'meta'], ADD_ATTR: ['onload'] });
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) { alert('Popup bloquée. Autorisez les popups pour exporter.'); return; }
+  printWindow.document.write(cleanHTML);
+  printWindow.document.close();
+}
+
+// Month/week PDF: clone screen
 export function exportPDF(viewMode: 'year' | 'month' | 'week') {
   const calendar = document.querySelector('[data-calendar-print]');
   const legend = document.querySelector('[data-legend-print]');
   const arretBar = document.querySelector('[data-arret-print]');
   if (!calendar) { alert('Calendrier introuvable pour export PDF.'); return; }
 
-  const title = viewMode === 'year'
-    ? `Calendrier ${new Date().getFullYear()}`
-    : `Calendrier`;
-
+  const title = `Calendrier`;
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
 
@@ -30,7 +52,7 @@ export function exportPDF(viewMode: 'year' | 'month' | 'week') {
       ${calendar.outerHTML}
       ${arretBar ? arretBar.outerHTML : ''}
     </div>
-    <script>window.onload=()=>{setTimeout(()=>{window.print();window.close();},300);};</script>
+    <script>window.onload=()=>{setTimeout(()=>{window.print();window.close();},300);};<\/script>
     </body></html>`);
   printWindow.document.close();
 }
