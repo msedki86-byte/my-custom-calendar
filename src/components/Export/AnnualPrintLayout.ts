@@ -5,7 +5,7 @@ import {
 import { fr } from 'date-fns/locale';
 import {
   CalendarSettings, CalendarEvent, Astreinte, Vacation, Arret,
-  Holiday, CancelledAstreinteDate, modulePatterns, PatternType,
+  Holiday, CancelledAstreinteDate, PatternType,
 } from '@/types/calendar';
 import { getArretColor } from '@/lib/trancheColors';
 
@@ -61,26 +61,44 @@ function isCancelledDate(date: Date, cancelled: CancelledAstreinteDate[]): boole
   return cancelled.some(c => isSameDay(new Date(c.date), date));
 }
 
-function patternSVG(pattern: PatternType, color: string, id: string): string {
-  const c = color;
-  switch (pattern) {
-    case 'stripes':
-      return `<pattern id="${id}" width="4" height="4" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="4" stroke="${c}" stroke-width="1.5"/></pattern>`;
-    case 'dots':
-      return `<pattern id="${id}" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="${c}"/></pattern>`;
-    case 'crosshatch':
-      return `<pattern id="${id}" width="4" height="4" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="4" y2="4" stroke="${c}" stroke-width="0.7"/><line x1="4" y1="0" x2="0" y2="4" stroke="${c}" stroke-width="0.7"/></pattern>`;
-    case 'diagonal':
-      return `<pattern id="${id}" width="4" height="4" patternUnits="userSpaceOnUse"><line x1="0" y1="4" x2="4" y2="0" stroke="${c}" stroke-width="1"/></pattern>`;
-    case 'waves':
-      return `<pattern id="${id}" width="8" height="4" patternUnits="userSpaceOnUse"><path d="M0 2 Q2 0 4 2 Q6 4 8 2" fill="none" stroke="${c}" stroke-width="0.8"/></pattern>`;
-    case 'grid':
-      return `<pattern id="${id}" width="4" height="4" patternUnits="userSpaceOnUse"><line x1="2" y1="0" x2="2" y2="4" stroke="${c}" stroke-width="0.5"/><line x1="0" y1="2" x2="4" y2="2" stroke="${c}" stroke-width="0.5"/></pattern>`;
-    case 'zigzag':
-      return `<pattern id="${id}" width="6" height="4" patternUnits="userSpaceOnUse"><polyline points="0,4 3,0 6,4" fill="none" stroke="${c}" stroke-width="0.8"/></pattern>`;
-    default:
-      return '';
+// Build arret context bars for a given week row
+function buildArretBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrintData): string {
+  const s = data.settings;
+  if (data.arrets.length === 0) return '';
+
+  // For each arret, find which columns of this week it covers
+  const bars: string[] = [];
+  const processedArrets = new Set<string>();
+
+  for (const arret of data.arrets) {
+    if (processedArrets.has(arret.id)) continue;
+    const arretStart = new Date(arret.startDate);
+    const arretEnd = new Date(arret.endDate);
+    const color = getArretColor(arret, s);
+
+    let firstCol = -1, lastCol = -1;
+    for (let i = 0; i < 7; i++) {
+      const day = week[i];
+      if (!isSameMonth(day, monthDate)) continue;
+      const d = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+      if (d >= new Date(arretStart.getFullYear(), arretStart.getMonth(), arretStart.getDate()) &&
+          d <= new Date(arretEnd.getFullYear(), arretEnd.getMonth(), arretEnd.getDate())) {
+        if (firstCol === -1) firstCol = i;
+        lastCol = i;
+      }
+    }
+
+    if (firstCol !== -1) {
+      processedArrets.add(arret.id);
+      // +1 col offset for week number column
+      const left = ((firstCol + 1) / 8 * 100);
+      const width = ((lastCol - firstCol + 1) / 8 * 100);
+      bars.push(`<div style="position:absolute;top:0;left:${left}%;width:${width}%;height:3px;background:${color};border-radius:1px;z-index:2;"></div>`);
+    }
   }
+
+  if (bars.length === 0) return '';
+  return `<tr><td colspan="8" style="position:relative;height:4px;padding:0;border:none;">${bars.join('')}</td></tr>`;
 }
 
 function buildMonthHTML(year: number, month: number, data: AnnualPrintData): string {
@@ -106,6 +124,9 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
   html += `</tr></thead><tbody>`;
 
   for (const week of weeks) {
+    // Arret context bars above the week
+    html += buildArretBarsForWeek(week, monthDate, data);
+
     const wn = getWeek(week[0], { locale: fr, weekStartsOn: 1 });
     html += `<tr><td class="wk-col" style="background:${s.weekNumberBgColor};color:${s.weekNumberTextColor}">${wn}</td>`;
 
@@ -118,7 +139,6 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
       const we = isWeekend(day);
       const hol = isHolidayDate(day, data.holidays);
       const vac = isVacationDate(day, data.vacations);
-      const arret = isArretDate(day, data.arrets);
       const ast = isAstreinteDate(day, data.astreintes);
       const cancelled = isCancelledDate(day, data.cancelledDates);
       const evts = getEventsOnDate(day, data.events);
@@ -133,28 +153,18 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
       if (cpEvt) { bg = s.cpColor; fg = '#FFF'; }
       if (ast && !cancelled) { bg = s.astreinteColor; fg = '#333'; }
 
-      let classes = 'day';
-      let extraStyle = '';
-      let dotHTML = '';
+      // Event lines (bars instead of dots)
+      let linesHTML = '';
 
-      // Arret indicator
-      if (arret) {
-        const arretColor = getArretColor(arret, s);
-        dotHTML += `<span class="dot" style="background:${arretColor}"></span>`;
-      }
-
-      // Vacation indicator
       if (vac) {
-        dotHTML += `<span class="dot" style="background:${s.vacationColor}"></span>`;
+        linesHTML += `<span class="ev-line" style="background:${s.vacationColor}"></span>`;
       }
-
-      // Regular events indicator
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
-      if (otherEvts.length > 0) {
-        dotHTML += `<span class="dot" style="background:${otherEvts[0].color}"></span>`;
+      for (const evt of otherEvts.slice(0, 2)) {
+        linesHTML += `<span class="ev-line" style="background:${evt.color}"></span>`;
       }
 
-      html += `<td class="${classes}" style="background:${bg};color:${fg};${extraStyle}"><span class="day-num">${day.getDate()}</span>${dotHTML ? `<div class="dots">${dotHTML}</div>` : ''}</td>`;
+      html += `<td class="day" style="background:${bg};color:${fg}"><span class="day-num">${day.getDate()}</span>${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}</td>`;
     }
     html += `</tr>`;
   }
@@ -170,12 +180,10 @@ function buildLegendHTML(data: AnnualPrintData): string {
     { label: 'CP', bg: s.cpColor },
   ];
 
-  // Vacations
   const uniqueVacs = new Map<string, Vacation>();
   data.vacations.forEach(v => uniqueVacs.set(v.name, v));
   uniqueVacs.forEach(v => items.push({ label: v.name, bg: v.color || s.vacationColor }));
 
-  // Tranches
   const tranches = new Set(data.arrets.map(a => a.tranche));
   tranches.forEach(tr => {
     const color = s[`arretTr${tr.replace('Tr', '')}Color` as keyof CalendarSettings] as string;
@@ -193,10 +201,9 @@ function buildLegendHTML(data: AnnualPrintData): string {
 function buildArretBarHTML(data: AnnualPrintData): string {
   if (data.arrets.length === 0) return '';
   const s = data.settings;
-  
+
   let html = `<div class="arret-bar"><div class="arret-bar-title">Planning Arrêts</div><div class="arret-items">`;
-  
-  // Group by tranche
+
   const byTranche = new Map<string, Arret[]>();
   data.arrets.forEach(a => {
     const list = byTranche.get(a.tranche) || [];
@@ -238,23 +245,23 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 
   .page { width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; }
 
-  /* Title */
-  .page-title { text-align: center; font-size: 11pt; font-weight: 700; margin-bottom: 2mm; }
+  .page-title { text-align: center; font-size: 11pt; font-weight: 700; margin-bottom: 1.5mm; }
 
   /* Legend */
-  .legend { display: flex; flex-wrap: wrap; gap: 2mm 4mm; justify-content: center; margin-bottom: 2mm; }
+  .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; }
   .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6pt; }
-  .legend-swatch { width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0; }
+  .legend-swatch { width: 10px; height: 4px; border-radius: 1px; flex-shrink: 0; }
   .legend-label { white-space: nowrap; }
 
-  /* Grid 4x3 */
+  /* Grid 4x3 with gaps */
   .months-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr);
-    gap: 2mm; flex: 1; min-height: 0; }
+    gap: 2.5mm; flex: 1; min-height: 0; }
 
-  /* Month block */
-  .month-block { display: flex; flex-direction: column; min-height: 0; }
+  /* Month block with rounded border */
+  .month-block { display: flex; flex-direction: column; min-height: 0;
+    border: 0.5px solid #ccc; border-radius: 3px; overflow: hidden; }
   .month-title { text-align: center; font-size: 7pt; font-weight: 700; padding: 1px 0;
-    text-transform: capitalize; border-radius: 2px 2px 0 0; }
+    text-transform: capitalize; }
 
   /* Table */
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
@@ -264,13 +271,15 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 
   /* Day cells */
   .day { position: relative; vertical-align: middle; }
-  .day.empty { background: #f5f5f5 !important; }
+  .day.empty { background: #f9f9f9 !important; }
   .day-num { position: relative; z-index: 1; }
-  .dots { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; gap: 1px; }
-  .dot { width: 3px; height: 3px; border-radius: 50%; }
+
+  /* Event lines (bars) */
+  .ev-lines { position: absolute; bottom: 0; left: 1px; right: 1px; display: flex; flex-direction: column; gap: 0; }
+  .ev-line { display: block; height: 2px; width: 100%; border-radius: 0.5px; }
 
   /* Arret bar */
-  .arret-bar { margin-top: 2mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1mm 2mm; }
+  .arret-bar { margin-top: 1.5mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1mm 2mm; }
   .arret-bar-title { font-size: 6.5pt; font-weight: 700; margin-bottom: 1mm; }
   .arret-items { display: flex; flex-wrap: wrap; gap: 1mm 3mm; }
   .arret-tranche { display: flex; align-items: center; gap: 1mm; }
