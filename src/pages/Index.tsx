@@ -13,7 +13,7 @@ import { SettingsPanel } from '@/components/Settings/SettingsPanel';
 import { AddEventDialog } from '@/components/Dialogs/AddEventDialog';
 import { EventsManager } from '@/components/Events/EventsManager';
 import { ConflictsList } from '@/components/Conflicts/ConflictsList';
-import { exportPDF } from '@/components/Export/ExportPDF';
+import { exportPDF, exportAnnualPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
 import { ICSImportDialog } from '@/components/Import/ICSImportDialog';
 import { ICSExportDialog } from '@/components/Export/ICSExportDialog';
@@ -249,7 +249,22 @@ const Index = () => {
           onViewModeChange={setViewMode}
           onYearChange={handleYearChange}
           onTabChange={setActiveTab}
-          onExportPDF={() => exportPDF(viewMode)}
+          onExportPDF={() => {
+            if (viewMode === 'year') {
+              exportAnnualPDF({
+                year: currentDate.getFullYear(),
+                settings,
+                events,
+                astreintes: yearAstreintes,
+                vacations,
+                arrets,
+                holidays,
+                cancelledDates: cancelledAstreinteDates,
+              });
+            } else {
+              exportPDF(viewMode);
+            }
+          }}
           onImport={() => setImportOpen(true)}
           onICSImport={() => setIcsImportOpen(true)}
           onICSExport={() => setIcsExportOpen(true)}
