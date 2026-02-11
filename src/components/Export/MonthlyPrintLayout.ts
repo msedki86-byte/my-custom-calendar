@@ -5,9 +5,9 @@ import {
 import { fr } from 'date-fns/locale';
 import {
   CalendarSettings, CalendarEvent, Astreinte, Vacation, Arret,
-  Holiday, CancelledAstreinteDate,
+  Holiday, CancelledAstreinteDate, PatternType,
 } from '@/types/calendar';
-import { getArretColor } from '@/lib/trancheColors';
+import { getArretColor, getArretPattern } from '@/lib/trancheColors';
 
 interface MonthlyPrintData {
   year: number;
@@ -54,11 +54,31 @@ function isCancelledDate(date: Date, cancelled: CancelledAstreinteDate[]): boole
   return cancelled.some(c => isSameDay(new Date(c.date), date));
 }
 
+function getPatternSVG(pattern: PatternType, color: string, id: string): string {
+  switch (pattern) {
+    case 'stripes':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="6" height="6"><rect width="6" height="6" fill="${color}"/><line x1="0" y1="0" x2="6" y2="6" stroke="#fff" stroke-width="1" opacity="0.6"/></pattern>`;
+    case 'dots':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="6" height="6"><rect width="6" height="6" fill="${color}"/><circle cx="3" cy="3" r="1.2" fill="#fff" opacity="0.6"/></pattern>`;
+    case 'crosshatch':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="6" height="6"><rect width="6" height="6" fill="${color}"/><line x1="0" y1="0" x2="6" y2="6" stroke="#fff" stroke-width="0.8" opacity="0.5"/><line x1="6" y1="0" x2="0" y2="6" stroke="#fff" stroke-width="0.8" opacity="0.5"/></pattern>`;
+    case 'diagonal':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="6" height="6"><rect width="6" height="6" fill="${color}"/><line x1="0" y1="6" x2="6" y2="0" stroke="#fff" stroke-width="1" opacity="0.6"/></pattern>`;
+    case 'waves':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="10" height="6"><rect width="10" height="6" fill="${color}"/><path d="M0 3 Q2.5 0 5 3 Q7.5 6 10 3" stroke="#fff" stroke-width="0.8" fill="none" opacity="0.6"/></pattern>`;
+    case 'grid':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="6" height="6"><rect width="6" height="6" fill="${color}"/><line x1="3" y1="0" x2="3" y2="6" stroke="#fff" stroke-width="0.6" opacity="0.5"/><line x1="0" y1="3" x2="6" y2="3" stroke="#fff" stroke-width="0.6" opacity="0.5"/></pattern>`;
+    default:
+      return '';
+  }
+}
+
 function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPrintData): string {
   const s = data.settings;
   const bars: string[] = [];
+  let patternCounter = 0;
 
-  // Vacation bars
+  // Vacation bars - use settings color
   for (const vac of data.vacations) {
     const vacStart = new Date(vac.startDate);
     const vacEnd = new Date(vac.endDate);
@@ -76,17 +96,17 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
     if (firstCol !== -1) {
       const left = ((firstCol + 1) / 8 * 100);
       const width = ((lastCol - firstCol + 1) / 8 * 100);
-      bars.push(`<div style="position:absolute;top:0;left:${left}%;width:${width}%;height:3px;background:${vac.color || s.vacationColor};border-radius:1px;z-index:1;"></div>`);
+      bars.push(`<div style="position:absolute;top:0;left:${left}%;width:${width}%;height:4px;background:${s.vacationColor};border-radius:1px;z-index:1;"></div>`);
     }
   }
 
-  // Arret bars
+  // Arret bars with patterns, stacked
+  const arretSlots: { arret: Arret; firstCol: number; lastCol: number }[] = [];
   const processedArrets = new Set<string>();
   for (const arret of data.arrets) {
     if (processedArrets.has(arret.id)) continue;
     const arretStart = new Date(arret.startDate);
     const arretEnd = new Date(arret.endDate);
-    const color = getArretColor(arret, s);
     let firstCol = -1, lastCol = -1;
     for (let i = 0; i < 7; i++) {
       const day = week[i];
@@ -100,14 +120,44 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
     }
     if (firstCol !== -1) {
       processedArrets.add(arret.id);
-      const left = ((firstCol + 1) / 8 * 100);
-      const width = ((lastCol - firstCol + 1) / 8 * 100);
-      bars.push(`<div style="position:absolute;top:3px;left:${left}%;width:${width}%;height:3px;background:${color};border-radius:1px;z-index:2;"></div>`);
+      arretSlots.push({ arret, firstCol, lastCol });
     }
   }
 
+  const arretBarHeight = 4;
+  const arretStartY = 5; // vacation(4px) + 1px gap
+  for (let idx = 0; idx < arretSlots.length; idx++) {
+    const { arret, firstCol, lastCol } = arretSlots[idx];
+    const color = getArretColor(arret, s);
+    const pattern = getArretPattern(arret);
+    const left = ((firstCol + 1) / 8 * 100);
+    const width = ((lastCol - firstCol + 1) / 8 * 100);
+    const top = arretStartY + idx * (arretBarHeight + 1);
+
+    if (pattern !== 'none') {
+      const patId = `mp_${monthDate.getMonth()}_${patternCounter++}`;
+      const patSvg = getPatternSVG(pattern, color, patId);
+      if (patSvg) {
+        bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${arretBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
+        continue;
+      }
+    }
+    bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${arretBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
+  }
+
   if (bars.length === 0) return '';
-  return `<tr><td colspan="8" style="position:relative;height:8px;padding:0;border:none;">${bars.join('')}</td></tr>`;
+  const totalHeight = arretSlots.length > 0 ? arretStartY + arretSlots.length * (arretBarHeight + 1) : 5;
+  return `<tr><td colspan="8" style="position:relative;height:${totalHeight}px;padding:0;border:none;">${bars.join('')}</td></tr>`;
+}
+
+function collectEventLegendItems(data: MonthlyPrintData): { label: string; bg: string }[] {
+  const seen = new Map<string, string>();
+  for (const evt of data.events) {
+    if (evt.type === 're' || evt.type === 'cp') continue;
+    const key = evt.name || evt.type;
+    if (!seen.has(key)) seen.set(key, evt.color);
+  }
+  return Array.from(seen.entries()).map(([label, bg]) => ({ label, bg }));
 }
 
 function buildLegendHTML(data: MonthlyPrintData): string {
@@ -119,6 +169,10 @@ function buildLegendHTML(data: MonthlyPrintData): string {
   ];
   if (data.vacations.length > 0) {
     items.push({ label: 'Vacances scolaires', bg: s.vacationColor });
+  }
+  const eventItems = collectEventLegendItems(data);
+  for (const ei of eventItems) {
+    items.push({ label: ei.label, bg: ei.bg });
   }
 
   let html = `<div class="legend">`;
@@ -140,7 +194,6 @@ function buildArretBarHTML(data: MonthlyPrintData): string {
     byTranche.set(a.tranche, list);
   });
 
-  // Tranche legend line
   const trancheSwatches: string[] = [];
   byTranche.forEach((arretList, tranche) => {
     const color = getArretColor(arretList[0], s);
@@ -234,42 +287,41 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <title>${monthName}</title>
 <style>
-  @page { size: A4 landscape; margin: 8mm; }
+  @page { size: A5 portrait; margin: 5mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 297mm; height: 210mm; overflow: hidden; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
+  html, body { width: 148mm; height: 210mm; overflow: hidden; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-  .page { width: 297mm; height: 210mm; padding: 5mm; display: flex; flex-direction: column; }
-  .page-title { text-align: center; font-size: 16pt; font-weight: 700; margin-bottom: 3mm; text-transform: capitalize; }
+  .page { width: 148mm; height: 210mm; padding: 4mm; display: flex; flex-direction: column; }
+  .page-title { text-align: center; font-size: 13pt; font-weight: 700; margin-bottom: 2mm; text-transform: capitalize; }
 
-  .legend { display: flex; flex-wrap: wrap; gap: 2mm 6mm; justify-content: center; margin-bottom: 2mm; }
-  .legend-item { display: flex; align-items: center; gap: 1.5mm; font-size: 8pt; }
-  .legend-swatch { width: 16px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; }
+  .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6.5pt; }
+  .legend-swatch { width: 14px; height: 9px; border-radius: 1.5px; flex-shrink: 0; }
   .legend-label { white-space: nowrap; }
 
-  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 2mm 6mm; justify-content: center; margin-bottom: 2mm; }
-  .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1.5mm; font-size: 8pt; }
-  .arret-legend-line .legend-swatch { width: 16px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; }
+  .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6.5pt; }
+  .arret-legend-line .legend-swatch { width: 14px; height: 9px; border-radius: 1.5px; flex-shrink: 0; }
 
-  .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
-  .month-table th, .month-table td { text-align: center; padding: 2px; line-height: 1.3; border: 0.5px solid #e0e0e0; }
-  .month-table th { font-size: 9pt; font-weight: 600; padding: 4px 2px; }
-  .month-table td { font-size: 11pt; height: 28px; }
-  .wk-col { width: 36px; font-size: 8pt !important; font-weight: 600; }
+  .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; border: 1px solid #ccc; border-radius: 3px; overflow: hidden; }
+  .month-table th, .month-table td { text-align: center; padding: 1px; line-height: 1.2; border: 0.5px solid #e0e0e0; }
+  .month-table th { font-size: 7pt; font-weight: 600; padding: 2px 1px; }
+  .month-table td { font-size: 9pt; }
+  .wk-col { width: 24px; font-size: 6.5pt !important; font-weight: 600; }
 
   .day { position: relative; vertical-align: middle; }
-  .day.empty { }
   .day-num { position: relative; z-index: 1; }
 
-  .ev-lines { position: absolute; top: 50%; left: 2px; right: 2px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; margin-top: 6px; }
-  .ev-line { display: block; height: 3px; width: 100%; border-radius: 1px; }
+  .ev-lines { position: absolute; top: 50%; left: 2px; right: 2px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; margin-top: 5px; }
+  .ev-line { display: block; height: 2.5px; width: 100%; border-radius: 0.5px; }
 
-  .arret-bar { margin-top: 2mm; border: 0.5px solid #ccc; border-radius: 3px; padding: 2mm 3mm; }
-  .arret-bar-title { font-size: 9pt; font-weight: 700; margin-bottom: 1.5mm; }
-  .arret-items { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; }
-  .arret-tranche { display: flex; align-items: center; gap: 1.5mm; }
-  .arret-tranche-label { font-size: 7pt; font-weight: 700; padding: 1mm 2mm; border-radius: 2px; }
-  .arret-chip { font-size: 7pt; border: 0.5px solid; border-radius: 2px; padding: 0.5mm 1.5mm; white-space: nowrap; }
+  .arret-bar { margin-top: 1.5mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1.5mm 2mm; }
+  .arret-bar-title { font-size: 7pt; font-weight: 700; margin-bottom: 1mm; }
+  .arret-items { display: flex; flex-wrap: wrap; gap: 1mm 3mm; }
+  .arret-tranche { display: flex; align-items: center; gap: 1mm; }
+  .arret-tranche-label { font-size: 6pt; font-weight: 700; padding: 0.5mm 1.5mm; border-radius: 2px; }
+  .arret-chip { font-size: 5.5pt; border: 0.5px solid; border-radius: 2px; padding: 0.3mm 1mm; white-space: nowrap; }
 </style>
 </head><body>
 <div class="page">

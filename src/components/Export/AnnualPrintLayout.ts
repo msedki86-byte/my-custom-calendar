@@ -5,9 +5,9 @@ import {
 import { fr } from 'date-fns/locale';
 import {
   CalendarSettings, CalendarEvent, Astreinte, Vacation, Arret,
-  Holiday, CancelledAstreinteDate, PatternType,
+  Holiday, CancelledAstreinteDate, PatternType, modulePatterns,
 } from '@/types/calendar';
-import { getArretColor } from '@/lib/trancheColors';
+import { getArretColor, getArretPattern } from '@/lib/trancheColors';
 
 interface AnnualPrintData {
   year: number;
@@ -27,14 +27,6 @@ function isHolidayDate(date: Date, holidays: Holiday[]): Holiday | null {
 function isVacationDate(date: Date, vacations: Vacation[]): Vacation | null {
   return vacations.find(v => {
     const s = new Date(v.startDate); const e = new Date(v.endDate);
-    return date >= new Date(s.getFullYear(), s.getMonth(), s.getDate()) &&
-           date <= new Date(e.getFullYear(), e.getMonth(), e.getDate());
-  }) || null;
-}
-
-function isArretDate(date: Date, arrets: Arret[]): Arret | null {
-  return arrets.find(a => {
-    const s = new Date(a.startDate); const e = new Date(a.endDate);
     return date >= new Date(s.getFullYear(), s.getMonth(), s.getDate()) &&
            date <= new Date(e.getFullYear(), e.getMonth(), e.getDate());
   }) || null;
@@ -61,12 +53,34 @@ function isCancelledDate(date: Date, cancelled: CancelledAstreinteDate[]): boole
   return cancelled.some(c => isSameDay(new Date(c.date), date));
 }
 
+/** Generate an SVG pattern fill for arrêt bars */
+function getPatternSVG(pattern: PatternType, color: string, id: string): string {
+  switch (pattern) {
+    case 'stripes':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="4" height="4"><rect width="4" height="4" fill="${color}"/><line x1="0" y1="0" x2="4" y2="4" stroke="#fff" stroke-width="0.8" opacity="0.6"/></pattern>`;
+    case 'dots':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="4" height="4"><rect width="4" height="4" fill="${color}"/><circle cx="2" cy="2" r="0.8" fill="#fff" opacity="0.6"/></pattern>`;
+    case 'crosshatch':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="4" height="4"><rect width="4" height="4" fill="${color}"/><line x1="0" y1="0" x2="4" y2="4" stroke="#fff" stroke-width="0.6" opacity="0.5"/><line x1="4" y1="0" x2="0" y2="4" stroke="#fff" stroke-width="0.6" opacity="0.5"/></pattern>`;
+    case 'diagonal':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="4" height="4"><rect width="4" height="4" fill="${color}"/><line x1="0" y1="4" x2="4" y2="0" stroke="#fff" stroke-width="0.8" opacity="0.6"/></pattern>`;
+    case 'waves':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="8" height="4"><rect width="8" height="4" fill="${color}"/><path d="M0 2 Q2 0 4 2 Q6 4 8 2" stroke="#fff" stroke-width="0.6" fill="none" opacity="0.6"/></pattern>`;
+    case 'grid':
+      return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="4" height="4"><rect width="4" height="4" fill="${color}"/><line x1="2" y1="0" x2="2" y2="4" stroke="#fff" stroke-width="0.5" opacity="0.5"/><line x1="0" y1="2" x2="4" y2="2" stroke="#fff" stroke-width="0.5" opacity="0.5"/></pattern>`;
+    default:
+      return '';
+  }
+}
+
 // Build context bars (vacations + arrets) for a given week row
 function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrintData): string {
   const s = data.settings;
   const bars: string[] = [];
+  const svgDefs: string[] = [];
+  let patternCounter = 0;
 
-  // Vacation bars
+  // Vacation bars - always use settings.vacationColor to match legend
   for (const vac of data.vacations) {
     const vacStart = new Date(vac.startDate);
     const vacEnd = new Date(vac.endDate);
@@ -84,17 +98,18 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
     if (firstCol !== -1) {
       const left = ((firstCol + 1) / 8 * 100);
       const width = ((lastCol - firstCol + 1) / 8 * 100);
-      bars.push(`<div style="position:absolute;top:0;left:${left}%;width:${width}%;height:2px;background:${vac.color || s.vacationColor};border-radius:1px;z-index:1;"></div>`);
+      bars.push(`<div style="position:absolute;top:0;left:${left}%;width:${width}%;height:2px;background:${s.vacationColor};border-radius:1px;z-index:1;"></div>`);
     }
   }
 
-  // Arret bars
+  // Arret bars - each on its own vertical slot to avoid overlap
+  // Group by unique arret and assign vertical slots
+  const arretSlots: { arret: Arret; firstCol: number; lastCol: number }[] = [];
   const processedArrets = new Set<string>();
   for (const arret of data.arrets) {
     if (processedArrets.has(arret.id)) continue;
     const arretStart = new Date(arret.startDate);
     const arretEnd = new Date(arret.endDate);
-    const color = getArretColor(arret, s);
     let firstCol = -1, lastCol = -1;
     for (let i = 0; i < 7; i++) {
       const day = week[i];
@@ -108,14 +123,36 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
     }
     if (firstCol !== -1) {
       processedArrets.add(arret.id);
-      const left = ((firstCol + 1) / 8 * 100);
-      const width = ((lastCol - firstCol + 1) / 8 * 100);
-      bars.push(`<div style="position:absolute;top:2px;left:${left}%;width:${width}%;height:2px;background:${color};border-radius:1px;z-index:2;"></div>`);
+      arretSlots.push({ arret, firstCol, lastCol });
     }
   }
 
+  // Each arrêt gets its own row offset: vacation=0-2px, then gap 1px, then arrêts stack at 3px each
+  const arretBarHeight = 3;
+  const arretStartY = 3; // after vacation bar (2px) + 1px gap
+  for (let idx = 0; idx < arretSlots.length; idx++) {
+    const { arret, firstCol, lastCol } = arretSlots[idx];
+    const color = getArretColor(arret, s);
+    const pattern = getArretPattern(arret);
+    const left = ((firstCol + 1) / 8 * 100);
+    const width = ((lastCol - firstCol + 1) / 8 * 100);
+    const top = arretStartY + idx * (arretBarHeight + 1);
+
+    if (pattern !== 'none') {
+      const patId = `ap_${monthDate.getMonth()}_${patternCounter++}`;
+      const patSvg = getPatternSVG(pattern, color, patId);
+      if (patSvg) {
+        svgDefs.push(patSvg);
+        bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${arretBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
+        continue;
+      }
+    }
+    bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${arretBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
+  }
+
   if (bars.length === 0) return '';
-  return `<tr><td colspan="8" style="position:relative;height:5px;padding:0;border:none;">${bars.join('')}</td></tr>`;
+  const totalHeight = arretSlots.length > 0 ? arretStartY + arretSlots.length * (arretBarHeight + 1) : 3;
+  return `<tr><td colspan="8" style="position:relative;height:${totalHeight}px;padding:0;border:none;">${bars.join('')}</td></tr>`;
 }
 
 function buildMonthHTML(year: number, month: number, data: AnnualPrintData): string {
@@ -141,7 +178,6 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
   html += `</tr></thead><tbody>`;
 
   for (const week of weeks) {
-    // Context bars (vacations + arrets) above the week
     html += buildContextBarsForWeek(week, monthDate, data);
 
     const wn = getWeek(week[0], { locale: fr, weekStartsOn: 1 });
@@ -149,14 +185,12 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
 
     for (const day of week) {
       if (!isSameMonth(day, monthDate)) {
-        // Empty cell with week number bg color to fill gaps
         html += `<td class="day empty" style="background:${s.weekNumberBgColor}"></td>`;
         continue;
       }
 
       const we = isWeekend(day);
       const hol = isHolidayDate(day, data.holidays);
-      const vac = isVacationDate(day, data.vacations);
       const ast = isAstreinteDate(day, data.astreintes);
       const cancelled = isCancelledDate(day, data.cancelledDates);
       const evts = getEventsOnDate(day, data.events);
@@ -171,7 +205,6 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
       if (cpEvt) { bg = s.cpColor; fg = '#FFF'; }
       if (ast && !cancelled) { bg = s.astreinteColor; fg = '#333'; }
 
-      // Event lines centered in cell
       let linesHTML = '';
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
       for (const evt of otherEvts.slice(0, 2)) {
@@ -186,6 +219,17 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
   return html;
 }
 
+/** Collect unique event types for legend (excluding RE/CP which are already listed) */
+function collectEventLegendItems(data: AnnualPrintData): { label: string; bg: string }[] {
+  const seen = new Map<string, string>();
+  for (const evt of data.events) {
+    if (evt.type === 're' || evt.type === 'cp') continue;
+    const key = evt.name || evt.type;
+    if (!seen.has(key)) seen.set(key, evt.color);
+  }
+  return Array.from(seen.entries()).map(([label, bg]) => ({ label, bg }));
+}
+
 function buildLegendHTML(data: AnnualPrintData): string {
   const s = data.settings;
   const items: { label: string; bg: string; border?: string }[] = [
@@ -194,9 +238,14 @@ function buildLegendHTML(data: AnnualPrintData): string {
     { label: 'CP', bg: s.cpColor },
   ];
 
-  // Single "Vacances scolaires" entry
   if (data.vacations.length > 0) {
     items.push({ label: 'Vacances scolaires', bg: s.vacationColor });
+  }
+
+  // Add event types
+  const eventItems = collectEventLegendItems(data);
+  for (const ei of eventItems) {
+    items.push({ label: ei.label, bg: ei.bg });
   }
 
   let html = `<div class="legend">`;
@@ -220,14 +269,12 @@ function buildArretBarHTML(data: AnnualPrintData): string {
     byTranche.set(a.tranche, list);
   });
 
-  // Legend swatches for tranches
   const trancheSwatches: string[] = [];
   byTranche.forEach((arretList, tranche) => {
     const color = getArretColor(arretList[0], s);
     trancheSwatches.push(`<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span><span class="legend-label">${tranche}</span></div>`);
   });
 
-  // Detail chips
   const chips: string[] = [];
   byTranche.forEach((arretList, tranche) => {
     const color = getArretColor(arretList[0], s);
@@ -245,7 +292,6 @@ function buildArretBarHTML(data: AnnualPrintData): string {
   html += chips.join('');
   html += `</div></div>`;
 
-  // Return both the legend line and the detail bar
   return `<div class="arret-legend-line">${trancheSwatches.join('')}</div>${html}`;
 }
 
