@@ -389,8 +389,8 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   html, body { width: 210mm; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     display: flex; justify-content: center; align-items: flex-start; }
-
-  .page { width: 198mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; }
+  .page { position: relative; width: 198mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; }
+  .page::before { content: ''; position: absolute; inset: 0; background: url('/images/logo-calendar.png') center/contain no-repeat; opacity: 0.15; pointer-events: none; z-index: 0; }
   .page-title { text-align: center; font-size: 10pt; font-weight: 700; margin-bottom: 1.5mm; text-transform: capitalize; width: 100%; }
 
   .legend { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1mm; width: 100%; }

@@ -29,7 +29,7 @@ export interface MonthlyExportData {
 }
 
 function openPrintWindow(rawHTML: string) {
-  const cleanHTML = DOMPurify.sanitize(rawHTML, { WHOLE_DOCUMENT: true, ADD_TAGS: ['style', 'meta'], ADD_ATTR: ['onload'] });
+  const cleanHTML = DOMPurify.sanitize(rawHTML, { WHOLE_DOCUMENT: true, ADD_TAGS: ['style', 'meta'], ADD_ATTR: ['onload', 'onclick'] });
   const printWindow = window.open('', '_blank');
   if (!printWindow) { alert('Popup bloquée. Autorisez les popups pour exporter.'); return; }
   printWindow.document.write(cleanHTML);
