@@ -377,7 +377,7 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   html, body { width: 297mm; height: 210mm; overflow: hidden; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #fff; color: #111;
     font-weight: 400; letter-spacing: 0.2px;
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { position: relative; width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; transform: scale(0.87); transform-origin: top left; }
+  .page { position: relative; width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; transform: scale(0.95); transform-origin: top center; margin: 0 auto; }
 
   .header-logo {
     position: absolute; top: 2mm; right: 3mm;
