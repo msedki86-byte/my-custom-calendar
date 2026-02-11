@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
-import DOMPurify from 'dompurify';
 import { generateMonthlyPrintHTML } from './MonthlyPrintLayout';
 import { generateAnnualPrintHTML } from './AnnualPrintLayout';
 import { CalendarSettings, CalendarEvent, Astreinte, Vacation, Arret, Holiday, CancelledAstreinteDate } from '@/types/calendar';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export interface AnnualExportData {
   year: number;
@@ -28,45 +29,114 @@ export interface MonthlyExportData {
   cancelledDates: CancelledAstreinteDate[];
 }
 
-function downloadPDF(rawHTML: string, filename: string) {
-  const cleanHTML = DOMPurify.sanitize(rawHTML, { WHOLE_DOCUMENT: true, ADD_TAGS: ['style', 'meta'], ADD_ATTR: ['onload', 'onclick'] });
-  const blob = new Blob([cleanHTML], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+/** Convert logo to base64 data URL for embedding in offline HTML */
+async function getLogoBase64(): Promise<string> {
+  try {
+    const response = await fetch('/images/logo-calendar.png');
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return '';
+  }
 }
 
-const PRINT_BTN_HTML = `
-<button class="print-btn" onclick="window.print()">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-  Imprimer
-</button>`;
+/** Render HTML string in a hidden container, capture with html2canvas, export as PDF */
+async function generateAndDownloadPDF(rawHTML: string, filename: string, orientation: 'landscape' | 'portrait') {
+  // Replace logo src with base64
+  const logoBase64 = await getLogoBase64();
+  let html = rawHTML;
+  if (logoBase64) {
+    html = html.replace(/src="\/images\/logo-calendar\.png"/g, `src="${logoBase64}"`);
+  }
 
-const PRINT_BTN_CSS = `
-.print-btn {
-  position: fixed; top: 12px; right: 12px; z-index: 9999;
-  padding: 10px 22px; background: #111; color: #fff; border: none; border-radius: 8px;
-  font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  transition: background 0.2s;
+  // Remove print buttons from the HTML
+  html = html.replace(/<button[^>]*onclick="window\.print\(\)"[^>]*>[\s\S]*?<\/button>/gi, '');
+  html = html.replace(/<div class="print-btn-bar"[\s\S]*?<\/div>\s*<\/div>/gi, '');
+
+  // Create hidden iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:-10000px;left:-10000px;width:1122px;height:793px;border:none;visibility:hidden;';
+  if (orientation === 'portrait') {
+    iframe.style.width = '793px';
+    iframe.style.height = '1122px';
+  }
+  document.body.appendChild(iframe);
+
+  try {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) throw new Error('Cannot access iframe document');
+
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    // Wait for images and rendering
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Wait for all images to load
+    const images = iframeDoc.querySelectorAll('img');
+    await Promise.all(Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const body = iframeDoc.body;
+    const canvas = await html2canvas(body, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: parseInt(iframe.style.width),
+      height: parseInt(iframe.style.height),
+      windowWidth: parseInt(iframe.style.width),
+      windowHeight: parseInt(iframe.style.height),
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+    const pdf = new jsPDF({
+      orientation,
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pdfWidth = orientation === 'landscape' ? 297 : 210;
+    const pdfHeight = orientation === 'landscape' ? 210 : 297;
+
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(filename);
+  } finally {
+    document.body.removeChild(iframe);
+  }
 }
-.print-btn:hover { background: #333; }
-@media print { .print-btn { display: none !important; } }`;
 
-// Annual PDF: uses generateAnnualPrintHTML for mm-based A4 landscape layout
+// Annual PDF
 export function exportAnnualPDF(data: AnnualExportData) {
-  downloadPDF(generateAnnualPrintHTML(data), `Calendrier_${data.year}.html`);
+  generateAndDownloadPDF(
+    generateAnnualPrintHTML(data),
+    `Calendrier_${data.year}.pdf`,
+    'landscape'
+  );
 }
 
-// Monthly PDF: dedicated layout
+// Monthly PDF
 export function exportMonthlyPDF(data: MonthlyExportData) {
   const monthNames = ['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
-  downloadPDF(generateMonthlyPrintHTML(data), `${monthNames[data.month]}_${data.year}.html`);
+  generateAndDownloadPDF(
+    generateMonthlyPrintHTML(data),
+    `${monthNames[data.month]}_${data.year}.pdf`,
+    'portrait'
+  );
 }
 
 // Week PDF: clone screen (fallback)
