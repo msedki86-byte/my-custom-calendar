@@ -186,30 +186,33 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
     bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${arretBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
   }
 
-  // Prépa modules: half-width centered bars with patterns, stacked after arrêts
+  // Prépa modules: individual half-width centered lines per day cell (not continuous bars)
+  // Group prepas by their id to stack different modules
   const prepaStartY = arretSlots.length > 0 ? arretStartY + arretSlots.length * (arretBarHeight + 1) : arretStartY;
   const prepaBarHeight = 3;
   for (let idx = 0; idx < prepaSlots.length; idx++) {
     const { arret, firstCol, lastCol } = prepaSlots[idx];
     const color = getArretColor(arret, s);
     const pattern = getArretPattern(arret);
-    const fullLeft = ((firstCol + 1) / 8 * 100);
-    const fullWidth = ((lastCol - firstCol + 1) / 8 * 100);
-    // Center at half-width
-    const left = fullLeft + fullWidth * 0.25;
-    const width = fullWidth * 0.5;
     const top = prepaStartY + idx * (prepaBarHeight + 1);
 
-    if (pattern !== 'none') {
-      const patId = `pp_${monthDate.getMonth()}_${patternCounter++}`;
-      const patSvg = getPatternSVG(pattern, color, patId);
-      if (patSvg) {
-        svgDefs.push(patSvg);
-        bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
-        continue;
+    // Render individual half-width centered line per day cell
+    for (let col = firstCol; col <= lastCol; col++) {
+      const cellLeft = ((col + 1) / 8 * 100);
+      const cellWidth = (1 / 8 * 100);
+      const left = cellLeft + cellWidth * 0.25;
+      const width = cellWidth * 0.5;
+
+      if (pattern !== 'none') {
+        const patId = `pp_${monthDate.getMonth()}_${patternCounter++}`;
+        const patSvg = getPatternSVG(pattern, color, patId);
+        if (patSvg) {
+          bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
+          continue;
+        }
       }
+      bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
     }
-    bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
   }
 
   if (bars.length === 0) return '';

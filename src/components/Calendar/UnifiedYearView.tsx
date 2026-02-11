@@ -234,44 +234,59 @@ function MonthMiniCard({
                       title={bar.item.name}
                     />
                   ))}
-                  {weekPrepaBars.map((bar, idx) => {
-                    const prepa = prepaItems.find(p => p.name === bar.item.name && p.color === bar.item.color);
-                    const pattern = prepa ? getArretPattern(prepa) : 'none';
-                    const fullWidth = (bar.span / 7) * 100;
-                    const halfWidth = fullWidth * 0.5;
-                    const offset = (bar.startCol / 7) * 100 + fullWidth * 0.25;
-                    return (
-                      <div
-                        key={`prepa-${idx}`}
-                        className="h-[4px] sm:h-[5px] rounded-sm relative overflow-hidden"
-                        style={{
-                          backgroundColor: bar.item.color,
-                          marginLeft: `${offset}%`,
-                          width: `${halfWidth}%`,
-                        }}
-                        title={bar.item.name}
-                      >
-                        {pattern !== 'none' && (
-                          <div className="absolute inset-0 opacity-60" style={{
-                            backgroundImage: pattern === 'stripes'
-                              ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)`
-                              : pattern === 'dots'
-                              ? `radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)`
-                              : pattern === 'crosshatch'
-                              ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px), repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
-                              : pattern === 'diagonal'
-                              ? `repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)`
-                              : pattern === 'waves'
-                              ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
-                              : pattern === 'grid'
-                              ? `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px), repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
-                              : 'none',
-                            backgroundSize: pattern === 'dots' ? '4px 4px' : undefined,
-                          }} />
-                        )}
-                      </div>
-                    );
-                  })}
+                  {/* Prépa modules: individual half-width centered lines per day */}
+                  <div className="grid grid-cols-7 gap-px">
+                    {week.map((day, dayIdx) => {
+                      const isCurrentMonth = isSameMonth(day, month);
+                      if (!isCurrentMonth) return <div key={`prepa-empty-${dayIdx}`} />;
+                      
+                      // Find all prepa modules active on this day
+                      const dayPrepas = prepaItems.filter(p => {
+                        const d = day.getTime();
+                        return d >= p.startDate.getTime() && d <= p.endDate.getTime();
+                      });
+                      
+                      if (dayPrepas.length === 0) return <div key={`prepa-empty-${dayIdx}`} />;
+                      
+                      return (
+                        <div key={`prepa-day-${dayIdx}`} className="flex flex-col items-center gap-px">
+                          {dayPrepas.map((prepa, pIdx) => {
+                            const pattern = getArretPattern(prepa);
+                            return (
+                              <div
+                                key={`prepa-${dayIdx}-${pIdx}`}
+                                className="h-[4px] sm:h-[5px] rounded-sm relative overflow-hidden"
+                                style={{
+                                  backgroundColor: prepa.color,
+                                  width: '50%',
+                                }}
+                                title={prepa.name}
+                              >
+                                {pattern !== 'none' && (
+                                  <div className="absolute inset-0 opacity-60" style={{
+                                    backgroundImage: pattern === 'stripes'
+                                      ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)`
+                                      : pattern === 'dots'
+                                      ? `radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)`
+                                      : pattern === 'crosshatch'
+                                      ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px), repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
+                                      : pattern === 'diagonal'
+                                      ? `repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)`
+                                      : pattern === 'waves'
+                                      ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
+                                      : pattern === 'grid'
+                                      ? `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px), repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
+                                      : 'none',
+                                    backgroundSize: pattern === 'dots' ? '4px 4px' : undefined,
+                                  }} />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
