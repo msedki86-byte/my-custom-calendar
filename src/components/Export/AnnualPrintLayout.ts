@@ -1,6 +1,7 @@
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, format, isWeekend, isSameMonth, getWeek, isSameDay,
+  isWithinInterval, startOfDay,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -21,32 +22,45 @@ interface AnnualPrintData {
 }
 
 function isHolidayDate(date: Date, holidays: Holiday[]): Holiday | null {
-  return holidays.find(h => isSameDay(new Date(h.date), date)) || null;
+  return holidays.find(h => isSameDay(startOfDay(new Date(h.date)), startOfDay(date))) || null;
 }
 
 function isVacationDate(date: Date, vacations: Vacation[]): Vacation | null {
+  const d = startOfDay(date);
   return vacations.find(v => {
-    const s = new Date(v.startDate); const e = new Date(v.endDate);
-    return date >= new Date(s.getFullYear(), s.getMonth(), s.getDate()) &&
-           date <= new Date(e.getFullYear(), e.getMonth(), e.getDate());
+    const s = startOfDay(new Date(v.startDate));
+    const e = startOfDay(new Date(v.endDate));
+    return d >= s && d <= e;
   }) || null;
 }
 
 function isAstreinteDate(date: Date, astreintes: Astreinte[]): Astreinte | null {
+  const d = startOfDay(date);
   return astreintes.find(a => {
     if (a.isCancelled) return false;
-    const s = new Date(a.startDate); const e = new Date(a.endDate);
-    return date >= new Date(s.getFullYear(), s.getMonth(), s.getDate()) &&
-           date <= new Date(e.getFullYear(), e.getMonth(), e.getDate());
+    const s = startOfDay(new Date(a.startDate));
+    const e = startOfDay(new Date(a.endDate));
+    return d >= s && d <= e;
   }) || null;
 }
 
 function getEventsOnDate(date: Date, events: CalendarEvent[]): CalendarEvent[] {
+  const d = startOfDay(date);
   return events.filter(ev => {
-    const s = new Date(ev.startDate); const e = new Date(ev.endDate);
-    return date >= new Date(s.getFullYear(), s.getMonth(), s.getDate()) &&
-           date <= new Date(e.getFullYear(), e.getMonth(), e.getDate());
+    const s = startOfDay(new Date(ev.startDate));
+    const e = startOfDay(new Date(ev.endDate));
+    return d >= s && d <= e;
   });
+}
+
+function isPrepaOnDate(date: Date, arrets: Arret[]): Arret | null {
+  const d = startOfDay(date);
+  return arrets.find(a => {
+    if (a.type !== 'prepa') return false;
+    const s = startOfDay(new Date(a.startDate));
+    const e = startOfDay(new Date(a.endDate));
+    return d >= s && d <= e;
+  }) || null;
 }
 
 function isCancelledDate(date: Date, cancelled: CancelledAstreinteDate[]): boolean {
@@ -82,15 +96,14 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
 
   // Vacation bars - always use settings.vacationColor to match legend
   for (const vac of data.vacations) {
-    const vacStart = new Date(vac.startDate);
-    const vacEnd = new Date(vac.endDate);
+    const vacStart = startOfDay(new Date(vac.startDate));
+    const vacEnd = startOfDay(new Date(vac.endDate));
     let firstCol = -1, lastCol = -1;
     for (let i = 0; i < 7; i++) {
       const day = week[i];
       if (!isSameMonth(day, monthDate)) continue;
-      const d = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-      if (d >= new Date(vacStart.getFullYear(), vacStart.getMonth(), vacStart.getDate()) &&
-          d <= new Date(vacEnd.getFullYear(), vacEnd.getMonth(), vacEnd.getDate())) {
+      const d = startOfDay(day);
+      if (d >= vacStart && d <= vacEnd) {
         if (firstCol === -1) firstCol = i;
         lastCol = i;
       }
@@ -102,21 +115,20 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
     }
   }
 
-  // Arret bars - each on its own vertical slot to avoid overlap
-  // Group by unique arret and assign vertical slots
+  // Arret bars (AT only) - each on its own vertical slot to avoid overlap
   const arretSlots: { arret: Arret; firstCol: number; lastCol: number }[] = [];
   const processedArrets = new Set<string>();
   for (const arret of data.arrets) {
+    if (arret.type !== 'arret') continue; // Only AT, not prépa
     if (processedArrets.has(arret.id)) continue;
-    const arretStart = new Date(arret.startDate);
-    const arretEnd = new Date(arret.endDate);
+    const arretStart = startOfDay(new Date(arret.startDate));
+    const arretEnd = startOfDay(new Date(arret.endDate));
     let firstCol = -1, lastCol = -1;
     for (let i = 0; i < 7; i++) {
       const day = week[i];
       if (!isSameMonth(day, monthDate)) continue;
-      const d = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-      if (d >= new Date(arretStart.getFullYear(), arretStart.getMonth(), arretStart.getDate()) &&
-          d <= new Date(arretEnd.getFullYear(), arretEnd.getMonth(), arretEnd.getDate())) {
+      const d = startOfDay(day);
+      if (d >= arretStart && d <= arretEnd) {
         if (firstCol === -1) firstCol = i;
         lastCol = i;
       }
@@ -196,6 +208,7 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
       const evts = getEventsOnDate(day, data.events);
       const reEvt = evts.find(e => e.type === 're');
       const cpEvt = evts.find(e => e.type === 'cp');
+      const prepa = isPrepaOnDate(day, data.arrets);
 
       let bg = s.dayCellBgColor;
       let fg = s.dayCellTextColor;
@@ -211,7 +224,14 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
         linesHTML += `<span class="ev-line" style="background:${evt.color}"></span>`;
       }
 
-      html += `<td class="day" style="background:${bg};color:${fg}"><span class="day-num">${day.getDate()}</span>${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}</td>`;
+      // Prépa module: centered half-width line
+      let prepaHTML = '';
+      if (prepa) {
+        const prepaColor = getArretColor(prepa, s);
+        prepaHTML = `<div class="prepa-line" style="background:${prepaColor}"></div>`;
+      }
+
+      html += `<td class="day" style="background:${bg};color:${fg}"><span class="day-num">${day.getDate()}</span>${prepaHTML}${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}</td>`;
     }
     html += `</tr>`;
   }
@@ -346,6 +366,9 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   .day { position: relative; vertical-align: middle; }
   .day.empty { }
   .day-num { position: relative; z-index: 1; }
+
+  /* Prépa module: centered half-width line */
+  .prepa-line { position: absolute; top: 50%; left: 25%; width: 50%; height: 2px; border-radius: 1px; transform: translateY(2px); z-index: 1; }
 
   /* Event lines centered in cell */
   .ev-lines { position: absolute; top: 50%; left: 1px; right: 1px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; margin-top: 3px; }
