@@ -377,7 +377,22 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   html, body { width: 297mm; height: 210mm; overflow: hidden; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { position: relative; width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; }
-  .page::before { content: ''; position: absolute; inset: 0; background: url('/images/logo-calendar.png') center/contain no-repeat; opacity: 0.15; pointer-events: none; z-index: 0; }
+  .page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at center,
+        rgba(0, 58, 143, 0.04) 0%,
+        rgba(0, 58, 143, 0.02) 35%,
+        transparent 70%
+      ),
+      url('/images/logo-calendar.png') center 48% / 38% no-repeat;
+    opacity: 0.06;
+    filter: grayscale(100%) contrast(110%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
   .page-title { text-align: center; font-size: 11pt; font-weight: 700; margin-bottom: 1mm; }
 

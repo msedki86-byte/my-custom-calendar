@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { generateMonthlyPrintHTML } from './MonthlyPrintLayout';
+import { generateAnnualPrintHTML } from './AnnualPrintLayout';
 import { CalendarSettings, CalendarEvent, Astreinte, Vacation, Arret, Holiday, CancelledAstreinteDate } from '@/types/calendar';
 
 export interface AnnualExportData {
@@ -52,126 +53,9 @@ const PRINT_BTN_CSS = `
 .print-btn:hover { background: #333; }
 @media print { .print-btn { display: none !important; } }`;
 
-// Annual PDF: DOM cloning for pixel-perfect A4 landscape output
-export function exportAnnualPDF(_data: AnnualExportData) {
-  const calendar = document.querySelector('[data-calendar-print]') as HTMLElement | null;
-  const legend = document.querySelector('[data-legend-print]') as HTMLElement | null;
-  const arretBar = document.querySelector('[data-arret-print]') as HTMLElement | null;
-  if (!calendar) { alert('Calendrier introuvable pour export PDF.'); return; }
-
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) { alert('Popup bloquée. Autorisez les popups pour exporter.'); return; }
-
-  // Collect all stylesheets
-  const stylesheets = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-    .map(el => el.outerHTML).join('\n');
-
-  // Measure DOM to calculate exact scale
-  const calendarWidth = calendar.offsetWidth;
-  const calendarHeight = calendar.offsetHeight;
-  const legendHeight = legend ? legend.offsetHeight : 0;
-  const arretHeight = arretBar ? arretBar.offsetHeight : 0;
-  const totalContentHeight = legendHeight + calendarHeight + arretHeight + 50; // 50px for title + gaps
-
-  // A4 landscape in px at 96dpi: 1123 x 794, minus margins (5mm = ~19px each side)
-  const pageW = 1085;
-  const pageH = 756;
-  const scaleX = pageW / calendarWidth;
-  const scaleY = pageH / totalContentHeight;
-  const scale = Math.min(scaleX, scaleY, 1);
-
-  const doc = printWindow.document;
-  doc.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
-<title>Calendrier Annuel ${_data.year}</title>
-${stylesheets}
-<style>
-  @page { size: A4 landscape; margin: 5mm; }
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0;
-    background: #ffffff;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    overflow: hidden;
-    width: 297mm; height: 210mm;
-  }
-
-  /* Premium watermark */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: url('/images/logo-calendar.png') center/50% no-repeat;
-    opacity: 0.04;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Subtle radial glow */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, rgba(0,58,143,0.015) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .print-page {
-    position: relative;
-    z-index: 1;
-    width: 287mm;
-    height: 200mm;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2mm 3mm;
-  }
-
-  .print-title {
-    font-size: 14pt;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: #111;
-    text-align: center;
-    margin-bottom: 2mm;
-  }
-
-  .print-content {
-    transform: scale(${scale});
-    transform-origin: top center;
-    width: ${calendarWidth}px;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Override overflow for print */
-  .print-content [style*="overflow"] { overflow: visible !important; }
-  .print-content button,
-  .print-content [data-toolbar],
-  .print-content [role="toolbar"] { display: none !important; }
-
-  /* Premium month blocks: subtle shadow + rounded */
-  .print-content [class*="month"] {
-    border-radius: 3px;
-  }
-
-  ${PRINT_BTN_CSS}
-</style>
-</head><body>
-  ${PRINT_BTN_HTML}
-  <div class="print-page">
-    <div class="print-title">Calendrier ${_data.year}</div>
-    <div class="print-content">
-      ${legend ? legend.outerHTML : ''}
-      ${calendar.outerHTML}
-      ${arretBar ? arretBar.outerHTML : ''}
-    </div>
-  </div>
-</body></html>`);
-  doc.close();
+// Annual PDF: uses generateAnnualPrintHTML for mm-based A4 landscape layout
+export function exportAnnualPDF(data: AnnualExportData) {
+  openPrintWindow(generateAnnualPrintHTML(data));
 }
 
 // Monthly PDF: dedicated layout
