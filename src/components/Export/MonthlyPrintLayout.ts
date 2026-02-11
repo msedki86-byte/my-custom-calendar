@@ -384,13 +384,13 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <title>${title}</title>
 <style>
-  @page { size: A5 portrait; margin: 4mm; }
+  @page { size: A4 portrait; margin: 6mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 148mm; height: 210mm; overflow: hidden; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
+  html, body { width: 210mm; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    display: flex; justify-content: center; align-items: center; }
+    display: flex; justify-content: center; align-items: flex-start; }
 
-  .page { width: 142mm; max-height: 204mm; padding: 2mm; display: flex; flex-direction: column; align-items: center; }
+  .page { width: 198mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; }
   .page-title { text-align: center; font-size: 10pt; font-weight: 700; margin-bottom: 1.5mm; text-transform: capitalize; width: 100%; }
 
   .legend { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1mm; width: 100%; }

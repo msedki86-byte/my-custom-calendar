@@ -47,16 +47,15 @@ export function ConflictsList({
         const isCancelledDate = cancelledDates.some(c => isSameDay(c.date, day));
         if (isCancelledDate) return;
 
-        // Check events only (not RE or CP)
+        // Check all events including RE and CP
         events.forEach(event => {
-          // Exclude RE and CP from conflicts
-          if (event.type === 're' || event.type === 'cp') return;
           
           if (day >= event.startDate && day <= event.endDate) {
+            const label = event.type === 'cp' ? 'CP' : event.type === 're' ? 'RE' : event.name;
             result.push({
               date: day,
               astreinte,
-              eventName: event.name,
+              eventName: label,
             });
           }
         });
@@ -97,8 +96,8 @@ export function ConflictsList({
               <TableCell className="font-medium">
                 {format(conflict.date, 'd MMMM yyyy', { locale: fr })}
               </TableCell>
-              <TableCell>
-                <span className="text-primary font-medium">{conflict.eventName}</span>
+            <TableCell>
+                <span className="text-primary font-medium">{conflict.eventName || 'Événement'}</span>
                 <span className="text-muted-foreground mx-2">/</span>
                 <span className="text-orange-600 font-medium">{"Astreinte"}</span>
               </TableCell>
