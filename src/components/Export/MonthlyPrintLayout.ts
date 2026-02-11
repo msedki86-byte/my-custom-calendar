@@ -399,6 +399,7 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
     width: 198mm; margin: 0 auto;
     padding: 3mm 4mm;
     display: flex; flex-direction: column; align-items: center;
+    transform: scale(0.87); transform-origin: top center;
   }
 
   .header-logo {
