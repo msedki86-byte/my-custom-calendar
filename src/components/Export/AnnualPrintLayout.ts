@@ -119,7 +119,7 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
   const arretSlots: { arret: Arret; firstCol: number; lastCol: number }[] = [];
   const processedArrets = new Set<string>();
   for (const arret of data.arrets) {
-    if (arret.type !== 'arret') continue; // Only AT, not prépa
+    if (arret.type !== 'arret') continue;
     if (processedArrets.has(arret.id)) continue;
     const arretStart = startOfDay(new Date(arret.startDate));
     const arretEnd = startOfDay(new Date(arret.endDate));
@@ -136,6 +136,30 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
     if (firstCol !== -1) {
       processedArrets.add(arret.id);
       arretSlots.push({ arret, firstCol, lastCol });
+    }
+  }
+
+  // Prépa module bars - half-width, centered, with patterns
+  const prepaSlots: { arret: Arret; firstCol: number; lastCol: number }[] = [];
+  const processedPrepas = new Set<string>();
+  for (const arret of data.arrets) {
+    if (arret.type !== 'prepa') continue;
+    if (processedPrepas.has(arret.id)) continue;
+    const arretStart = startOfDay(new Date(arret.startDate));
+    const arretEnd = startOfDay(new Date(arret.endDate));
+    let firstCol = -1, lastCol = -1;
+    for (let i = 0; i < 7; i++) {
+      const day = week[i];
+      if (!isSameMonth(day, monthDate)) continue;
+      const d = startOfDay(day);
+      if (d >= arretStart && d <= arretEnd) {
+        if (firstCol === -1) firstCol = i;
+        lastCol = i;
+      }
+    }
+    if (firstCol !== -1) {
+      processedPrepas.add(arret.id);
+      prepaSlots.push({ arret, firstCol, lastCol });
     }
   }
 
@@ -162,8 +186,35 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
     bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${arretBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
   }
 
+  // Prépa modules: half-width centered bars with patterns, stacked after arrêts
+  const prepaStartY = arretSlots.length > 0 ? arretStartY + arretSlots.length * (arretBarHeight + 1) : arretStartY;
+  const prepaBarHeight = 3;
+  for (let idx = 0; idx < prepaSlots.length; idx++) {
+    const { arret, firstCol, lastCol } = prepaSlots[idx];
+    const color = getArretColor(arret, s);
+    const pattern = getArretPattern(arret);
+    const fullLeft = ((firstCol + 1) / 8 * 100);
+    const fullWidth = ((lastCol - firstCol + 1) / 8 * 100);
+    // Center at half-width
+    const left = fullLeft + fullWidth * 0.25;
+    const width = fullWidth * 0.5;
+    const top = prepaStartY + idx * (prepaBarHeight + 1);
+
+    if (pattern !== 'none') {
+      const patId = `pp_${monthDate.getMonth()}_${patternCounter++}`;
+      const patSvg = getPatternSVG(pattern, color, patId);
+      if (patSvg) {
+        svgDefs.push(patSvg);
+        bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
+        continue;
+      }
+    }
+    bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
+  }
+
   if (bars.length === 0) return '';
-  const totalHeight = arretSlots.length > 0 ? arretStartY + arretSlots.length * (arretBarHeight + 1) : 3;
+  const allSlots = arretSlots.length + prepaSlots.length;
+  const totalHeight = allSlots > 0 ? prepaStartY + prepaSlots.length * (prepaBarHeight + 1) : 3;
   return `<tr><td colspan="8" style="position:relative;height:${totalHeight}px;padding:0;border:none;">${bars.join('')}</td></tr>`;
 }
 
@@ -208,7 +259,6 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
       const evts = getEventsOnDate(day, data.events);
       const reEvt = evts.find(e => e.type === 're');
       const cpEvt = evts.find(e => e.type === 'cp');
-      const prepa = isPrepaOnDate(day, data.arrets);
 
       let bg = s.dayCellBgColor;
       let fg = s.dayCellTextColor;
@@ -224,14 +274,7 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
         linesHTML += `<span class="ev-line" style="background:${evt.color}"></span>`;
       }
 
-      // Prépa module: centered half-width line
-      let prepaHTML = '';
-      if (prepa) {
-        const prepaColor = getArretColor(prepa, s);
-        prepaHTML = `<div class="prepa-line" style="background:${prepaColor}"></div>`;
-      }
-
-      html += `<td class="day" style="background:${bg};color:${fg}"><span class="day-num">${day.getDate()}</span>${prepaHTML}${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}</td>`;
+      html += `<td class="day" style="background:${bg};color:${fg}"><span class="day-num">${day.getDate()}</span>${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}</td>`;
     }
     html += `</tr>`;
   }

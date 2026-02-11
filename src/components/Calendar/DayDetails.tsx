@@ -22,6 +22,7 @@ interface DayDetailsProps {
   holiday: Holiday | null;
   vacation: Vacation | null;
   arret: Arret | null;
+  arrets?: Arret[];
   cancelled: CancelledAstreinteDate | null;
   settings: CalendarSettings;
   reDay?: CalendarEvent | null;
@@ -37,6 +38,7 @@ export function DayDetails({
   holiday,
   vacation,
   arret,
+  arrets,
   cancelled,
   settings,
 }: DayDetailsProps) {
@@ -67,6 +69,7 @@ export function DayDetails({
             holiday={holiday}
             vacation={vacation}
             arret={arret}
+            arrets={arrets}
             cancelled={cancelled}
             settings={settings}
           />

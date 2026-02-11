@@ -430,6 +430,7 @@ const Index = () => {
         holiday={selectedDayData?.holiday || null}
         vacation={selectedDayData?.vacation || null}
         arret={selectedDayData?.arret || null}
+        arrets={arrets}
         cancelled={selectedDayData?.cancelled || null}
         settings={settings}
       />
