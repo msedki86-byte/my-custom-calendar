@@ -177,20 +177,25 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
     const { arret, firstCol, lastCol } = prepaSlots[idx];
     const color = getArretColor(arret, s);
     const pattern = getArretPattern(arret);
-    const fullLeft = ((firstCol + 1) / 8 * 100);
-    const fullWidth = ((lastCol - firstCol + 1) / 8 * 100);
-    const left = fullLeft + fullWidth * 0.25;
-    const width = fullWidth * 0.5;
     const top = prepaStartY + idx * (prepaBarHeight + 1);
-    if (pattern !== 'none') {
-      const patId = `mp_${monthDate.getMonth()}_p${patternCounter++}`;
-      const patSvg = getPatternSVG(pattern, color, patId);
-      if (patSvg) {
-        bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
-        continue;
+
+    // Individual half-width centered line per day cell
+    for (let col = firstCol; col <= lastCol; col++) {
+      const cellLeft = ((col + 1) / 8 * 100);
+      const cellWidth = (1 / 8 * 100);
+      const left = cellLeft + cellWidth * 0.25;
+      const width = cellWidth * 0.5;
+
+      if (pattern !== 'none') {
+        const patId = `mp_${monthDate.getMonth()}_p${patternCounter++}`;
+        const patSvg = getPatternSVG(pattern, color, patId);
+        if (patSvg) {
+          bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
+          continue;
+        }
       }
+      bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
     }
-    bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
   }
 
   if (bars.length === 0) return '';
@@ -266,8 +271,7 @@ function buildArretBarHTML(data: MonthlyPrintData): string {
   return `<div class="arret-legend-line">${trancheSwatches.join('')}</div>${html}`;
 }
 
-export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
-  const { year, month } = data;
+function buildMonthTableHTML(year: number, month: number, data: MonthlyPrintData): { monthName: string; tableHTML: string } {
   const monthDate = new Date(year, month, 1);
   const monthStart = startOfMonth(monthDate);
   const monthEnd = endOfMonth(monthDate);
@@ -280,21 +284,22 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
 
   const monthName = format(monthDate, 'MMMM yyyy', { locale: fr });
-  const legend = buildLegendHTML(data);
-  const arretSection = buildArretBarHTML(data);
 
-  // Cell height: each day cell is tall enough to show events by time
-  const cellHeight = 80; // px - enough for timed events
+  // Build data object scoped to this month for context bars
+  const monthData: MonthlyPrintData = { ...data, year, month };
 
-  let tableHTML = `<table class="month-table"><thead><tr>
+  let tableHTML = `<div class="month-section"><div class="month-section-title">${monthName}</div>`;
+  tableHTML += `<table class="month-table"><thead><tr>
     <th class="wk-col" style="background:${s.weekNumberBgColor};color:${s.weekNumberTextColor}">Sem</th>`;
-  ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].forEach(d => {
+  ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d => {
     tableHTML += `<th style="background:${s.monthHeaderBgColor};color:${s.monthHeaderTextColor}">${d}</th>`;
   });
   tableHTML += `</tr></thead><tbody>`;
 
+  const cellHeight = 70;
+
   for (const week of weeks) {
-    tableHTML += buildContextBarsForWeek(week, monthDate, data);
+    tableHTML += buildContextBarsForWeek(week, monthDate, monthData);
 
     const wn = getWeek(week[0], { locale: fr, weekStartsOn: 1 });
     tableHTML += `<tr><td class="wk-col" style="background:${s.weekNumberBgColor};color:${s.weekNumberTextColor}">${wn}</td>`;
@@ -321,80 +326,115 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
       if (cpEvt) { bg = s.cpColor; fg = '#FFF'; }
       if (ast && !cancelled) { bg = s.astreinteColor; fg = '#333'; }
 
-      // Timed events positioned vertically (5h-21h range = 16h)
+      // State labels (CP, RE, holiday) - big, bold, centered
+      let stateLabel = '';
+      if (cpEvt) {
+        stateLabel = `<div class="state-label">CP</div>`;
+      } else if (reEvt) {
+        stateLabel = `<div class="state-label">RE</div>`;
+      } else if (hol) {
+        stateLabel = `<div class="state-label">${hol.name}</div>`;
+      }
+
+      // Timed events positioned vertically
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
       let eventsHTML = '';
-      for (const evt of otherEvts.slice(0, 4)) {
+      for (const evt of otherEvts.slice(0, 3)) {
         const startMinutes = evt.startTime ? (parseInt(evt.startTime.split(':')[0]) * 60 + parseInt(evt.startTime.split(':')[1] || '0')) : 5 * 60;
         const endMinutes = evt.endTime ? (parseInt(evt.endTime.split(':')[0]) * 60 + parseInt(evt.endTime.split(':')[1] || '0')) : 21 * 60;
         const clampedStart = Math.max(startMinutes, 5 * 60);
         const clampedEnd = Math.min(endMinutes, 21 * 60);
         const topPct = ((clampedStart - 5 * 60) / (16 * 60)) * 100;
-        const heightPct = Math.max(((clampedEnd - clampedStart) / (16 * 60)) * 100, 8);
-        const timeLabel = evt.startTime ? `${evt.startTime}` : '';
-        eventsHTML += `<div class="ev-block" style="top:${14 + topPct * 0.66}%;height:${heightPct * 0.66}%;background:${evt.color}" title="${evt.name} ${timeLabel}">
+        const heightPct = Math.max(((clampedEnd - clampedStart) / (16 * 60)) * 100, 12);
+        eventsHTML += `<div class="ev-block" style="top:${16 + topPct * 0.64}%;height:${heightPct * 0.64}%;background:${evt.color}">
           <span class="ev-name">${evt.name}</span>
-          ${timeLabel ? `<span class="ev-time">${timeLabel}</span>` : ''}
+          ${evt.startTime ? `<span class="ev-time">${evt.startTime}</span>` : ''}
         </div>`;
       }
 
       tableHTML += `<td class="day" style="background:${bg};color:${fg};height:${cellHeight}px">
         <span class="day-num">${day.getDate()}</span>
+        ${stateLabel}
         ${eventsHTML}
       </td>`;
     }
     tableHTML += `</tr>`;
   }
-  tableHTML += `</tbody></table>`;
+  tableHTML += `</tbody></table></div>`;
+
+  return { monthName, tableHTML };
+}
+
+export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
+  const { year, month } = data;
+  const s = data.settings;
+  
+  // Build 2 months: current + next
+  const month1 = buildMonthTableHTML(year, month, data);
+  const nextMonth = month + 1;
+  const nextYear = nextMonth > 11 ? year + 1 : year;
+  const nextMonthIdx = nextMonth > 11 ? 0 : nextMonth;
+  const month2 = buildMonthTableHTML(nextYear, nextMonthIdx, data);
+
+  const legend = buildLegendHTML(data);
+  const arretSection = buildArretBarHTML(data);
+
+  const title = `${month1.monthName} — ${month2.monthName}`;
 
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
-<title>${monthName}</title>
+<title>${title}</title>
 <style>
-  @page { size: A5 portrait; margin: 5mm; }
+  @page { size: A5 portrait; margin: 4mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 148mm; height: 210mm; overflow: hidden; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     display: flex; justify-content: center; align-items: center; }
 
-  .page { width: 140mm; max-height: 200mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; }
-  .page-title { text-align: center; font-size: 13pt; font-weight: 700; margin-bottom: 2mm; text-transform: capitalize; width: 100%; }
+  .page { width: 142mm; max-height: 204mm; padding: 2mm; display: flex; flex-direction: column; align-items: center; }
+  .page-title { text-align: center; font-size: 10pt; font-weight: 700; margin-bottom: 1.5mm; text-transform: capitalize; width: 100%; }
 
-  .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; width: 100%; }
-  .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6.5pt; }
-  .legend-swatch { width: 14px; height: 9px; border-radius: 1.5px; flex-shrink: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1mm; width: 100%; }
+  .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; }
+  .legend-swatch { width: 12px; height: 7px; border-radius: 1px; flex-shrink: 0; }
   .legend-label { white-space: nowrap; }
 
-  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; width: 100%; }
-  .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6.5pt; }
-  .arret-legend-line .legend-swatch { width: 14px; height: 9px; border-radius: 1.5px; flex-shrink: 0; }
+  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1mm; width: 100%; }
+  .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; }
+  .arret-legend-line .legend-swatch { width: 12px; height: 7px; border-radius: 1px; flex-shrink: 0; }
 
-  .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; border: 1px solid #ccc; border-radius: 3px; overflow: hidden; }
-  .month-table th, .month-table td { text-align: center; padding: 1px; line-height: 1.2; border: 0.5px solid #e0e0e0; }
-  .month-table th { font-size: 7pt; font-weight: 600; padding: 2px 1px; }
-  .month-table td { font-size: 9pt; }
-  .wk-col { width: 24px; font-size: 6.5pt !important; font-weight: 600; }
+  .month-section { width: 100%; margin-bottom: 1.5mm; }
+  .month-section-title { text-align: center; font-size: 8pt; font-weight: 700; text-transform: capitalize; margin-bottom: 0.5mm; padding: 1px 0; background: ${s.yearMonthBgColor}; color: ${s.yearMonthTextColor}; border-radius: 2px; }
 
-  .day { position: relative; vertical-align: top; padding-top: 1px !important; }
-  .day-num { position: relative; z-index: 1; font-size: 8pt; font-weight: 600; }
+  .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 0.5px solid #ccc; border-radius: 2px; overflow: hidden; }
+  .month-table th, .month-table td { text-align: center; padding: 0.5px; line-height: 1.1; border: 0.5px solid #e0e0e0; }
+  .month-table th { font-size: 5.5pt; font-weight: 600; padding: 1px 0; }
+  .month-table td { font-size: 7pt; }
+  .wk-col { width: 18px; font-size: 5.5pt !important; font-weight: 600; }
 
-  .ev-block { position: absolute; left: 1px; right: 1px; border-radius: 1.5px; color: #fff; font-size: 5pt; line-height: 1.1; padding: 0 1px; overflow: hidden; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
-  .ev-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ev-time { font-size: 4.5pt; opacity: 0.8; }
+  .day { position: relative; vertical-align: top; padding-top: 0.5px !important; }
+  .day-num { position: relative; z-index: 1; font-size: 6.5pt; font-weight: 600; }
 
-  .arret-bar { margin-top: 1.5mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1.5mm 2mm; width: 100%; }
-  .arret-bar-title { font-size: 7pt; font-weight: 700; margin-bottom: 1mm; }
-  .arret-items { display: flex; flex-wrap: wrap; gap: 1mm 3mm; }
-  .arret-tranche { display: flex; align-items: center; gap: 1mm; }
-  .arret-tranche-label { font-size: 6pt; font-weight: 700; padding: 0.5mm 1.5mm; border-radius: 2px; }
-  .arret-chip { font-size: 5.5pt; border: 0.5px solid; border-radius: 2px; padding: 0.3mm 1mm; white-space: nowrap; }
+  .state-label { font-size: 12pt; font-weight: 800; text-align: center; width: 100%; margin-top: 2px; line-height: 1; }
+
+  .ev-block { position: absolute; left: 1px; right: 1px; border-radius: 1.5px; color: #fff; overflow: hidden; z-index: 2; display: flex; flex-direction: column; align-items: center; padding-top: 1px; }
+  .ev-name { font-size: 7pt; font-weight: 800; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+  .ev-time { font-size: 5pt; opacity: 0.8; }
+
+  .arret-bar { margin-top: 1mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1mm 2mm; width: 100%; }
+  .arret-bar-title { font-size: 6pt; font-weight: 700; margin-bottom: 0.5mm; }
+  .arret-items { display: flex; flex-wrap: wrap; gap: 0.5mm 2mm; }
+  .arret-tranche { display: flex; align-items: center; gap: 0.5mm; }
+  .arret-tranche-label { font-size: 5pt; font-weight: 700; padding: 0.3mm 1mm; border-radius: 2px; }
+  .arret-chip { font-size: 4.5pt; border: 0.5px solid; border-radius: 2px; padding: 0.2mm 0.8mm; white-space: nowrap; }
 </style>
 </head><body>
 <div class="page">
-  <div class="page-title">${monthName}</div>
+  <div class="page-title">${title}</div>
   ${legend}
   ${arretSection}
-  ${tableHTML}
+  ${month1.tableHTML}
+  ${month2.tableHTML}
 </div>
 <script>window.onload=()=>{setTimeout(()=>{window.print();window.close();},400);};<\/script>
-</body></html>`;
+</body></html>`
 }
