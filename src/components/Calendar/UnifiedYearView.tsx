@@ -17,7 +17,8 @@ import { fr } from 'date-fns/locale';
 import { CalendarSettings, Astreinte, Holiday, Vacation, CalendarEvent, CancelledAstreinteDate, Arret } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 import { useOrientation } from '@/hooks/useOrientation';
-import { getArretColor } from '@/lib/trancheColors';
+import { getArretColor, getArretPattern } from '@/lib/trancheColors';
+import { isSameDay, isWithinInterval } from 'date-fns';
 
 interface UnifiedYearViewProps {
   year: number;
@@ -162,10 +163,14 @@ function MonthMiniCard({
     .filter(v => v.startDate <= monthEnd && v.endDate >= monthStart)
     .map(v => ({ ...v, color: settings.vacationColor }));
 
-  // Arrêt bars (AT only, NO prépa)
+  // Arrêt bars (AT only, NO prépa) - shown as context bars above days
   const arretATItems = arrets
     .filter(a => a.type === 'arret' && a.startDate <= monthEnd && a.endDate >= monthStart)
     .map(a => ({ ...a, color: a.color || getArretColor(a, settings) }));
+
+  // Prépa modules - shown as centered lines within day cells
+  const prepaItems = arrets
+    .filter(a => a.type === 'prepa' && a.startDate <= monthEnd && a.endDate >= monthStart);
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -248,6 +253,12 @@ function MonthMiniCard({
                   const showREBackground = reDay && !hasActiveAstreinte && !showCPBackground;
                   const hasEvents = events.length > 0;
 
+                  // Check if day falls within a prépa module
+                  const prepaOnDay = isCurrentMonth ? prepaItems.find(p => 
+                    isSameDay(day, p.startDate) || isSameDay(day, p.endDate) ||
+                    isWithinInterval(day, { start: p.startDate, end: p.endDate })
+                  ) : undefined;
+
                   let cellBgColor = undefined;
                   if (hasActiveAstreinte && isCurrentMonth) {
                     cellBgColor = astreinte.isPonctuelle 
@@ -284,6 +295,14 @@ function MonthMiniCard({
                     >
                       {format(day, 'd')}
                       
+                      {/* Prépa module: centered half-width line */}
+                      {prepaOnDay && (
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/2 h-[2px] rounded-full z-[1] mt-[5px]"
+                          style={{ backgroundColor: getArretColor(prepaOnDay, settings) }}
+                          title={`${prepaOnDay.name}${prepaOnDay.module ? ` (${prepaOnDay.module})` : ''}`}
+                        />
+                      )}
+
                       {isCurrentMonth && (
                         <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-px pb-0.5">
                           {hasEvents && !hasActiveAstreinte && (
