@@ -385,49 +385,115 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
 <title>${title}</title>
 <style>
   @page { size: A4 portrait; margin: 6mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 210mm; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 210mm; height: 297mm;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: #ffffff; color: #111;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    display: flex; justify-content: center; align-items: flex-start; }
-  .page { position: relative; width: 198mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; }
-  .page::before { content: ''; position: absolute; inset: 0; background: url('/images/logo-calendar.png') center/contain no-repeat; opacity: 0.15; pointer-events: none; z-index: 0; }
-  .page-title { text-align: center; font-size: 10pt; font-weight: 700; margin-bottom: 1.5mm; text-transform: capitalize; width: 100%; }
+    overflow: hidden;
+  }
 
-  .legend { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1mm; width: 100%; }
+  /* Premium watermark */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url('/images/logo-calendar.png') center/45% no-repeat;
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Subtle radial glow */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(0,58,143,0.012) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative; z-index: 1;
+    width: 198mm; margin: 0 auto;
+    padding: 3mm 4mm;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 13pt; font-weight: 600;
+    letter-spacing: 0.4px; color: #111;
+    margin-bottom: 2mm;
+    text-transform: capitalize;
+    width: 100%;
+  }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1.5mm; width: 100%; }
   .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; }
   .legend-swatch { width: 12px; height: 7px; border-radius: 1px; flex-shrink: 0; }
   .legend-label { white-space: nowrap; }
 
-  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1mm; width: 100%; }
+  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1.5mm; width: 100%; }
   .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; }
   .arret-legend-line .legend-swatch { width: 12px; height: 7px; border-radius: 1px; flex-shrink: 0; }
 
-  .month-section { width: 100%; margin-bottom: 4mm; border: 1.5px solid #111; border-radius: 4px; overflow: hidden; }
-  .month-section-title { text-align: center; font-size: 10pt; font-weight: 800; text-transform: capitalize; margin-bottom: 0; padding: 3px 0; background: #111 !important; color: #fff !important; }
+  /* Month sections - premium card style */
+  .month-section {
+    width: 100%; margin-bottom: 5mm;
+    border: 1px solid #d0d0d0; border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .month-section-title {
+    text-align: center; font-size: 10pt; font-weight: 700;
+    text-transform: capitalize; margin-bottom: 0;
+    padding: 4px 0;
+    background: #111 !important; color: #fff !important;
+    letter-spacing: 0.3px;
+  }
 
-  .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 0.5px solid #ccc; border-radius: 2px; overflow: hidden; }
+  /* Table */
+  .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   .month-table th, .month-table td { text-align: center; padding: 0.5px; line-height: 1.1; border: 0.5px solid #e0e0e0; }
-  .month-table th { font-size: 5.5pt; font-weight: 600; padding: 1px 0; }
+  .month-table th { font-size: 5.5pt; font-weight: 600; padding: 2px 0; }
   .month-table td { font-size: 7pt; }
   .wk-col { width: 18px; font-size: 5.5pt !important; font-weight: 600; }
 
   .day { position: relative; vertical-align: top; padding-top: 0.5px !important; }
   .day-num { position: relative; z-index: 1; font-size: 6.5pt; font-weight: 600; }
-
   .state-label { font-size: 12pt; font-weight: 800; text-align: center; width: 100%; margin-top: 2px; line-height: 1; }
 
   .ev-block { position: absolute; left: 1px; right: 1px; border-radius: 1.5px; color: #fff; overflow: hidden; z-index: 2; display: flex; flex-direction: column; align-items: center; padding-top: 1px; }
   .ev-name { font-size: 7pt; font-weight: 800; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
   .ev-time { font-size: 5pt; opacity: 0.8; }
 
-  .arret-bar { margin-top: 1mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1mm 2mm; width: 100%; }
+  /* Arret bar */
+  .arret-bar { margin-top: 1.5mm; border: 0.5px solid #d0d0d0; border-radius: 3px; padding: 1.5mm 2mm; width: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
   .arret-bar-title { font-size: 6pt; font-weight: 700; margin-bottom: 0.5mm; }
   .arret-items { display: flex; flex-wrap: wrap; gap: 0.5mm 2mm; }
   .arret-tranche { display: flex; align-items: center; gap: 0.5mm; }
   .arret-tranche-label { font-size: 5pt; font-weight: 700; padding: 0.3mm 1mm; border-radius: 2px; }
   .arret-chip { font-size: 4.5pt; border: 0.5px solid; border-radius: 2px; padding: 0.2mm 0.8mm; white-space: nowrap; }
+
+  /* Print button */
+  .print-btn {
+    position: fixed; top: 12px; right: 12px; z-index: 9999;
+    padding: 10px 22px; background: #111; color: #fff; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .print-btn:hover { background: #333; }
+  @media print { .print-btn { display: none !important; } }
 </style>
 </head><body>
+<button class="print-btn" onclick="window.print()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  Imprimer
+</button>
 <div class="page">
   <div class="page-title">${title}</div>
   ${legend}
@@ -435,12 +501,5 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   ${month1.tableHTML}
   ${month2.tableHTML}
 </div>
-<div class="print-btn-bar" style="position:fixed;top:8px;right:8px;z-index:999;display:flex;gap:6px;">
-  <button onclick="window.print()" style="display:flex;align-items:center;gap:4px;padding:6px 14px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-    Imprimer
-  </button>
-</div>
-<style>@media print { .print-btn-bar { display: none !important; } }</style>
 </body></html>`
 }
