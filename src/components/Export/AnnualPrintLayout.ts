@@ -377,22 +377,12 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   html, body { width: 297mm; height: 210mm; overflow: hidden; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #fff; color: #111;
     font-weight: 400; letter-spacing: 0.2px;
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { position: relative; width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; }
-  .page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at center,
-        rgba(0, 58, 143, 0.04) 0%,
-        rgba(0, 58, 143, 0.02) 35%,
-        transparent 70%
-      ),
-      url('/images/logo-calendar.png') center 48% / 38% no-repeat;
-    opacity: 0.05;
-    filter: grayscale(100%);
-    pointer-events: none;
-    z-index: 0;
+  .page { position: relative; width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; transform: scale(0.87); transform-origin: top left; }
+
+  .header-logo {
+    position: absolute; top: 2mm; right: 3mm;
+    width: 20mm; height: auto; opacity: 0.7;
+    z-index: 2;
   }
 
   .page-title { text-align: center; font-size: 11pt; font-weight: 600; letter-spacing: 0.8px; margin-bottom: 1mm; }
@@ -451,6 +441,7 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 </style>
 </head><body>
 <div class="page">
+  <img src="/images/logo-calendar.png" class="header-logo" alt="" />
   <div class="page-title">Calendrier ${year}</div>
   ${legend}
   ${arretSection}
