@@ -163,14 +163,15 @@ function MonthMiniCard({
     .filter(v => v.startDate <= monthEnd && v.endDate >= monthStart)
     .map(v => ({ ...v, color: settings.vacationColor }));
 
-  // Arrêt bars (AT only, NO prépa) - shown as context bars above days
+  // Arrêt bars (AT only) - shown as context bars above days
   const arretATItems = arrets
     .filter(a => a.type === 'arret' && a.startDate <= monthEnd && a.endDate >= monthStart)
     .map(a => ({ ...a, color: a.color || getArretColor(a, settings) }));
 
-  // Prépa modules - shown as centered lines within day cells
+  // Prépa modules - also shown as context bars above days (half-width, centered, with patterns)
   const prepaItems = arrets
-    .filter(a => a.type === 'prepa' && a.startDate <= monthEnd && a.endDate >= monthStart);
+    .filter(a => a.type === 'prepa' && a.startDate <= monthEnd && a.endDate >= monthStart)
+    .map(a => ({ ...a, color: a.color || getArretColor(a, settings) }));
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -202,7 +203,8 @@ function MonthMiniCard({
         {weeks.map((week, weekIndex) => {
           const weekVacBars = computeWeekBars(vacItems, week);
           const weekArretBars = computeWeekBars(arretATItems, week);
-          const hasContextBars = weekVacBars.length > 0 || weekArretBars.length > 0;
+          const weekPrepaBars = computeWeekBars(prepaItems, week);
+          const hasContextBars = weekVacBars.length > 0 || weekArretBars.length > 0 || weekPrepaBars.length > 0;
 
           return (
             <div key={weekIndex}>
@@ -232,6 +234,44 @@ function MonthMiniCard({
                       title={bar.item.name}
                     />
                   ))}
+                  {weekPrepaBars.map((bar, idx) => {
+                    const prepa = prepaItems.find(p => p.name === bar.item.name && p.color === bar.item.color);
+                    const pattern = prepa ? getArretPattern(prepa) : 'none';
+                    const fullWidth = (bar.span / 7) * 100;
+                    const halfWidth = fullWidth * 0.5;
+                    const offset = (bar.startCol / 7) * 100 + fullWidth * 0.25;
+                    return (
+                      <div
+                        key={`prepa-${idx}`}
+                        className="h-[4px] sm:h-[5px] rounded-sm relative overflow-hidden"
+                        style={{
+                          backgroundColor: bar.item.color,
+                          marginLeft: `${offset}%`,
+                          width: `${halfWidth}%`,
+                        }}
+                        title={bar.item.name}
+                      >
+                        {pattern !== 'none' && (
+                          <div className="absolute inset-0 opacity-60" style={{
+                            backgroundImage: pattern === 'stripes'
+                              ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)`
+                              : pattern === 'dots'
+                              ? `radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)`
+                              : pattern === 'crosshatch'
+                              ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px), repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
+                              : pattern === 'diagonal'
+                              ? `repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)`
+                              : pattern === 'waves'
+                              ? `repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
+                              : pattern === 'grid'
+                              ? `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px), repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px)`
+                              : 'none',
+                            backgroundSize: pattern === 'dots' ? '4px 4px' : undefined,
+                          }} />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -253,11 +293,7 @@ function MonthMiniCard({
                   const showREBackground = reDay && !hasActiveAstreinte && !showCPBackground;
                   const hasEvents = events.length > 0;
 
-                  // Check if day falls within a prépa module
-                  const prepaOnDay = isCurrentMonth ? prepaItems.find(p => 
-                    isSameDay(day, p.startDate) || isSameDay(day, p.endDate) ||
-                    isWithinInterval(day, { start: p.startDate, end: p.endDate })
-                  ) : undefined;
+                  // Prépa modules now shown as context bars, not in cells
 
                   let cellBgColor = undefined;
                   if (hasActiveAstreinte && isCurrentMonth) {
@@ -294,14 +330,6 @@ function MonthMiniCard({
                       }}
                     >
                       {format(day, 'd')}
-                      
-                      {/* Prépa module: centered half-width line */}
-                      {prepaOnDay && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/2 h-[2px] rounded-full z-[1] mt-[5px]"
-                          style={{ backgroundColor: getArretColor(prepaOnDay, settings) }}
-                          title={`${prepaOnDay.name}${prepaOnDay.module ? ` (${prepaOnDay.module})` : ''}`}
-                        />
-                      )}
 
                       {isCurrentMonth && (
                         <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-px pb-0.5">

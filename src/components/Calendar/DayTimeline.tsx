@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarEvent, Astreinte, Holiday, Vacation, Arret, CalendarSettings, CancelledAstreinteDate } from '@/types/calendar';
+import { getArretColor } from '@/lib/trancheColors';
+import { isSameDay, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface DayTimelineProps {
@@ -11,6 +13,7 @@ interface DayTimelineProps {
   holiday: Holiday | null;
   vacation: Vacation | null;
   arret: Arret | null;
+  arrets?: Arret[];
   cancelled: CancelledAstreinteDate | null;
   settings: CalendarSettings;
 }
@@ -45,6 +48,7 @@ export function DayTimeline({
   holiday,
   vacation,
   arret,
+  arrets = [],
   cancelled,
   settings,
 }: DayTimelineProps) {
@@ -53,6 +57,16 @@ export function DayTimeline({
   }, []);
 
   const hasActiveAstreinte = astreinte && !astreinte.isCancelled && !cancelled;
+
+  // Find prépa modules active on this day
+  const prepaModules = useMemo(() => {
+    return arrets.filter(a => 
+      a.type === 'prepa' && (
+        isSameDay(date, a.startDate) || isSameDay(date, a.endDate) ||
+        isWithinInterval(date, { start: a.startDate, end: a.endDate })
+      )
+    );
+  }, [arrets, date]);
 
   // Astreinte positioning (default 8h-8h but clamped to view)
   const astreintePosition = useMemo(() => {
@@ -87,6 +101,11 @@ export function DayTimeline({
             {arret.name} ({arret.tranche})
           </span>
         )}
+        {prepaModules.map(prepa => (
+          <span key={prepa.id} className="text-xs px-2 py-0.5 rounded text-white font-medium" style={{ backgroundColor: getArretColor(prepa, settings) }}>
+            {prepa.module || prepa.name} ({prepa.tranche})
+          </span>
+        ))}
         {cancelled && (
           <span className="text-xs px-2 py-0.5 rounded text-white font-medium" style={{ backgroundColor: settings.astreinteCancelledColor }}>
             Annulée — {cancelled.name}

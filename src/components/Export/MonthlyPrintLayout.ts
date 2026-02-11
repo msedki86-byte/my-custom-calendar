@@ -1,6 +1,7 @@
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, format, isWeekend, isSameMonth, getWeek, isSameDay,
+  startOfDay,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -22,36 +23,39 @@ interface MonthlyPrintData {
 }
 
 function isHolidayDate(date: Date, holidays: Holiday[]): Holiday | null {
-  return holidays.find(h => isSameDay(new Date(h.date), date)) || null;
+  return holidays.find(h => isSameDay(startOfDay(new Date(h.date)), startOfDay(date))) || null;
 }
 
 function isVacationDate(date: Date, vacations: Vacation[]): Vacation | null {
+  const d = startOfDay(date);
   return vacations.find(v => {
-    const s = new Date(v.startDate); const e = new Date(v.endDate);
-    return date >= new Date(s.getFullYear(), s.getMonth(), s.getDate()) &&
-           date <= new Date(e.getFullYear(), e.getMonth(), e.getDate());
+    const s = startOfDay(new Date(v.startDate));
+    const e = startOfDay(new Date(v.endDate));
+    return d >= s && d <= e;
   }) || null;
 }
 
 function isAstreinteDate(date: Date, astreintes: Astreinte[]): Astreinte | null {
+  const d = startOfDay(date);
   return astreintes.find(a => {
     if (a.isCancelled) return false;
-    const s = new Date(a.startDate); const e = new Date(a.endDate);
-    return date >= new Date(s.getFullYear(), s.getMonth(), s.getDate()) &&
-           date <= new Date(e.getFullYear(), e.getMonth(), e.getDate());
+    const s = startOfDay(new Date(a.startDate));
+    const e = startOfDay(new Date(a.endDate));
+    return d >= s && d <= e;
   }) || null;
 }
 
 function getEventsOnDate(date: Date, events: CalendarEvent[]): CalendarEvent[] {
+  const d = startOfDay(date);
   return events.filter(ev => {
-    const s = new Date(ev.startDate); const e = new Date(ev.endDate);
-    return date >= new Date(s.getFullYear(), s.getMonth(), s.getDate()) &&
-           date <= new Date(e.getFullYear(), e.getMonth(), e.getDate());
+    const s = startOfDay(new Date(ev.startDate));
+    const e = startOfDay(new Date(ev.endDate));
+    return d >= s && d <= e;
   });
 }
 
 function isCancelledDate(date: Date, cancelled: CancelledAstreinteDate[]): boolean {
-  return cancelled.some(c => isSameDay(new Date(c.date), date));
+  return cancelled.some(c => isSameDay(startOfDay(new Date(c.date)), startOfDay(date)));
 }
 
 function getPatternSVG(pattern: PatternType, color: string, id: string): string {
@@ -78,17 +82,16 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
   const bars: string[] = [];
   let patternCounter = 0;
 
-  // Vacation bars - use settings color
+  // Vacation bars
   for (const vac of data.vacations) {
-    const vacStart = new Date(vac.startDate);
-    const vacEnd = new Date(vac.endDate);
+    const vacStart = startOfDay(new Date(vac.startDate));
+    const vacEnd = startOfDay(new Date(vac.endDate));
     let firstCol = -1, lastCol = -1;
     for (let i = 0; i < 7; i++) {
       const day = week[i];
       if (!isSameMonth(day, monthDate)) continue;
-      const d = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-      if (d >= new Date(vacStart.getFullYear(), vacStart.getMonth(), vacStart.getDate()) &&
-          d <= new Date(vacEnd.getFullYear(), vacEnd.getMonth(), vacEnd.getDate())) {
+      const d = startOfDay(day);
+      if (d >= vacStart && d <= vacEnd) {
         if (firstCol === -1) firstCol = i;
         lastCol = i;
       }
@@ -100,20 +103,20 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
     }
   }
 
-  // Arret bars with patterns, stacked
+  // AT bars
   const arretSlots: { arret: Arret; firstCol: number; lastCol: number }[] = [];
   const processedArrets = new Set<string>();
   for (const arret of data.arrets) {
+    if (arret.type !== 'arret') continue;
     if (processedArrets.has(arret.id)) continue;
-    const arretStart = new Date(arret.startDate);
-    const arretEnd = new Date(arret.endDate);
+    const arretStart = startOfDay(new Date(arret.startDate));
+    const arretEnd = startOfDay(new Date(arret.endDate));
     let firstCol = -1, lastCol = -1;
     for (let i = 0; i < 7; i++) {
       const day = week[i];
       if (!isSameMonth(day, monthDate)) continue;
-      const d = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-      if (d >= new Date(arretStart.getFullYear(), arretStart.getMonth(), arretStart.getDate()) &&
-          d <= new Date(arretEnd.getFullYear(), arretEnd.getMonth(), arretEnd.getDate())) {
+      const d = startOfDay(day);
+      if (d >= arretStart && d <= arretEnd) {
         if (firstCol === -1) firstCol = i;
         lastCol = i;
       }
@@ -124,8 +127,32 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
     }
   }
 
+  // Prépa bars (half-width centered)
+  const prepaSlots: { arret: Arret; firstCol: number; lastCol: number }[] = [];
+  const processedPrepas = new Set<string>();
+  for (const arret of data.arrets) {
+    if (arret.type !== 'prepa') continue;
+    if (processedPrepas.has(arret.id)) continue;
+    const arretStart = startOfDay(new Date(arret.startDate));
+    const arretEnd = startOfDay(new Date(arret.endDate));
+    let firstCol = -1, lastCol = -1;
+    for (let i = 0; i < 7; i++) {
+      const day = week[i];
+      if (!isSameMonth(day, monthDate)) continue;
+      const d = startOfDay(day);
+      if (d >= arretStart && d <= arretEnd) {
+        if (firstCol === -1) firstCol = i;
+        lastCol = i;
+      }
+    }
+    if (firstCol !== -1) {
+      processedPrepas.add(arret.id);
+      prepaSlots.push({ arret, firstCol, lastCol });
+    }
+  }
+
   const arretBarHeight = 4;
-  const arretStartY = 5; // vacation(4px) + 1px gap
+  const arretStartY = 5;
   for (let idx = 0; idx < arretSlots.length; idx++) {
     const { arret, firstCol, lastCol } = arretSlots[idx];
     const color = getArretColor(arret, s);
@@ -133,9 +160,8 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
     const left = ((firstCol + 1) / 8 * 100);
     const width = ((lastCol - firstCol + 1) / 8 * 100);
     const top = arretStartY + idx * (arretBarHeight + 1);
-
     if (pattern !== 'none') {
-      const patId = `mp_${monthDate.getMonth()}_${patternCounter++}`;
+      const patId = `mp_${monthDate.getMonth()}_a${patternCounter++}`;
       const patSvg = getPatternSVG(pattern, color, patId);
       if (patSvg) {
         bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${arretBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
@@ -145,8 +171,31 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
     bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${arretBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
   }
 
+  const prepaStartY = arretSlots.length > 0 ? arretStartY + arretSlots.length * (arretBarHeight + 1) : arretStartY;
+  const prepaBarHeight = 4;
+  for (let idx = 0; idx < prepaSlots.length; idx++) {
+    const { arret, firstCol, lastCol } = prepaSlots[idx];
+    const color = getArretColor(arret, s);
+    const pattern = getArretPattern(arret);
+    const fullLeft = ((firstCol + 1) / 8 * 100);
+    const fullWidth = ((lastCol - firstCol + 1) / 8 * 100);
+    const left = fullLeft + fullWidth * 0.25;
+    const width = fullWidth * 0.5;
+    const top = prepaStartY + idx * (prepaBarHeight + 1);
+    if (pattern !== 'none') {
+      const patId = `mp_${monthDate.getMonth()}_p${patternCounter++}`;
+      const patSvg = getPatternSVG(pattern, color, patId);
+      if (patSvg) {
+        bars.push(`<svg style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;z-index:2;"><defs>${patSvg}</defs><rect width="100%" height="100%" fill="url(#${patId})" rx="1"/></svg>`);
+        continue;
+      }
+    }
+    bars.push(`<div style="position:absolute;top:${top}px;left:${left}%;width:${width}%;height:${prepaBarHeight}px;background:${color};border-radius:1px;z-index:2;"></div>`);
+  }
+
   if (bars.length === 0) return '';
-  const totalHeight = arretSlots.length > 0 ? arretStartY + arretSlots.length * (arretBarHeight + 1) : 5;
+  const allSlots = arretSlots.length + prepaSlots.length;
+  const totalHeight = allSlots > 0 ? prepaStartY + prepaSlots.length * (prepaBarHeight + 1) : 5;
   return `<tr><td colspan="8" style="position:relative;height:${totalHeight}px;padding:0;border:none;">${bars.join('')}</td></tr>`;
 }
 
@@ -234,6 +283,9 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   const legend = buildLegendHTML(data);
   const arretSection = buildArretBarHTML(data);
 
+  // Cell height: each day cell is tall enough to show events by time
+  const cellHeight = 80; // px - enough for timed events
+
   let tableHTML = `<table class="month-table"><thead><tr>
     <th class="wk-col" style="background:${s.weekNumberBgColor};color:${s.weekNumberTextColor}">Sem</th>`;
   ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].forEach(d => {
@@ -249,7 +301,7 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
 
     for (const day of week) {
       if (!isSameMonth(day, monthDate)) {
-        tableHTML += `<td class="day empty" style="background:${s.weekNumberBgColor}"></td>`;
+        tableHTML += `<td class="day empty" style="background:${s.weekNumberBgColor};height:${cellHeight}px"></td>`;
         continue;
       }
 
@@ -269,15 +321,26 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
       if (cpEvt) { bg = s.cpColor; fg = '#FFF'; }
       if (ast && !cancelled) { bg = s.astreinteColor; fg = '#333'; }
 
-      let linesHTML = '';
+      // Timed events positioned vertically (5h-21h range = 16h)
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
-      for (const evt of otherEvts.slice(0, 3)) {
-        linesHTML += `<span class="ev-line" style="background:${evt.color}"></span>`;
+      let eventsHTML = '';
+      for (const evt of otherEvts.slice(0, 4)) {
+        const startMinutes = evt.startTime ? (parseInt(evt.startTime.split(':')[0]) * 60 + parseInt(evt.startTime.split(':')[1] || '0')) : 5 * 60;
+        const endMinutes = evt.endTime ? (parseInt(evt.endTime.split(':')[0]) * 60 + parseInt(evt.endTime.split(':')[1] || '0')) : 21 * 60;
+        const clampedStart = Math.max(startMinutes, 5 * 60);
+        const clampedEnd = Math.min(endMinutes, 21 * 60);
+        const topPct = ((clampedStart - 5 * 60) / (16 * 60)) * 100;
+        const heightPct = Math.max(((clampedEnd - clampedStart) / (16 * 60)) * 100, 8);
+        const timeLabel = evt.startTime ? `${evt.startTime}` : '';
+        eventsHTML += `<div class="ev-block" style="top:${14 + topPct * 0.66}%;height:${heightPct * 0.66}%;background:${evt.color}" title="${evt.name} ${timeLabel}">
+          <span class="ev-name">${evt.name}</span>
+          ${timeLabel ? `<span class="ev-time">${timeLabel}</span>` : ''}
+        </div>`;
       }
 
-      tableHTML += `<td class="day" style="background:${bg};color:${fg}">
+      tableHTML += `<td class="day" style="background:${bg};color:${fg};height:${cellHeight}px">
         <span class="day-num">${day.getDate()}</span>
-        ${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}
+        ${eventsHTML}
       </td>`;
     }
     tableHTML += `</tr>`;
@@ -290,17 +353,18 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   @page { size: A5 portrait; margin: 5mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 148mm; height: 210mm; overflow: hidden; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
-    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    display: flex; justify-content: center; align-items: center; }
 
-  .page { width: 148mm; height: 210mm; padding: 4mm; display: flex; flex-direction: column; }
-  .page-title { text-align: center; font-size: 13pt; font-weight: 700; margin-bottom: 2mm; text-transform: capitalize; }
+  .page { width: 140mm; max-height: 200mm; padding: 3mm; display: flex; flex-direction: column; align-items: center; }
+  .page-title { text-align: center; font-size: 13pt; font-weight: 700; margin-bottom: 2mm; text-transform: capitalize; width: 100%; }
 
-  .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; }
+  .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; width: 100%; }
   .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6.5pt; }
   .legend-swatch { width: 14px; height: 9px; border-radius: 1.5px; flex-shrink: 0; }
   .legend-label { white-space: nowrap; }
 
-  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; }
+  .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1.5mm; width: 100%; }
   .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6.5pt; }
   .arret-legend-line .legend-swatch { width: 14px; height: 9px; border-radius: 1.5px; flex-shrink: 0; }
 
@@ -310,13 +374,14 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   .month-table td { font-size: 9pt; }
   .wk-col { width: 24px; font-size: 6.5pt !important; font-weight: 600; }
 
-  .day { position: relative; vertical-align: middle; }
-  .day-num { position: relative; z-index: 1; }
+  .day { position: relative; vertical-align: top; padding-top: 1px !important; }
+  .day-num { position: relative; z-index: 1; font-size: 8pt; font-weight: 600; }
 
-  .ev-lines { position: absolute; top: 50%; left: 2px; right: 2px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; margin-top: 5px; }
-  .ev-line { display: block; height: 2.5px; width: 100%; border-radius: 0.5px; }
+  .ev-block { position: absolute; left: 1px; right: 1px; border-radius: 1.5px; color: #fff; font-size: 5pt; line-height: 1.1; padding: 0 1px; overflow: hidden; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
+  .ev-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ev-time { font-size: 4.5pt; opacity: 0.8; }
 
-  .arret-bar { margin-top: 1.5mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1.5mm 2mm; }
+  .arret-bar { margin-top: 1.5mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1.5mm 2mm; width: 100%; }
   .arret-bar-title { font-size: 7pt; font-weight: 700; margin-bottom: 1mm; }
   .arret-items { display: flex; flex-wrap: wrap; gap: 1mm 3mm; }
   .arret-tranche { display: flex; align-items: center; gap: 1mm; }
