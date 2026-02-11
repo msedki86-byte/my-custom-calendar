@@ -374,7 +374,8 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 <style>
   @page { size: A4 landscape; margin: 5mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 297mm; height: 210mm; overflow: hidden; font-family: Arial, Helvetica, sans-serif; background: #fff; color: #111;
+  html, body { width: 297mm; height: 210mm; overflow: hidden; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #fff; color: #111;
+    font-weight: 400; letter-spacing: 0.2px;
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { position: relative; width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; }
   .page::before {
@@ -388,45 +389,50 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
         transparent 70%
       ),
       url('/images/logo-calendar.png') center 48% / 38% no-repeat;
-    opacity: 0.06;
-    filter: grayscale(100%) contrast(110%);
+    opacity: 0.05;
+    filter: grayscale(100%);
     pointer-events: none;
     z-index: 0;
   }
 
-  .page-title { text-align: center; font-size: 11pt; font-weight: 700; margin-bottom: 1mm; }
+  .page-title { text-align: center; font-size: 11pt; font-weight: 600; letter-spacing: 0.8px; margin-bottom: 1mm; }
 
   /* Legend */
   .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1mm; }
   .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6pt; }
   .legend-swatch { width: 12px; height: 8px; border-radius: 1px; flex-shrink: 0; }
-  .legend-label { white-space: nowrap; }
+  .legend-label { white-space: nowrap; font-weight: 500; }
 
-  /* Arret legend line (between legend and calendar) */
+  /* Arret legend line */
   .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1mm; }
   .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6pt; }
   .arret-legend-line .legend-swatch { width: 12px; height: 8px; border-radius: 1px; flex-shrink: 0; }
 
-  /* Grid 4x3 with gaps */
+  /* Grid 4x3 */
   .months-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr);
-    gap: 2.5mm; flex: 1; min-height: 0; }
+    gap: 3.5mm; flex: 1; min-height: 0; }
 
-  /* Month block with rounded border */
+  /* Month block premium */
   .month-block { display: flex; flex-direction: column; min-height: 0;
-    border: 0.5px solid #ccc; border-radius: 3px; overflow: hidden; }
-  .month-title { text-align: center; font-size: 7pt; font-weight: 700; padding: 2px 0;
+    border: 0.6px solid #d8d8d8; border-radius: 4px; background: #ffffff; box-shadow: 0 0.5px 2px rgba(0,0,0,0.04); overflow: hidden; }
+  .month-title { text-align: center; font-size: 8pt; font-weight: 700; letter-spacing: 0.6px; padding: 2px 0;
     text-transform: capitalize; background: #111 !important; color: #fff !important; }
 
   /* Table */
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
-  .month-table th, .month-table td { font-size: 5.5pt; text-align: center; padding: 0; line-height: 1; height: 12px; }
+  .month-table th, .month-table td { font-size: 6pt; text-align: center; padding: 1px 0; line-height: 1.25; height: 14px; }
   .month-table th { font-weight: 600; font-size: 5pt; }
   .wk-col { width: 14px; font-size: 5pt !important; }
 
   /* Day cells */
   .day { position: relative; vertical-align: middle; }
   .day.empty { }
-  .day-num { position: relative; z-index: 1; }
+  .day-num { position: relative; z-index: 1; font-weight: 600; }
+
+  /* Footer signature */
+  .footer-signature { position: absolute; bottom: 3mm; left: 0; width: 100%; text-align: center;
+    font-size: 5pt; color: rgba(0,0,0,0.45); letter-spacing: 1px; font-weight: 500; }
+  .footer-signature .separator { margin: 0 4px; opacity: 0.4; }
 
   /* Prépa module: centered half-width line */
   .prepa-line { position: absolute; top: 50%; left: 25%; width: 50%; height: 2px; border-radius: 1px; transform: translateY(2px); z-index: 1; }
@@ -449,6 +455,13 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   ${legend}
   ${arretSection}
   <div class="months-grid">${months}</div>
+  <div class="footer-signature">
+    <span>W Planner</span>
+    <span class="separator">•</span>
+    <span>Planning professionnel</span>
+    <span class="separator">•</span>
+    <span>${year}</span>
+  </div>
 </div>
 <div class="print-btn-bar" style="position:fixed;top:8px;right:8px;z-index:999;display:flex;gap:6px;">
   <button onclick="window.print()" style="display:flex;align-items:center;gap:4px;padding:6px 14px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
