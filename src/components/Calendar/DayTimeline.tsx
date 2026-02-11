@@ -171,7 +171,7 @@ export function DayTimeline({
             <div
               key={event.id || idx}
               className={cn(
-                "absolute left-12 right-2 rounded-md px-2 py-1 text-white text-xs font-medium shadow-sm flex flex-col justify-center",
+                "absolute left-12 right-2 rounded-md px-2 text-white shadow-sm flex flex-col items-center",
                 !hasTime && "border-l-4 border-white/50"
               )}
               style={{
@@ -179,9 +179,10 @@ export function DayTimeline({
                 height: pos.height - 2,
                 backgroundColor: event.color,
                 zIndex: 10 + idx,
+                paddingTop: '4px',
               }}
             >
-              <span className="truncate font-semibold">{event.name}</span>
+              <span className="truncate font-bold text-center w-full" style={{ fontSize: '0.85rem' }}>{event.name}</span>
               {hasTime && (
                 <span className="text-[10px] opacity-80">
                   {event.startTime || '05:00'} — {event.endTime || '21:00'}

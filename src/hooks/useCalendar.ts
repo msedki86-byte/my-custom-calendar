@@ -304,6 +304,41 @@ export function useCalendar() {
     const isCancelled = cancelledAstreinteDates.some(c => isSameDay(c.date, date));
     if (isCancelled) return false;
     
+    const activeAstreinte = astreintes.find(a => 
+      !a.isCancelled && (
+        isWithinInterval(date, { start: a.startDate, end: a.endDate }) ||
+        isSameDay(date, a.startDate) ||
+        isSameDay(date, a.endDate)
+      )
+    );
+    if (!activeAstreinte) return false;
+
+    // Multiple astreintes = conflict
+    const multipleAstreintes = astreintes.filter(a => 
+      !a.isCancelled && (
+        isWithinInterval(date, { start: a.startDate, end: a.endDate }) ||
+        isSameDay(date, a.startDate) ||
+        isSameDay(date, a.endDate)
+      )
+    ).length > 1;
+    if (multipleAstreintes) return true;
+
+    // Any event (including CP/RE) overlapping an active astreinte = conflict
+    const dayEvents = events.filter(e =>
+      isWithinInterval(date, { start: e.startDate, end: e.endDate }) ||
+      isSameDay(date, e.startDate) ||
+      isSameDay(date, e.endDate)
+    );
+    return dayEvents.length > 0;
+  }, [cancelledAstreinteDates, events]);
+
+  const getConflictDetails = useCallback((date: Date, astreintes: Astreinte[]): string[] => {
+    // Check if the date is cancelled - if so, no conflict details
+    const isCancelled = cancelledAstreinteDates.some(c => isSameDay(c.date, date));
+    if (isCancelled) return [];
+    
+    const details: string[] = [];
+    
     const activeAstreintes = astreintes.filter(a => 
       !a.isCancelled && (
         isWithinInterval(date, { start: a.startDate, end: a.endDate }) ||
@@ -311,23 +346,25 @@ export function useCalendar() {
         isSameDay(date, a.endDate)
       )
     );
-    return activeAstreintes.length > 1;
-  }, [cancelledAstreinteDates]);
-
-  const getConflictDetails = useCallback((date: Date, astreintes: Astreinte[]): string[] => {
-    // Check if the date is cancelled - if so, no conflict details
-    const isCancelled = cancelledAstreinteDates.some(c => isSameDay(c.date, date));
-    if (isCancelled) return [];
     
-    const conflicting = astreintes.filter(a => 
-      !a.isCancelled && (
-        isWithinInterval(date, { start: a.startDate, end: a.endDate }) ||
-        isSameDay(date, a.startDate) ||
-        isSameDay(date, a.endDate)
-      )
-    );
-    return conflicting.map(a => a.name || `Astreinte ${format(a.startDate, 'dd/MM')}`);
-  }, [cancelledAstreinteDates]);
+    if (activeAstreintes.length > 1) {
+      activeAstreintes.forEach(a => details.push(a.name || `Astreinte ${format(a.startDate, 'dd/MM')}`));
+    }
+
+    if (activeAstreintes.length > 0) {
+      const dayEvents = events.filter(e =>
+        isWithinInterval(date, { start: e.startDate, end: e.endDate }) ||
+        isSameDay(date, e.startDate) ||
+        isSameDay(date, e.endDate)
+      );
+      dayEvents.forEach(e => {
+        const label = e.type === 'cp' ? 'CP' : e.type === 're' ? 'RE' : e.name;
+        details.push(`${label} / Astreinte`);
+      });
+    }
+
+    return details;
+  }, [cancelledAstreinteDates, events]);
 
   const cancelAstreinteDates = useCallback((startDate: Date, endDate: Date, name: string, startTime?: string, endTime?: string) => {
     const days = eachDayOfInterval({ start: startDate, end: endDate });

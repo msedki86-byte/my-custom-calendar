@@ -186,9 +186,9 @@ export function DayCell({
       {/* Holiday name */}
       {holiday && (
         <div className={cn(
-          'text-xs font-semibold text-holiday mb-1 truncate',
+          'font-bold text-holiday mb-1 truncate text-center',
           astreinte && !astreinte.isCancelled && 'text-white/90'
-        )}>
+        )} style={{ fontSize: '0.65rem' }}>
           {holiday.name}
         </div>
       )}
@@ -198,10 +198,11 @@ export function DayCell({
         {events.slice(0, 3).map(event => (
           <div
             key={event.id}
-            className="text-xs px-1.5 py-0.5 rounded truncate font-medium"
+            className="px-1 py-0.5 rounded truncate font-bold text-center"
             style={{ 
               backgroundColor: event.color,
               color: '#fff',
+              fontSize: '0.65rem',
             }}
             title={event.name}
           >
