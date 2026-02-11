@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileDown, Upload, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileText, Sheet, CalendarPlus, CalendarMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -97,22 +97,22 @@ export function UnifiedToolbar({
           <div className="hidden sm:flex items-center gap-1">
             {onExportPDF && (
               <Button variant="ghost" size="icon" onClick={onExportPDF} className="h-8 w-8" title="Exporter PDF">
-                <FileDown className="w-4 h-4" />
+                <FileText className="w-4 h-4 text-red-600" />
               </Button>
             )}
             {onImport && (
-              <Button variant="ghost" size="icon" onClick={onImport} className="h-8 w-8" title="Importer Excel">
-                <Upload className="w-4 h-4" />
+              <Button variant="ghost" size="icon" onClick={onImport} className="h-8 w-8" title="Importer Excel/CSV">
+                <Sheet className="w-4 h-4 text-green-600" />
               </Button>
             )}
             {onICSImport && (
               <Button variant="ghost" size="icon" onClick={onICSImport} className="h-8 w-8" title="Importer ICS">
-                <CalendarIcon className="w-4 h-4" />
+                <CalendarPlus className="w-4 h-4 text-blue-600" />
               </Button>
             )}
             {onICSExport && (
               <Button variant="ghost" size="icon" onClick={onICSExport} className="h-8 w-8" title="Exporter ICS">
-                <Download className="w-4 h-4" />
+                <CalendarMinus className="w-4 h-4 text-orange-600" />
               </Button>
             )}
             <Button variant="ghost" size="icon" onClick={onOpenSettings} className="h-8 w-8" title="Paramètres">
@@ -138,19 +138,19 @@ export function UnifiedToolbar({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onExportPDF}>
-                <FileDown className="w-4 h-4 mr-2" />
+                <FileText className="w-4 h-4 mr-2 text-red-600" />
                 Exporter PDF
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onImport}>
-                <Upload className="w-4 h-4 mr-2" />
+                <Sheet className="w-4 h-4 mr-2 text-green-600" />
                 Importer Excel
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onICSImport}>
-                <CalendarIcon className="w-4 h-4 mr-2" />
+                <CalendarPlus className="w-4 h-4 mr-2 text-blue-600" />
                 Importer ICS
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onICSExport}>
-                <Download className="w-4 h-4 mr-2" />
+                <CalendarMinus className="w-4 h-4 mr-2 text-orange-600" />
                 Exporter ICS
               </DropdownMenuItem>
               <DropdownMenuSeparator />

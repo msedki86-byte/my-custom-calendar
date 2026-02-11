@@ -402,8 +402,8 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; }
   .arret-legend-line .legend-swatch { width: 12px; height: 7px; border-radius: 1px; flex-shrink: 0; }
 
-  .month-section { width: 100%; margin-bottom: 1.5mm; }
-  .month-section-title { text-align: center; font-size: 8pt; font-weight: 700; text-transform: capitalize; margin-bottom: 0.5mm; padding: 1px 0; background: ${s.yearMonthBgColor}; color: ${s.yearMonthTextColor}; border-radius: 2px; }
+  .month-section { width: 100%; margin-bottom: 4mm; border: 1.5px solid #111; border-radius: 4px; overflow: hidden; }
+  .month-section-title { text-align: center; font-size: 10pt; font-weight: 800; text-transform: capitalize; margin-bottom: 0; padding: 3px 0; background: #111 !important; color: #fff !important; }
 
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 0.5px solid #ccc; border-radius: 2px; overflow: hidden; }
   .month-table th, .month-table td { text-align: center; padding: 0.5px; line-height: 1.1; border: 0.5px solid #e0e0e0; }
@@ -435,6 +435,12 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   ${month1.tableHTML}
   ${month2.tableHTML}
 </div>
-<script>window.onload=()=>{setTimeout(()=>{window.print();window.close();},400);};<\/script>
+<div class="print-btn-bar" style="position:fixed;top:8px;right:8px;z-index:999;display:flex;gap:6px;">
+  <button onclick="window.print()" style="display:flex;align-items:center;gap:4px;padding:6px 14px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Imprimer
+  </button>
+</div>
+<style>@media print { .print-btn-bar { display: none !important; } }</style>
 </body></html>`
 }

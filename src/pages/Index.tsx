@@ -228,8 +228,12 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="px-2 sm:px-4 lg:px-6 py-2 sm:py-4 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-background relative">
+      {/* Background watermark logo */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <img src="/images/logo-calendar.png" alt="" className="w-[400px] h-[400px] opacity-[0.04]" />
+      </div>
+      <div className="px-2 sm:px-4 lg:px-6 py-2 sm:py-4 max-w-7xl mx-auto relative z-10">
         <UnifiedToolbar
           currentDate={currentDate}
           currentYear={currentDate.getFullYear()}
