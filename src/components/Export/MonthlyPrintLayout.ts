@@ -394,32 +394,17 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
     overflow: hidden;
   }
 
-  /* Premium watermark */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: url('/images/logo-calendar.png') center/45% no-repeat;
-    opacity: 0.04;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Subtle radial glow */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, rgba(0,58,143,0.012) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
   .page {
     position: relative; z-index: 1;
     width: 198mm; margin: 0 auto;
     padding: 3mm 4mm;
     display: flex; flex-direction: column; align-items: center;
+  }
+
+  .header-logo {
+    position: absolute; top: 3mm; right: 4mm;
+    width: 18mm; height: auto; opacity: 0.7;
+    z-index: 2;
   }
 
   .page-title {
@@ -495,6 +480,7 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   Imprimer
 </button>
 <div class="page">
+  <img src="/images/logo-calendar.png" class="header-logo" alt="" />
   <div class="page-title">${title}</div>
   ${legend}
   ${arretSection}

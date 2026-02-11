@@ -28,12 +28,17 @@ export interface MonthlyExportData {
   cancelledDates: CancelledAstreinteDate[];
 }
 
-function openPrintWindow(rawHTML: string) {
+function downloadPDF(rawHTML: string, filename: string) {
   const cleanHTML = DOMPurify.sanitize(rawHTML, { WHOLE_DOCUMENT: true, ADD_TAGS: ['style', 'meta'], ADD_ATTR: ['onload', 'onclick'] });
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) { alert('Popup bloquée. Autorisez les popups pour exporter.'); return; }
-  printWindow.document.write(cleanHTML);
-  printWindow.document.close();
+  const blob = new Blob([cleanHTML], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 const PRINT_BTN_HTML = `
@@ -55,12 +60,13 @@ const PRINT_BTN_CSS = `
 
 // Annual PDF: uses generateAnnualPrintHTML for mm-based A4 landscape layout
 export function exportAnnualPDF(data: AnnualExportData) {
-  openPrintWindow(generateAnnualPrintHTML(data));
+  downloadPDF(generateAnnualPrintHTML(data), `Calendrier_${data.year}.html`);
 }
 
 // Monthly PDF: dedicated layout
 export function exportMonthlyPDF(data: MonthlyExportData) {
-  openPrintWindow(generateMonthlyPrintHTML(data));
+  const monthNames = ['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
+  downloadPDF(generateMonthlyPrintHTML(data), `${monthNames[data.month]}_${data.year}.html`);
 }
 
 // Week PDF: clone screen (fallback)
