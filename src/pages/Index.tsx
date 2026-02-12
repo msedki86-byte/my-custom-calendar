@@ -18,6 +18,7 @@ import { ExcelImport } from '@/components/Import/ExcelImport';
 import { ICSImportDialog } from '@/components/Import/ICSImportDialog';
 import { ICSExportDialog } from '@/components/Export/ICSExportDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { startOfWeek, getWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -228,6 +229,7 @@ const Index = () => {
   }
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-background relative">
       {/* Background watermark logo - full page at 15% opacity */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -482,6 +484,7 @@ const Index = () => {
         <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setSettingsOpen(false)} />
       )}
     </div>
+    </ErrorBoundary>
   );
 };
 
