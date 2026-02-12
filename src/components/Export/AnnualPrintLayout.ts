@@ -218,7 +218,7 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: AnnualPrin
   if (bars.length === 0) return '';
   const allSlots = arretSlots.length + prepaSlots.length;
   const totalHeight = allSlots > 0 ? prepaStartY + prepaSlots.length * (prepaBarHeight + 1) : 3;
-  return `<tr><td colspan="8" style="position:relative;height:${totalHeight}px;padding:0;border:none;">${bars.join('')}</td></tr>`;
+  return `<tr><td class="wk-col" style="background:${s.weekNumberBgColor};padding:0;border:none;"></td><td colspan="7" style="position:relative;height:${totalHeight}px;padding:0;border:none;">${bars.join('')}</td></tr>`;
 }
 
 function buildMonthHTML(year: number, month: number, data: AnnualPrintData): string {
@@ -274,10 +274,17 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
       let linesHTML = '';
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
       for (const evt of otherEvts.slice(0, 2)) {
-        linesHTML += `<span class="ev-line" style="background:${evt.color}"></span>`;
+        // Calculate dynamic width based on event duration relative to cell
+        const evtStart = startOfDay(new Date(evt.startDate));
+        const evtEnd = startOfDay(new Date(evt.endDate));
+        const totalDays = Math.max(1, Math.round((evtEnd.getTime() - evtStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        const widthPct = Math.min(100, Math.max(30, totalDays <= 1 ? 40 : totalDays <= 3 ? 60 : totalDays <= 7 ? 80 : 100));
+        const safeName = (evt.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        linesHTML += `<span class="ev-line" style="background:${evt.color};width:${widthPct}%" title="${safeName}"></span>`;
       }
 
-      html += `<td class="day" style="background:${bg};color:${fg}"><span class="day-num">${day.getDate()}</span>${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}</td>`;
+      const safeDay = day.getDate();
+      html += `<td class="day" style="background:${bg};color:${fg}"><span class="day-num">${safeDay}</span>${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}</td>`;
     }
     html += `</tr>`;
   }
@@ -417,14 +424,14 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 
   /* Table */
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
-  .month-table th, .month-table td { font-size: 6pt; text-align: center; padding: 1px 0; line-height: 1.25; height: 14px; border: 0.3px solid ${data.settings.weekNumberBgColor}; }
+  .month-table th, .month-table td { font-size: 6pt; text-align: center; padding: 0; line-height: 14px; height: 14px; vertical-align: middle; border: 0.3px solid ${data.settings.weekNumberBgColor}; }
   .month-table th { font-weight: 600; font-size: 5pt; }
   .wk-col { width: 14px; font-size: 5pt !important; }
 
-  /* Day cells */
-  .day { position: relative; vertical-align: middle; }
-  .day.empty { }
-  .day-num { position: relative; z-index: 1; font-weight: 600; }
+   /* Day cells */
+   .day { position: relative; vertical-align: middle; }
+   .day.empty { }
+   .day-num { position: relative; z-index: 1; font-weight: 600; display: inline-block; vertical-align: middle; }
 
   /* Footer signature */
   .footer-signature { position: absolute; bottom: 3mm; left: 0; width: 100%; text-align: center;
@@ -434,9 +441,9 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   /* Prépa module: centered half-width line */
   .prepa-line { position: absolute; top: 50%; left: 25%; width: 50%; height: 2px; border-radius: 1px; transform: translateY(2px); z-index: 1; }
 
-  /* Event lines centered in cell */
-  .ev-lines { position: absolute; top: 50%; left: 1px; right: 1px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; margin-top: 3px; }
-  .ev-line { display: block; height: 2px; width: 100%; border-radius: 0.5px; }
+   /* Event lines centered in cell */
+   .ev-lines { position: absolute; bottom: 1px; left: 1px; right: 1px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+   .ev-line { display: block; height: 2px; border-radius: 0.5px; }
 
   /* Arret bar */
   .arret-bar { margin-top: 1mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1mm 2mm; }
