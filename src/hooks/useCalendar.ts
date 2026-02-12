@@ -15,7 +15,6 @@ import {
   initialArrets,
   initialEvents,
   ASTREINTE_START_DATE,
-  ASTREINTE_CYCLE_WEEKS,
 } from '@/data/initialData';
 import { 
   addDays, 
@@ -137,16 +136,17 @@ export function useCalendar() {
     const astreintes: Astreinte[] = [];
     const astreinteStartDate = new Date(settings.astreinteStartDate || '2026-02-05T00:00:00.000Z');
     if (isNaN(astreinteStartDate.getTime())) return astreintes;
+    const cycleWeeks = settings.astreinteCycleWeeks || 6;
     
     let currentStart = astreinteStartDate;
 
     const weeksDiff = differenceInWeeks(startDate, astreinteStartDate);
-    const cyclesBefore = Math.floor(weeksDiff / ASTREINTE_CYCLE_WEEKS);
+    const cyclesBefore = Math.floor(weeksDiff / cycleWeeks);
     if (cyclesBefore > 0) {
-      currentStart = addWeeks(astreinteStartDate, cyclesBefore * ASTREINTE_CYCLE_WEEKS);
+      currentStart = addWeeks(astreinteStartDate, cyclesBefore * cycleWeeks);
     }
 
-    currentStart = addWeeks(currentStart, -ASTREINTE_CYCLE_WEEKS);
+    currentStart = addWeeks(currentStart, -cycleWeeks);
 
     while (currentStart <= endDate) {
       let astStart = new Date(currentStart);
@@ -169,7 +169,7 @@ export function useCalendar() {
         isCancelled: false,
         isPonctuelle: false,
       });
-      currentStart = addWeeks(currentStart, ASTREINTE_CYCLE_WEEKS);
+      currentStart = addWeeks(currentStart, cycleWeeks);
     }
 
     ponctualAstreintes.forEach(pa => {

@@ -135,8 +135,9 @@ export interface CalendarSettings {
   prepaTr3Color: string;
   prepaTr4Color: string;
   prepaTr5Color: string;
-  // Astreinte start date & PIN
+  // Astreinte start date, cycle & PIN
   astreinteStartDate: string; // ISO string
+  astreinteCycleWeeks: number; // Cycle length in weeks (default 6)
   settingsPin: string;
 }
 
@@ -187,5 +188,6 @@ export const defaultSettings: CalendarSettings = {
   prepaTr5Color: TRANCHE_COLORS.Tr5,
   // Astreinte
   astreinteStartDate: new Date(2026, 1, 5).toISOString(),
+  astreinteCycleWeeks: 6,
   settingsPin: '0000',
 };

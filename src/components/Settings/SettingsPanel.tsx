@@ -24,6 +24,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
   const [newPin, setNewPin] = useState('');
   const [showPinChange, setShowPinChange] = useState(false);
   const [newStartDate, setNewStartDate] = useState('');
+  const [newCycleWeeks, setNewCycleWeeks] = useState<number>(6);
 
   if (!isOpen) return null;
 
@@ -33,6 +34,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
       setPinError(false);
       const d = new Date(settings.astreinteStartDate);
       setNewStartDate(format(d, 'yyyy-MM-dd'));
+      setNewCycleWeeks(settings.astreinteCycleWeeks || 6);
     } else {
       setPinError(true);
     }
@@ -182,7 +184,13 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                         {isValidDate ? format(astreinteDate, 'dd/MM/yyyy', { locale: fr }) : '05/02/2026'}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">Cycle de 6 semaines à partir de cette date.</p>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Cycle actuel</Label>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {settings.astreinteCycleWeeks || 6} semaines
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Cycle à partir de la date initiale.</p>
                     <div className="flex gap-2 items-end">
                       <div className="flex-1">
                         <Label className="text-xs">Nouvelle date</Label>
@@ -194,6 +202,27 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                         />
                       </div>
                       <Button size="sm" className="h-8" onClick={handleDateChange}>OK</Button>
+                    </div>
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <Label className="text-xs">Cycle (semaines)</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={52}
+                          value={newCycleWeeks}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            if (!isNaN(v) && v >= 1 && v <= 52) setNewCycleWeeks(v);
+                          }}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <Button size="sm" className="h-8" onClick={() => {
+                        onUpdateSettings({ astreinteCycleWeeks: newCycleWeeks });
+                        setPinUnlocked(false);
+                        setPinInput('');
+                      }}>OK</Button>
                     </div>
                   </div>
 
