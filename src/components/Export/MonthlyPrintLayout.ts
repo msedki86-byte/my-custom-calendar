@@ -201,7 +201,7 @@ function buildContextBarsForWeek(week: Date[], monthDate: Date, data: MonthlyPri
   if (bars.length === 0) return '';
   const allSlots = arretSlots.length + prepaSlots.length;
   const totalHeight = allSlots > 0 ? prepaStartY + prepaSlots.length * (prepaBarHeight + 1) : 5;
-  return `<tr><td colspan="8" style="position:relative;height:${totalHeight}px;padding:0;border:none;">${bars.join('')}</td></tr>`;
+  return `<tr><td class="wk-col" style="background:${s.weekNumberBgColor};color:${s.weekNumberTextColor};padding:0;border:none;"></td><td colspan="7" style="position:relative;height:${totalHeight}px;padding:0;border:none;">${bars.join('')}</td></tr>`;
 }
 
 function collectEventLegendItems(data: MonthlyPrintData): { label: string; bg: string }[] {
@@ -340,6 +340,7 @@ function buildMonthTableHTML(year: number, month: number, data: MonthlyPrintData
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
       let eventsHTML = '';
       for (const evt of otherEvts.slice(0, 3)) {
+        const safeName = (evt.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         const startMinutes = evt.startTime ? (parseInt(evt.startTime.split(':')[0]) * 60 + parseInt(evt.startTime.split(':')[1] || '0')) : 5 * 60;
         const endMinutes = evt.endTime ? (parseInt(evt.endTime.split(':')[0]) * 60 + parseInt(evt.endTime.split(':')[1] || '0')) : 21 * 60;
         const clampedStart = Math.max(startMinutes, 5 * 60);
@@ -347,7 +348,7 @@ function buildMonthTableHTML(year: number, month: number, data: MonthlyPrintData
         const topPct = ((clampedStart - 5 * 60) / (16 * 60)) * 100;
         const heightPct = Math.max(((clampedEnd - clampedStart) / (16 * 60)) * 100, 12);
         eventsHTML += `<div class="ev-block" style="top:${16 + topPct * 0.64}%;height:${heightPct * 0.64}%;background:${evt.color}">
-          <span class="ev-name">${evt.name}</span>
+          <span class="ev-name">${safeName}</span>
           ${evt.startTime ? `<span class="ev-time">${evt.startTime}</span>` : ''}
         </div>`;
       }
