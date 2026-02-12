@@ -91,6 +91,8 @@ export function UnifiedYearView({
     ? 'grid-cols-3' 
     : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4';
 
+  if (!months || months.length === 0) return null;
+
   return (
     <div className={cn("grid gap-2 sm:gap-3 lg:gap-4", gridCols)}>
       {months.map((month) => (
