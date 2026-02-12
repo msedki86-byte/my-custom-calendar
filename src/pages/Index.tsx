@@ -83,7 +83,7 @@ const Index = () => {
   const [icsExportOpen, setIcsExportOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'year' | 'month' | 'week'>('month');
+  const [viewMode, setViewMode] = useState<'year' | 'month' | 'week'>('year');
   const [activeTab, setActiveTab] = useState('calendar');
   const [weekViewDate, setWeekViewDate] = useState<Date>(new Date());
   useEffect(() => {
