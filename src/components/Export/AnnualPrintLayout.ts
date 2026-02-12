@@ -251,7 +251,7 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
 
     for (const day of week) {
       if (!isSameMonth(day, monthDate)) {
-        html += `<td class="day empty" style="background:${s.weekNumberBgColor};border-color:${s.weekNumberBgColor}"></td>`;
+        html += `<td class="day empty" style="background:${s.weekNumberBgColor}"></td>`;
         continue;
       }
 
@@ -274,11 +274,7 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
       let linesHTML = '';
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
       for (const evt of otherEvts.slice(0, 2)) {
-        const startMin = evt.startTime ? (parseInt(evt.startTime.split(':')[0]) * 60 + parseInt(evt.startTime.split(':')[1] || '0')) : 5 * 60;
-        const endMin = evt.endTime ? (parseInt(evt.endTime.split(':')[0]) * 60 + parseInt(evt.endTime.split(':')[1] || '0')) : 21 * 60;
-        const durationH = Math.max((endMin - startMin) / 60, 1);
-        const lh = Math.min(Math.max(durationH / 16 * 6, 1.5), 4);
-        linesHTML += `<span class="ev-line" style="background:${evt.color};height:${lh.toFixed(1)}px"></span>`;
+        linesHTML += `<span class="ev-line" style="background:${evt.color}"></span>`;
       }
 
       html += `<td class="day" style="background:${bg};color:${fg}"><span class="day-num">${day.getDate()}</span>${linesHTML ? `<div class="ev-lines">${linesHTML}</div>` : ''}</td>`;
@@ -426,9 +422,9 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   .wk-col { width: 14px; font-size: 5pt !important; }
 
   /* Day cells */
-   .day { position: relative; vertical-align: middle; }
-   .day.empty { }
-   .day-num { position: relative; z-index: 1; font-weight: 600; display: flex; align-items: center; justify-content: center; height: 100%; }
+  .day { position: relative; vertical-align: middle; }
+  .day.empty { }
+  .day-num { position: relative; z-index: 1; font-weight: 600; }
 
   /* Footer signature */
   .footer-signature { position: absolute; bottom: 3mm; left: 0; width: 100%; text-align: center;
@@ -438,9 +434,9 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   /* Prépa module: centered half-width line */
   .prepa-line { position: absolute; top: 50%; left: 25%; width: 50%; height: 2px; border-radius: 1px; transform: translateY(2px); z-index: 1; }
 
-   /* Event lines centered in cell */
-   .ev-lines { position: absolute; bottom: 0; left: 1px; right: 1px; display: flex; flex-direction: column; gap: 0.5px; padding-bottom: 0.5px; }
-   .ev-line { display: block; width: 100%; border-radius: 0.5px; }
+  /* Event lines centered in cell */
+  .ev-lines { position: absolute; top: 50%; left: 1px; right: 1px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; margin-top: 3px; }
+  .ev-line { display: block; height: 2px; width: 100%; border-radius: 0.5px; }
 
   /* Arret bar */
   .arret-bar { margin-top: 1mm; border: 0.5px solid #ccc; border-radius: 2px; padding: 1mm 2mm; }

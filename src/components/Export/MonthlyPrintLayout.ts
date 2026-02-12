@@ -336,7 +336,7 @@ function buildMonthTableHTML(year: number, month: number, data: MonthlyPrintData
         stateLabel = `<div class="state-label">${hol.name}</div>`;
       }
 
-      // Timed events positioned vertically with dynamic height
+      // Timed events positioned vertically
       const otherEvts = evts.filter(e => e.type !== 're' && e.type !== 'cp');
       let eventsHTML = '';
       for (const evt of otherEvts.slice(0, 3)) {
@@ -345,8 +345,8 @@ function buildMonthTableHTML(year: number, month: number, data: MonthlyPrintData
         const clampedStart = Math.max(startMinutes, 5 * 60);
         const clampedEnd = Math.min(endMinutes, 21 * 60);
         const topPct = ((clampedStart - 5 * 60) / (16 * 60)) * 100;
-        const heightPct = Math.max(((clampedEnd - clampedStart) / (16 * 60)) * 100, 8);
-        eventsHTML += `<div class="ev-block" style="top:${16 + topPct * 0.64}%;height:${heightPct * 0.64}%;min-height:8px;background:${evt.color}">
+        const heightPct = Math.max(((clampedEnd - clampedStart) / (16 * 60)) * 100, 12);
+        eventsHTML += `<div class="ev-block" style="top:${16 + topPct * 0.64}%;height:${heightPct * 0.64}%;background:${evt.color}">
           <span class="ev-name">${evt.name}</span>
           ${evt.startTime ? `<span class="ev-time">${evt.startTime}</span>` : ''}
         </div>`;
