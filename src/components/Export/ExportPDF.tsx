@@ -58,13 +58,11 @@ async function generateAndDownloadPDF(rawHTML: string, filename: string, orienta
   html = html.replace(/<button[^>]*onclick="window\.print\(\)"[^>]*>[\s\S]*?<\/button>/gi, '');
   html = html.replace(/<div class="print-btn-bar"[\s\S]*?<\/div>\s*<\/div>/gi, '');
 
-  // Create hidden iframe
+  // Create hidden iframe - fixed dimensions for consistent rendering on all devices
   const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;top:-10000px;left:-10000px;width:1122px;height:793px;border:none;opacity:0;';
-  if (orientation === 'portrait') {
-    iframe.style.width = '793px';
-    iframe.style.height = '1122px';
-  }
+  const iframeW = orientation === 'landscape' ? 1122 : 793;
+  const iframeH = orientation === 'landscape' ? 793 : 1122;
+  iframe.style.cssText = `position:fixed;top:-10000px;left:-10000px;width:${iframeW}px;height:${iframeH}px;border:none;opacity:0;pointer-events:none;`;
   document.body.appendChild(iframe);
 
   try {
@@ -96,10 +94,10 @@ async function generateAndDownloadPDF(rawHTML: string, filename: string, orienta
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: parseInt(iframe.style.width),
-      height: parseInt(iframe.style.height),
-      windowWidth: parseInt(iframe.style.width),
-      windowHeight: parseInt(iframe.style.height),
+      width: iframeW,
+      height: iframeH,
+      windowWidth: iframeW,
+      windowHeight: iframeH,
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.95);
