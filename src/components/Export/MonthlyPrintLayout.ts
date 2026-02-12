@@ -288,7 +288,7 @@ function buildMonthTableHTML(year: number, month: number, data: MonthlyPrintData
   // Build data object scoped to this month for context bars
   const monthData: MonthlyPrintData = { ...data, year, month };
 
-  let tableHTML = `<div class="month-section"><div class="month-section-title">${monthName}</div>`;
+  let tableHTML = `<div class="month-section"><div class="month-section-title" style="background:${s.yearMonthBgColor};color:${s.yearMonthTextColor}">${monthName}</div>`;
   tableHTML += `<table class="month-table"><thead><tr>
     <th class="wk-col" style="background:${s.weekNumberBgColor};color:${s.weekNumberTextColor}">Sem</th>`;
   ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d => {
@@ -451,7 +451,6 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
     text-align: center; font-size: 10pt; font-weight: 700;
     text-transform: capitalize; margin-bottom: 0;
     padding: 4px 0;
-    background: #111 !important; color: #fff !important;
     letter-spacing: 0.3px;
   }
 

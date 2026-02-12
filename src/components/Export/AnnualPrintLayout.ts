@@ -236,7 +236,7 @@ function buildMonthHTML(year: number, month: number, data: AnnualPrintData): str
   const monthName = format(monthDate, 'MMMM', { locale: fr });
 
   let html = `<div class="month-block">`;
-  html += `<div class="month-title">${monthName}</div>`;
+  html += `<div class="month-title" style="background:${s.yearMonthBgColor};color:${s.yearMonthTextColor}">${monthName}</div>`;
   html += `<table class="month-table"><thead><tr><th class="wk-col" style="background:${s.weekNumberBgColor};color:${s.weekNumberTextColor}">S</th>`;
   ['L','M','M','J','V','S','D'].forEach(d => {
     html += `<th style="background:${s.monthHeaderBgColor};color:${s.monthHeaderTextColor}">${d}</th>`;
@@ -420,7 +420,7 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   .month-block { display: flex; flex-direction: column; min-height: 0;
     border: 0.6px solid #d8d8d8; border-radius: 4px; background: #ffffff; box-shadow: 0 0.5px 2px rgba(0,0,0,0.04); overflow: hidden; }
   .month-title { text-align: center; font-size: 8pt; font-weight: 700; letter-spacing: 0.6px; padding: 2px 0;
-    text-transform: capitalize; background: #111 !important; color: #fff !important; }
+    text-transform: capitalize; }
 
   /* Table */
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
