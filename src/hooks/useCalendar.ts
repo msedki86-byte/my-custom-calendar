@@ -56,9 +56,11 @@ export function useCalendar() {
     return new Date(2026, 0, 1);
   });
   
-  const [settings, setSettings] = useState<CalendarSettings>(() => 
-    parseStoredData('calendar-settings', defaultSettings)
-  );
+  const [settings, setSettings] = useState<CalendarSettings>(() => {
+    const stored = parseStoredData<Partial<CalendarSettings>>('calendar-settings', {});
+    // Merge with defaults so new keys are never missing
+    return { ...defaultSettings, ...stored };
+  });
   
   const [events, setEvents] = useState<CalendarEvent[]>(() => 
     parseStoredData('calendar-events', initialEvents)
