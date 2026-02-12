@@ -60,7 +60,7 @@ async function generateAndDownloadPDF(rawHTML: string, filename: string, orienta
 
   // Create hidden iframe
   const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;top:-10000px;left:-10000px;width:1122px;height:793px;border:none;visibility:hidden;';
+  iframe.style.cssText = 'position:fixed;top:-10000px;left:-10000px;width:1122px;height:793px;border:none;opacity:0;';
   if (orientation === 'portrait') {
     iframe.style.width = '793px';
     iframe.style.height = '1122px';
