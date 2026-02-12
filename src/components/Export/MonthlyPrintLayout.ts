@@ -405,7 +405,7 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   /* Watermark */
   .watermark {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg);
-    font-size: 64pt; font-weight: 900; color: #003A8F; opacity: 0.06;
+    font-size: 64pt; font-weight: 900; color: #003A8F; opacity: 0.10;
     letter-spacing: 10px; white-space: nowrap; z-index: 0; pointer-events: none;
     text-transform: uppercase;
   }
@@ -457,7 +457,7 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
 
   /* Table */
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  .month-table th, .month-table td { text-align: center; padding: 0.5px; line-height: 1.1; border: 0.5px solid #e0e0e0; }
+  .month-table th, .month-table td { text-align: center; padding: 0.5px; line-height: 1.1; border: 0.5px solid ${s.weekNumberBgColor}; }
   .month-table th { font-size: 5.5pt; font-weight: 600; padding: 2px 0; }
   .month-table td { font-size: 7pt; }
   .wk-col { width: 18px; font-size: 5.5pt !important; font-weight: 600; }
