@@ -402,11 +402,24 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
     transform: scale(0.87); transform-origin: top center;
   }
 
+  /* Watermark */
+  .watermark {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 64pt; font-weight: 900; color: #003A8F; opacity: 0.06;
+    letter-spacing: 10px; white-space: nowrap; z-index: 0; pointer-events: none;
+    text-transform: uppercase;
+  }
+
   .header-logo {
     position: absolute; top: 3mm; right: 4mm;
     width: 18mm; height: auto; opacity: 0.7;
     z-index: 2;
   }
+
+  /* Footer signature */
+  .footer-signature { position: absolute; bottom: 3mm; left: 0; width: 100%; text-align: center;
+    font-size: 5pt; color: rgba(0,0,0,0.45); letter-spacing: 1px; font-weight: 500; }
+  .footer-signature .separator { margin: 0 4px; opacity: 0.4; }
 
   .page-title {
     text-align: center;
@@ -481,12 +494,20 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   Imprimer
 </button>
 <div class="page">
+  <div class="watermark">W Planner</div>
   <img src="/images/logo-calendar.png" class="header-logo" alt="" />
   <div class="page-title">${title}</div>
   ${legend}
   ${arretSection}
   ${month1.tableHTML}
   ${month2.tableHTML}
+  <div class="footer-signature">
+    <span>W Planner</span>
+    <span class="separator">•</span>
+    <span>Planning professionnel</span>
+    <span class="separator">•</span>
+    <span>${year}</span>
+  </div>
 </div>
 </body></html>`
 }
