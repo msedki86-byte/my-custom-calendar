@@ -403,9 +403,9 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 
   /* Legend */
   .legend { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1mm; }
-  .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6pt; }
+  .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 6pt; line-height: 1; }
   .legend-swatch { width: 12px; height: 8px; border-radius: 1px; flex-shrink: 0; }
-  .legend-label { white-space: nowrap; font-weight: 500; }
+  .legend-label { white-space: nowrap; font-weight: 500; line-height: 1; }
 
   /* Arret legend line */
   .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; justify-content: center; margin-bottom: 1mm; }
@@ -419,19 +419,19 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   /* Month block premium */
   .month-block { display: flex; flex-direction: column; min-height: 0;
     border: 0.6px solid #d8d8d8; border-radius: 4px; background: #ffffff; box-shadow: 0 0.5px 2px rgba(0,0,0,0.04); overflow: hidden; }
-  .month-title { text-align: center; font-size: 8pt; font-weight: 700; letter-spacing: 0.6px; padding: 2px 0;
-    text-transform: capitalize; }
+  .month-title { text-align: center; font-size: 8pt; font-weight: 700; letter-spacing: 0.6px; padding: 0; height: 16px; line-height: 16px;
+    text-transform: capitalize; vertical-align: middle; }
 
   /* Table */
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
-  .month-table th, .month-table td { font-size: 6pt; text-align: center; padding: 0; line-height: 14px; height: 14px; vertical-align: middle; border: 0.3px solid ${data.settings.weekNumberBgColor}; }
-  .month-table th { font-weight: 600; font-size: 5pt; }
-  .wk-col { width: 14px; font-size: 5pt !important; }
+  .month-table th, .month-table td { font-size: 6pt; text-align: center; padding: 0; height: 14px; vertical-align: middle; border: 0.3px solid ${data.settings.weekNumberBgColor}; }
+  .month-table th { font-weight: 600; font-size: 5pt; line-height: 14px; }
+  .wk-col { width: 14px; font-size: 5pt !important; line-height: 14px; }
 
-   /* Day cells */
-   .day { position: relative; vertical-align: middle; }
-   .day.empty { }
-   .day-num { position: relative; z-index: 1; font-weight: 600; display: inline-block; vertical-align: middle; }
+  /* Day cells */
+  .day { position: relative; vertical-align: middle; line-height: 14px; }
+  .day.empty { }
+  .day-num { position: relative; z-index: 1; font-weight: 600; line-height: 14px; vertical-align: middle; }
 
   /* Footer signature */
   .footer-signature { position: absolute; bottom: 3mm; left: 0; width: 100%; text-align: center;

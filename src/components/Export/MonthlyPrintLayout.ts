@@ -432,9 +432,9 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
 
   /* Legend */
   .legend { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1.5mm; width: 100%; }
-  .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; }
+  .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; line-height: 1; }
   .legend-swatch { width: 12px; height: 7px; border-radius: 1px; flex-shrink: 0; }
-  .legend-label { white-space: nowrap; }
+  .legend-label { white-space: nowrap; line-height: 1; }
 
   .arret-legend-line { display: flex; flex-wrap: wrap; gap: 1mm 3mm; justify-content: center; margin-bottom: 1.5mm; width: 100%; }
   .arret-legend-line .legend-item { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; }
@@ -450,19 +450,19 @@ export function generateMonthlyPrintHTML(data: MonthlyPrintData): string {
   .month-section-title {
     text-align: center; font-size: 10pt; font-weight: 700;
     text-transform: capitalize; margin-bottom: 0;
-    padding: 4px 0;
+    padding: 0; height: 24px; line-height: 24px;
     letter-spacing: 0.3px;
   }
 
   /* Table */
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  .month-table th, .month-table td { text-align: center; padding: 0.5px; line-height: 1.1; border: 0.5px solid ${s.weekNumberBgColor}; }
-  .month-table th { font-size: 5.5pt; font-weight: 600; padding: 2px 0; }
+  .month-table th, .month-table td { text-align: center; padding: 0; vertical-align: middle; border: 0.5px solid ${s.weekNumberBgColor}; }
+  .month-table th { font-size: 5.5pt; font-weight: 600; height: 16px; line-height: 16px; }
   .month-table td { font-size: 7pt; }
-  .wk-col { width: 18px; font-size: 5.5pt !important; font-weight: 600; }
+  .wk-col { width: 18px; font-size: 5.5pt !important; font-weight: 600; line-height: 16px; }
 
-  .day { position: relative; vertical-align: top; padding-top: 0.5px !important; }
-  .day-num { position: relative; z-index: 1; font-size: 6.5pt; font-weight: 600; }
+  .day { position: relative; vertical-align: middle; }
+  .day-num { position: relative; z-index: 1; font-size: 6.5pt; font-weight: 600; vertical-align: middle; }
   .state-label { font-size: 12pt; font-weight: 800; text-align: center; width: 100%; margin-top: 2px; line-height: 1; }
 
   .ev-block { position: absolute; left: 1px; right: 1px; border-radius: 1.5px; color: #fff; overflow: hidden; z-index: 2; display: flex; flex-direction: column; align-items: center; padding-top: 1px; }
