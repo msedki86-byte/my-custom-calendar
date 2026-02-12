@@ -379,6 +379,14 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { position: relative; width: 297mm; height: 210mm; padding: 3mm; display: flex; flex-direction: column; transform: scale(0.95); transform-origin: top center; margin: 0 auto; }
 
+  /* Watermark */
+  .watermark {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 72pt; font-weight: 900; color: #003A8F; opacity: 0.06;
+    letter-spacing: 12px; white-space: nowrap; z-index: 0; pointer-events: none;
+    text-transform: uppercase;
+  }
+
   .header-logo {
     position: absolute; top: 2mm; right: 3mm;
     width: 20mm; height: auto; opacity: 0.7;
@@ -441,6 +449,7 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 </style>
 </head><body>
 <div class="page">
+  <div class="watermark">W Planner</div>
   <img src="/images/logo-calendar.png" class="header-logo" alt="" />
   <div class="page-title">Calendrier ${year}</div>
   ${legend}

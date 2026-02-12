@@ -77,6 +77,10 @@ export function UnifiedToolbar({
           </div>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          {/* Mobile: Add Event button at top */}
+          <Button onClick={onAddEvent} size="sm" className="sm:hidden h-8 gap-1 rounded-lg shadow-sm text-xs">
+            <Plus className="w-3 h-3" />
+          </Button>
           <Select 
             value={currentYear.toString()} 
             onValueChange={(v) => onYearChange(parseInt(v))}
@@ -246,9 +250,9 @@ export function UnifiedToolbar({
             </Button>
           </div>
 
-          <Button onClick={onAddEvent} size="sm" className="h-8 gap-1 rounded-lg shadow-sm text-xs">
+          <Button onClick={onAddEvent} size="sm" className="hidden sm:flex h-8 gap-1 rounded-lg shadow-sm text-xs">
             <Plus className="w-3 h-3" />
-            <span className="hidden xs:inline">Ajouter</span>
+            <span>Ajouter</span>
           </Button>
         </div>
       )}
