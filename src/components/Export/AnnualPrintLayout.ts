@@ -382,7 +382,7 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
   /* Watermark */
   .watermark {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg);
-    font-size: 72pt; font-weight: 900; color: #003A8F; opacity: 0.06;
+    font-size: 72pt; font-weight: 900; color: #003A8F; opacity: 0.10;
     letter-spacing: 12px; white-space: nowrap; z-index: 0; pointer-events: none;
     text-transform: uppercase;
   }
@@ -418,7 +418,7 @@ export function generateAnnualPrintHTML(data: AnnualPrintData): string {
 
   /* Table */
   .month-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
-  .month-table th, .month-table td { font-size: 6pt; text-align: center; padding: 1px 0; line-height: 1.25; height: 14px; }
+  .month-table th, .month-table td { font-size: 6pt; text-align: center; padding: 1px 0; line-height: 1.25; height: 14px; border: 0.3px solid ${data.settings.weekNumberBgColor}; }
   .month-table th { font-weight: 600; font-size: 5pt; }
   .wk-col { width: 14px; font-size: 5pt !important; }
 
