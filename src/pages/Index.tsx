@@ -13,7 +13,6 @@ import { SettingsPanel } from '@/components/Settings/SettingsPanel';
 import { AddEventDialog } from '@/components/Dialogs/AddEventDialog';
 import { EventsManager } from '@/components/Events/EventsManager';
 import { ConflictsList } from '@/components/Conflicts/ConflictsList';
-import { PointageModule } from '@/components/Pointage/PointageModule';
 import { exportPDF, exportAnnualPDF, exportMonthlyPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
 import { ICSImportDialog } from '@/components/Import/ICSImportDialog';
@@ -423,12 +422,6 @@ const Index = () => {
               year={currentDate.getFullYear()}
               cancelledDates={cancelledAstreinteDates}
             />
-          </div>
-        )}
-
-        {activeTab === 'pointage' && (
-          <div className="mt-3 sm:mt-4">
-            <PointageModule />
           </div>
         )}
       </div>

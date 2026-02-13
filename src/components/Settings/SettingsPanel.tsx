@@ -63,7 +63,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
   const astreinteDate = new Date(settings.astreinteStartDate || '2026-02-05T00:00:00.000Z');
   const isValidDate = !isNaN(astreinteDate.getTime());
 
-  const pinLockUI = (
+  const PinLockUI = () => (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Lock className="w-4 h-4 text-muted-foreground" />
@@ -76,7 +76,6 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
           placeholder="Code PIN (4 chiffres)"
           value={pinInput}
           onChange={(e) => { setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(false); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') handlePinSubmit(); }}
           className="h-8 text-sm flex-1"
         />
         <Button size="sm" className="h-8" onClick={handlePinSubmit}>
@@ -169,7 +168,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
             
             {!pinUnlocked ? (
               <div className="bg-muted/50 rounded-lg p-3">
-                {pinLockUI}
+                <PinLockUI />
               </div>
             ) : (
               <div className="space-y-4">
