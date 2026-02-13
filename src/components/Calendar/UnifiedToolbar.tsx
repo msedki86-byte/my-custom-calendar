@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileText, Sheet, CalendarPlus, CalendarMinus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileText, Sheet, CalendarPlus, CalendarMinus, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -140,6 +140,10 @@ export function UnifiedToolbar({
                 <AlertTriangle className="w-4 h-4 mr-2" />
                 Conflits
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onTabChange('pointage')}>
+                <ClipboardCheck className="w-4 h-4 mr-2" />
+                Pointage
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onExportPDF}>
                 <FileText className="w-4 h-4 mr-2 text-red-600" />
@@ -170,7 +174,7 @@ export function UnifiedToolbar({
       {/* Tabs - Desktop */}
       <div className="hidden sm:block overflow-x-auto -mx-3 px-3">
         <Tabs value={activeTab} onValueChange={onTabChange}>
-          <TabsList className="h-9 w-full grid grid-cols-3 sm:w-auto sm:inline-flex">
+          <TabsList className="h-9 w-full grid grid-cols-4 sm:w-auto sm:inline-flex">
             <TabsTrigger value="calendar" className="gap-1 text-xs px-2 sm:px-3 h-7">
               <CalendarIcon className="h-3 w-3" />
               Calendrier
@@ -182,6 +186,10 @@ export function UnifiedToolbar({
             <TabsTrigger value="conflicts" className="gap-1 text-xs px-2 sm:px-3 h-7">
               <AlertTriangle className="h-3 w-3" />
               Conflits
+            </TabsTrigger>
+            <TabsTrigger value="pointage" className="gap-1 text-xs px-2 sm:px-3 h-7">
+              <ClipboardCheck className="h-3 w-3" />
+              Pointage
             </TabsTrigger>
           </TabsList>
         </Tabs>
