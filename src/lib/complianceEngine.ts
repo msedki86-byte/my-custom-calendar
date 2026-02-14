@@ -295,7 +295,8 @@ function checkReposQuotidien(
 
 function checkReposHebdo(
   entries: TimeEntry[],
-  weekDates: string[]
+  weekDates: string[],
+  allEntries?: TimeEntry[]
 ): { alerts: ComplianceAlert[]; ok: boolean } {
   const alerts: ComplianceAlert[] = [];
   let ok = true;
@@ -319,7 +320,20 @@ function checkReposHebdo(
   if (workedSlots.length === 0) {
     maxGap = weekMinutes;
   } else {
-    maxGap = workedSlots[0].start;
+    // Consider rest carried from prior week (Saturday/Sunday before this week's Sunday)
+    // If no entries exist on the Saturday before this week, add that day's rest
+    const priorSatDate = format(addDays(parseISO(weekDates[0]), -1), 'yyyy-MM-dd');
+    const priorFriDate = format(addDays(parseISO(weekDates[0]), -2), 'yyyy-MM-dd');
+    const source = allEntries || entries;
+    const priorSatWorked = source.some(e => e.date === priorSatDate && !e.isAstreinteSansIntervention);
+    const priorFriWorked = source.some(e => e.date === priorFriDate && !e.isAstreinteSansIntervention);
+
+    // If prior Saturday was free, we get at least 24h rest leading into this week
+    let leadingRest = workedSlots[0].start; // minutes from Sunday 00:00
+    if (!priorSatWorked) leadingRest += 24 * 60; // Saturday free
+    if (!priorFriWorked && !priorSatWorked) leadingRest += 24 * 60; // Friday also free
+
+    maxGap = leadingRest;
     for (let i = 1; i < workedSlots.length; i++) {
       const gap = workedSlots[i].start - workedSlots[i - 1].end;
       if (gap > maxGap) maxGap = gap;
@@ -374,7 +388,19 @@ export function computeWeekSummary(
 
   const totalHours = daySummaries.reduce((sum, d) => sum + d.totalHours, 0);
   const daysWorked = daySummaries.filter(d => d.hoursWorked > 0).length;
-  const plafond = daysWorked >= 6 ? 54 : 53;
+
+  // 6 CONSECUTIVE worked days check (not just count)
+  let has6Consecutive = false;
+  let consecutiveCount = 0;
+  for (let i = 0; i < 7; i++) {
+    if (daySummaries[i].hoursWorked > 0) {
+      consecutiveCount++;
+      if (consecutiveCount >= 6) { has6Consecutive = true; break; }
+    } else {
+      consecutiveCount = 0;
+    }
+  }
+  const plafond = has6Consecutive ? 54 : 53;
   const heuresRestantes = Math.max(0, plafond - totalHours);
 
   // Day-level alerts (10h)
@@ -412,8 +438,9 @@ export function computeWeekSummary(
   const r2 = checkReposQuotidien(entries, weekDates);
   allAlerts.push(...r2.alerts);
 
-  // Rule 3 – Repos hebdo
-  const r3 = checkReposHebdo(entries, weekDates);
+  // Rule 3 – Repos hebdo (pass all entries for prior-week check)
+  const weekEntries = entries.filter(e => weekDates.includes(e.date));
+  const r3 = checkReposHebdo(weekEntries, weekDates, entries);
   allAlerts.push(...r3.alerts);
 
   // RE pot alert
