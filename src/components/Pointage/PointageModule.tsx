@@ -1,5 +1,5 @@
 /**
- * Module 2 – Conformité & Pointage : Main weekly view
+ * Module 2 – Conformité & Pointage CNPE Bugey
  * Vue calendrier hebdomadaire dimanche–samedi avec saisie, conformité et notes.
  */
 
@@ -8,8 +8,7 @@ import { usePointage } from '@/hooks/usePointage';
 import { WeeklySummaryTable } from './WeeklySummary';
 import { DayEntryForm } from './DayEntryForm';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, MessageSquare, Check, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Clock, Utensils, Car } from 'lucide-react';
 import { format, parseISO, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getWeekDates } from '@/lib/complianceEngine';
@@ -19,6 +18,7 @@ export function PointageModule() {
     entries,
     currentWeekStart,
     weekSummary,
+    pointageSettings,
     addEntry,
     updateEntry,
     deleteEntry,
@@ -29,7 +29,6 @@ export function PointageModule() {
   } = usePointage();
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-
   const weekDates = getWeekDates(currentWeekStart);
 
   const handleDayClick = useCallback((date: string) => {
@@ -57,7 +56,7 @@ export function PointageModule() {
       </div>
 
       {/* Weekly Summary */}
-      <WeeklySummaryTable summary={weekSummary} />
+      <WeeklySummaryTable summary={weekSummary} pointageSettings={pointageSettings} />
 
       {/* Day cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
@@ -80,7 +79,6 @@ export function PointageModule() {
                     : 'border-border bg-card hover:bg-accent/30'
               }`}
             >
-              {/* Day header */}
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] sm:text-xs font-medium text-muted-foreground capitalize">
                   {format(parseISO(dateStr), 'EEE', { locale: fr })}
@@ -90,7 +88,6 @@ export function PointageModule() {
                 </span>
               </div>
 
-              {/* Hours */}
               {daySummary.totalHours > 0 ? (
                 <div className="flex items-center gap-1 mt-1">
                   <Clock className="w-3 h-3 text-muted-foreground" />
@@ -100,7 +97,6 @@ export function PointageModule() {
                 <p className="text-[10px] text-muted-foreground mt-1">—</p>
               )}
 
-              {/* Entries preview */}
               {dayEntries.length > 0 && (
                 <div className="mt-1 space-y-0.5">
                   {dayEntries.slice(0, 2).map(e => (
@@ -111,21 +107,30 @@ export function PointageModule() {
                     </p>
                   ))}
                   {dayEntries.length > 2 && (
-                    <p className="text-[9px] text-muted-foreground">+{dayEntries.length - 2} autre(s)</p>
+                    <p className="text-[9px] text-muted-foreground">+{dayEntries.length - 2}</p>
                   )}
                 </div>
               )}
 
-              {/* Note indicator */}
-              {hasNote && (
-                <div className="absolute top-1 right-1">
+              {/* Indicators */}
+              <div className="absolute top-1 right-1 flex gap-0.5">
+                {hasNote && (
                   <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                     <Check className="w-2.5 h-2.5 text-primary-foreground" />
                   </div>
-                </div>
-              )}
+                )}
+                {daySummary.primeRepas && (
+                  <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center" title="Prime repas">
+                    <Utensils className="w-2.5 h-2.5 text-white" />
+                  </div>
+                )}
+                {daySummary.ikAlert && (
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center" title="IK à vérifier">
+                    <Car className="w-2.5 h-2.5 text-white" />
+                  </div>
+                )}
+              </div>
 
-              {/* Alert dot */}
               {hasAlerts && (
                 <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-red-500" />
               )}
@@ -135,10 +140,11 @@ export function PointageModule() {
       </div>
 
       {/* Real-time counters */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground p-2 rounded-lg bg-muted/50 border border-border">
-        <span>Travail effectif : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.hoursWorked, 0).toFixed(1)}h</strong></span>
+      <div className="flex items-center gap-3 text-xs text-muted-foreground p-2 rounded-lg bg-muted/50 border border-border flex-wrap">
+        <span>Effectif : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.hoursWorked, 0).toFixed(1)}h</strong></span>
         <span>Habillage : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.habillageHours, 0).toFixed(1)}h</strong></span>
-        <span>Total cumulé : <strong className="text-foreground">{weekSummary.totalHours.toFixed(1)}h</strong></span>
+        <span>Total pointé : <strong className="text-foreground">{weekSummary.totalHours.toFixed(1)}h</strong></span>
+        <span>Restant : <strong className={weekSummary.heuresRestantes <= 8 ? 'text-red-600' : weekSummary.heuresRestantes <= 16 ? 'text-amber-600' : 'text-emerald-600'}>{weekSummary.heuresRestantes.toFixed(1)}h</strong></span>
       </div>
 
       {/* Day Entry Dialog */}

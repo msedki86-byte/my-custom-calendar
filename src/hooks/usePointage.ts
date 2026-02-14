@@ -1,25 +1,38 @@
 /**
- * Hook for Module 2 – Conformité & Pointage
- * Manages time entries with localStorage persistence.
+ * Hook for Module 2 – Conformité & Pointage (CNPE Bugey)
+ * Manages time entries + pointage settings with localStorage persistence.
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { TimeEntry, NoteTag } from '@/types/pointage';
-import { computeWeekSummary, getWeekSunday, getWeekDates } from '@/lib/complianceEngine';
+import { TimeEntry, PointageSettings, defaultPointageSettings } from '@/types/pointage';
+import { computeWeekSummary, getWeekSunday, computeAutoComments } from '@/lib/complianceEngine';
 import { addDays, format } from 'date-fns';
 
-const STORAGE_KEY = 'wplanner-pointage-entries';
+const ENTRIES_KEY = 'wplanner-pointage-entries';
+const SETTINGS_KEY = 'wplanner-pointage-settings';
 
 function loadEntries(): TimeEntry[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(ENTRIES_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
   return [];
 }
 
 function saveEntries(entries: TimeEntry[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+}
+
+function loadPointageSettings(): PointageSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return { ...defaultPointageSettings, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return { ...defaultPointageSettings };
+}
+
+function savePointageSettings(s: PointageSettings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
 
 let idCounter = Date.now();
@@ -29,19 +42,25 @@ function newId(): string {
 
 export function usePointage() {
   const [entries, setEntries] = useState<TimeEntry[]>(loadEntries);
+  const [pointageSettings, setPointageSettings] = useState<PointageSettings>(loadPointageSettings);
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getWeekSunday(format(new Date(), 'yyyy-MM-dd')));
 
-  useEffect(() => {
-    saveEntries(entries);
-  }, [entries]);
+  useEffect(() => { saveEntries(entries); }, [entries]);
+  useEffect(() => { savePointageSettings(pointageSettings); }, [pointageSettings]);
 
-  const addEntry = useCallback((entry: Omit<TimeEntry, 'id'>) => {
-    setEntries(prev => [...prev, { ...entry, id: newId() }]);
-  }, []);
+  const addEntry = useCallback((entry: Omit<TimeEntry, 'id' | 'autoComments'>) => {
+    const autoComments = computeAutoComments(entry as TimeEntry, pointageSettings.primeRepasValeur);
+    setEntries(prev => [...prev, { ...entry, id: newId(), autoComments }]);
+  }, [pointageSettings.primeRepasValeur]);
 
   const updateEntry = useCallback((id: string, patch: Partial<TimeEntry>) => {
-    setEntries(prev => prev.map(e => e.id === id ? { ...e, ...patch } : e));
-  }, []);
+    setEntries(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const updated = { ...e, ...patch };
+      updated.autoComments = computeAutoComments(updated, pointageSettings.primeRepasValeur);
+      return updated;
+    }));
+  }, [pointageSettings.primeRepasValeur]);
 
   const deleteEntry = useCallback((id: string) => {
     setEntries(prev => prev.filter(e => e.id !== id));
@@ -52,25 +71,22 @@ export function usePointage() {
   }, [entries]);
 
   const weekSummary = useMemo(() => {
-    return computeWeekSummary(entries, currentWeekStart);
-  }, [entries, currentWeekStart]);
+    return computeWeekSummary(entries, currentWeekStart, pointageSettings);
+  }, [entries, currentWeekStart, pointageSettings]);
 
-  const goToNextWeek = useCallback(() => {
-    setCurrentWeekStart(prev => addDays(prev, 7));
-  }, []);
+  const goToNextWeek = useCallback(() => setCurrentWeekStart(prev => addDays(prev, 7)), []);
+  const goToPrevWeek = useCallback(() => setCurrentWeekStart(prev => addDays(prev, -7)), []);
+  const goToCurrentWeek = useCallback(() => setCurrentWeekStart(getWeekSunday(format(new Date(), 'yyyy-MM-dd'))), []);
 
-  const goToPrevWeek = useCallback(() => {
-    setCurrentWeekStart(prev => addDays(prev, -7));
-  }, []);
-
-  const goToCurrentWeek = useCallback(() => {
-    setCurrentWeekStart(getWeekSunday(format(new Date(), 'yyyy-MM-dd')));
+  const updatePointageSettings = useCallback((patch: Partial<PointageSettings>) => {
+    setPointageSettings(prev => ({ ...prev, ...patch }));
   }, []);
 
   return {
     entries,
     currentWeekStart,
     weekSummary,
+    pointageSettings,
     addEntry,
     updateEntry,
     deleteEntry,
@@ -78,5 +94,6 @@ export function usePointage() {
     goToNextWeek,
     goToPrevWeek,
     goToCurrentWeek,
+    updatePointageSettings,
   };
 }
