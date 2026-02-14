@@ -7,14 +7,15 @@ export interface TimeEntry {
   date: string; // ISO date YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm
-  habillage: number; // minutes (0-60)
   isFormation: boolean;
   isInterventionAstreinte: boolean;
   isAstreinteSansIntervention: boolean;
   suppressionMidi: boolean; // default true if covers 12:00-12:45
   note?: string;
   noteTags?: NoteTag[];
-  autoComments?: string[]; // auto-generated comments (IK, prime repas, etc.)
+  autoComments?: string[]; // auto-generated comments (IK, prime repas, HS, etc.)
+  // Legacy field - no longer used (habillage is now fixed 1h/worked day)
+  habillage?: number;
 }
 
 export type NoteTag = 'prime' | 'ecart' | 'observation' | 'validation-n1';
@@ -38,12 +39,19 @@ export interface ComplianceAlert {
 export interface DaySummary {
   date: string;
   hoursWorked: number; // effective work hours (after midi deduction)
-  habillageHours: number;
+  habillageHours: number; // fixed 1h if worked, 0 otherwise
   totalHours: number; // worked + habillage
   hasNote: boolean;
   alerts: ComplianceAlert[];
-  primeRepas: boolean; // prime repas sans déplacement
-  ikAlert: boolean; // IK à vérifier
+  primeRepas: boolean;
+  ikAlert: boolean;
+}
+
+export interface OvertimeDetail {
+  date: string;
+  hours: number;
+  rate: number; // percentage (25, 40, 50, 100)
+  label: string;
 }
 
 export interface WeekSummary {
@@ -58,24 +66,17 @@ export interface WeekSummary {
   days: DaySummary[];
   alerts: ComplianceAlert[];
   daysWorkedCount: number;
+  overtimeDetails: OvertimeDetail[];
 }
 
 export interface PointageSettings {
-  /** Seuil orange: alerte si heures restantes <= ce seuil */
   seuilOrangeHeures: number;
-  /** Seuil rouge: alerte si heures restantes <= ce seuil */
   seuilRougeHeures: number;
-  /** Pot RE annuel (heures) */
   potREAnnuel: number;
-  /** Solde RE courant (heures) */
   soldeRE: number;
-  /** Date activation pot RE (ISO string) */
   dateActivationRE: string;
-  /** Seuil alerte RE (heures restantes) */
   seuilAlerteRE: number;
-  /** Prime repas valeur € */
   primeRepasValeur: number;
-  /** Alertes activées */
   alertesActives: boolean;
 }
 

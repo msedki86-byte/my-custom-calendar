@@ -1,9 +1,11 @@
 /**
- * Moteur de conformité EDF CNPE Bugey – Refonte complète
+ * Moteur de conformité EDF CNPE Bugey – Refonte Phase 1
  * Semaine : Dimanche 00h00 → Samedi 24h00
+ * Habillage fixe = 1h / jour travaillé
+ * Heures supplémentaires avec majorations IEG
  */
 
-import { TimeEntry, ComplianceAlert, DaySummary, WeekSummary, AlertLevel, PointageSettings, defaultPointageSettings } from '@/types/pointage';
+import { TimeEntry, ComplianceAlert, DaySummary, WeekSummary, AlertLevel, PointageSettings, defaultPointageSettings, OvertimeDetail } from '@/types/pointage';
 import { format, addDays, parseISO, startOfWeek } from 'date-fns';
 
 // ---- Helpers ----
@@ -27,7 +29,6 @@ function getEffectiveMinutes(entry: TimeEntry): number {
   let end = timeToMinutes(entry.endTime);
   if (end <= start) end += 24 * 60;
   let minutes = end - start;
-  // Suppression midi: remove 45min if covers 12:00-12:45 and option is checked
   if (entry.suppressionMidi && coversMidi(entry.startTime, entry.endTime)) {
     minutes -= 45;
   }
@@ -39,12 +40,10 @@ export function computeAutoComments(entry: TimeEntry, primeRepasValeur: number):
   const comments: string[] = [];
   if (entry.isAstreinteSansIntervention) return comments;
 
-  // Prime repas: if covers midi and suppression is OFF
   if (!entry.suppressionMidi && coversMidi(entry.startTime, entry.endTime)) {
     comments.push(`Prime : repas sans dép (${primeRepasValeur.toFixed(2)} €)`);
   }
 
-  // IK: if start < 08:00 or end > 16:45
   const start = timeToMinutes(entry.startTime);
   const end = timeToMinutes(entry.endTime);
   if (start < 8 * 60 || end > 16 * 60 + 45) {
@@ -54,18 +53,165 @@ export function computeAutoComments(entry: TimeEntry, primeRepasValeur: number):
   return comments;
 }
 
+// ---- Overtime / Heures supplémentaires ----
+
+/** Get the day of week index for a date (0=Sunday, 6=Saturday) */
+function getDayOfWeek(dateStr: string): number {
+  return parseISO(dateStr).getDay();
+}
+
+/** 
+ * Compute overtime details for the week.
+ * Rules:
+ * - 36th-43rd hour: +25%
+ * - 44th+ hour: +50%
+ * - Saturday: +25%
+ * - Sunday: +100%
+ * - Holiday: +100%
+ * - Night (21h-6h): +40%
+ * - Apply the MOST FAVORABLE single rate (no cumul)
+ */
+export function computeOvertimeDetails(
+  entries: TimeEntry[],
+  weekDates: string[],
+  holidays: string[] = []
+): OvertimeDetail[] {
+  const details: OvertimeDetail[] = [];
+  
+  // Calculate total effective hours to determine base overtime bracket
+  let totalEffectiveMinutes = 0;
+  const dailyMinutes: { date: string; minutes: number; entries: TimeEntry[] }[] = [];
+  
+  for (const dateStr of weekDates) {
+    const dayEntries = entries.filter(e => e.date === dateStr && !e.isAstreinteSansIntervention);
+    let dayMinutes = 0;
+    for (const entry of dayEntries) {
+      dayMinutes += getEffectiveMinutes(entry);
+    }
+    dailyMinutes.push({ date: dateStr, minutes: dayMinutes, entries: dayEntries });
+    totalEffectiveMinutes += dayMinutes;
+  }
+  
+  const totalEffectiveHours = totalEffectiveMinutes / 60;
+  
+  // Only compute if we have overtime (>35h base)
+  if (totalEffectiveHours <= 35) return details;
+  
+  // Process each worked day
+  let cumulHours = 0;
+  for (const day of dailyMinutes) {
+    if (day.minutes === 0) continue;
+    
+    const dayHours = day.minutes / 60;
+    const dow = getDayOfWeek(day.date);
+    const isSaturday = dow === 6;
+    const isSunday = dow === 0;
+    const isHoliday = holidays.includes(day.date);
+    
+    // Determine day-based rate
+    let dayRate = 0;
+    if (isSunday || isHoliday) dayRate = 100;
+    else if (isSaturday) dayRate = 25;
+    
+    // Check night hours for this day's entries
+    let nightMinutes = 0;
+    for (const entry of day.entries) {
+      nightMinutes += getNightMinutes(entry);
+    }
+    const nightRate = nightMinutes > 0 ? 40 : 0;
+    
+    // Bracket-based rate for hours in the 36-43 and 44+ ranges
+    const prevCumul = cumulHours;
+    cumulHours += dayHours;
+    
+    let bracketRate = 0;
+    if (cumulHours > 43) {
+      // Some hours at 25%, some at 50%
+      const hoursAt50 = Math.min(dayHours, cumulHours - 43);
+      const hoursAt25 = dayHours - hoursAt50;
+      // Use weighted average for bracket rate or just report the highest
+      bracketRate = hoursAt50 > 0 ? 50 : (prevCumul >= 35 ? 25 : 0);
+    } else if (cumulHours > 35) {
+      bracketRate = 25;
+    }
+    
+    // Apply MOST FAVORABLE single rate (no cumul)
+    const bestRate = Math.max(dayRate, nightRate, bracketRate);
+    
+    if (bestRate > 0 && prevCumul >= 35) {
+      // Only the overtime portion
+      const overtimeHours = Math.min(dayHours, cumulHours - 35);
+      if (overtimeHours > 0) {
+        let rateLabel = '';
+        if (bestRate === dayRate) {
+          rateLabel = isSunday ? 'Dimanche' : isHoliday ? 'Férié' : 'Samedi';
+        } else if (bestRate === nightRate) {
+          rateLabel = 'Nuit (21h-6h)';
+        } else {
+          rateLabel = cumulHours > 43 ? '44e heure+' : '36e-43e heure';
+        }
+        
+        details.push({
+          date: day.date,
+          hours: parseFloat(overtimeHours.toFixed(2)),
+          rate: bestRate,
+          label: `HS +${bestRate}% (${rateLabel})`,
+        });
+      }
+    } else if (prevCumul < 35 && cumulHours > 35) {
+      // Partial overtime day
+      const overtimeHours = cumulHours - 35;
+      const bestOvertimeRate = Math.max(dayRate, nightRate, 25);
+      let rateLabel = '';
+      if (bestOvertimeRate === dayRate && dayRate > 0) {
+        rateLabel = isSunday ? 'Dimanche' : isHoliday ? 'Férié' : 'Samedi';
+      } else if (bestOvertimeRate === nightRate && nightRate > 0) {
+        rateLabel = 'Nuit (21h-6h)';
+      } else {
+        rateLabel = '36e-43e heure';
+      }
+      
+      details.push({
+        date: day.date,
+        hours: parseFloat(overtimeHours.toFixed(2)),
+        rate: bestOvertimeRate,
+        label: `HS +${bestOvertimeRate}% (${rateLabel})`,
+      });
+    }
+  }
+  
+  return details;
+}
+
+/** Calculate night minutes (21h-6h) for an entry */
+function getNightMinutes(entry: TimeEntry): number {
+  if (entry.isAstreinteSansIntervention) return 0;
+  const start = timeToMinutes(entry.startTime);
+  let end = timeToMinutes(entry.endTime);
+  if (end <= start) end += 24 * 60;
+  
+  let nightMin = 0;
+  // Night = 21:00 (1260) to 30:00 (next day 6:00 = 1800)
+  // Also 0:00 to 6:00 (0-360)
+  for (let m = start; m < end; m++) {
+    const normalizedM = m % (24 * 60);
+    if (normalizedM >= 21 * 60 || normalizedM < 6 * 60) {
+      nightMin++;
+    }
+  }
+  return nightMin;
+}
+
 // ---- Day Summary ----
 
 export function computeDaySummary(entries: TimeEntry[], date: string): DaySummary {
   const dayEntries = entries.filter(e => e.date === date);
   let effectiveMinutes = 0;
-  let habillageMinutes = 0;
   let primeRepas = false;
   let ikAlert = false;
 
   for (const entry of dayEntries) {
     effectiveMinutes += getEffectiveMinutes(entry);
-    habillageMinutes += entry.habillage;
     if (!entry.suppressionMidi && coversMidi(entry.startTime, entry.endTime) && !entry.isAstreinteSansIntervention) {
       primeRepas = true;
     }
@@ -77,7 +223,8 @@ export function computeDaySummary(entries: TimeEntry[], date: string): DaySummar
   }
 
   const hoursWorked = effectiveMinutes / 60;
-  const habillageHours = habillageMinutes / 60;
+  // Habillage fixe = 1h si jour travaillé
+  const habillageHours = hoursWorked > 0 ? 1 : 0;
   const totalHours = hoursWorked + habillageHours;
   const hasNote = dayEntries.some(e => !!e.note);
   const alerts: ComplianceAlert[] = [];
@@ -87,7 +234,7 @@ export function computeDaySummary(entries: TimeEntry[], date: string): DaySummar
     alerts.push({
       rule: 'R_JOUR',
       level: 'rouge',
-      message: `Dépassement journalier : ${hoursWorked.toFixed(1)}h effectives > 10h`,
+      message: `Dépassement journalier : ${hoursWorked.toFixed(2)}h effectives > 10h`,
       date,
     });
   }
@@ -138,7 +285,7 @@ function checkReposQuotidien(
       alerts.push({
         rule: 'R2',
         level: 'orange',
-        message: `Repos quotidien insuffisant entre ${weekDates[i]} et ${weekDates[i + 1]} : ${(restMinutes / 60).toFixed(1)}h < 11h`,
+        message: `Repos quotidien insuffisant entre ${weekDates[i]} et ${weekDates[i + 1]} : ${(restMinutes / 60).toFixed(2)}h < 11h`,
         date: weekDates[i],
       });
     }
@@ -186,11 +333,10 @@ function checkReposHebdo(
     alerts.push({
       rule: 'R3',
       level: 'rouge',
-      message: `Repos hebdomadaire insuffisant : ${(maxGap / 60).toFixed(1)}h < 35h`,
+      message: `Repos hebdomadaire insuffisant : ${(maxGap / 60).toFixed(2)}h < 35h`,
     });
   }
 
-  // Check 24h civil continuous rest
   let has24hCivilRest = false;
   for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
     const dayEntries = entries.filter(e => e.date === weekDates[dayIndex] && !e.isAstreinteSansIntervention);
@@ -217,7 +363,8 @@ function checkReposHebdo(
 export function computeWeekSummary(
   entries: TimeEntry[],
   weekSunday: Date,
-  pointageSettings?: PointageSettings
+  pointageSettings?: PointageSettings,
+  holidays: string[] = []
 ): WeekSummary {
   const ps = pointageSettings || defaultPointageSettings;
   const weekDates = getWeekDates(weekSunday);
@@ -240,23 +387,23 @@ export function computeWeekSummary(
     allAlerts.push({
       rule: 'R1',
       level: 'rouge',
-      message: `Plafond hebdomadaire dépassé : ${totalHours.toFixed(1)}h > ${plafond}h`,
+      message: `Plafond hebdomadaire dépassé : ${totalHours.toFixed(2)}h > ${plafond}h`,
     });
   }
 
-  // Progressive weekly alerts based on remaining hours
+  // Progressive weekly alerts
   if (ps.alertesActives) {
     if (heuresRestantes <= ps.seuilRougeHeures && heuresRestantes > 0) {
       allAlerts.push({
         rule: 'R1_SEUIL',
         level: 'rouge',
-        message: `Attention : seulement ${heuresRestantes.toFixed(1)}h restantes avant plafond`,
+        message: `Heures restantes avant seuil critique : ${heuresRestantes.toFixed(2)}h`,
       });
     } else if (heuresRestantes <= ps.seuilOrangeHeures && heuresRestantes > ps.seuilRougeHeures) {
       allAlerts.push({
         rule: 'R1_SEUIL',
         level: 'orange',
-        message: `Vigilance : ${heuresRestantes.toFixed(1)}h restantes avant plafond`,
+        message: `Heures restantes avant seuil critique : ${heuresRestantes.toFixed(2)}h`,
       });
     }
   }
@@ -274,9 +421,12 @@ export function computeWeekSummary(
     allAlerts.push({
       rule: 'RE',
       level: 'rouge',
-      message: `Pot RE critique : ${ps.soldeRE.toFixed(1)}h restantes (seuil : ${ps.seuilAlerteRE}h)`,
+      message: `Pot RE critique : ${ps.soldeRE.toFixed(2)}h restantes (seuil : ${ps.seuilAlerteRE}h)`,
     });
   }
+
+  // Overtime details
+  const overtimeDetails = computeOvertimeDetails(entries, weekDates, holidays);
 
   // Overall status
   let overallStatus: AlertLevel = 'vert';
@@ -303,5 +453,6 @@ export function computeWeekSummary(
     days: daySummaries,
     alerts: allAlerts,
     daysWorkedCount: daysWorked,
+    overtimeDetails,
   };
 }
