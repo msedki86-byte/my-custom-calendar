@@ -1,6 +1,7 @@
 /**
  * Module 2 – Day Entry Form (CNPE Bugey)
- * Saisie journée : heures, habillage, suppression midi, formation, astreinte, notes.
+ * Saisie journée : heures, suppression midi, formation, astreinte, notes.
+ * Habillage fixe 1h/jour travaillé (automatique, pas de saisie).
  */
 
 import { useState } from 'react';
@@ -30,7 +31,6 @@ interface DayEntryFormProps {
 export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen, onClose }: DayEntryFormProps) {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('16:45');
-  const [habillage, setHabillage] = useState(0);
   const [isFormation, setIsFormation] = useState(false);
   const [isIntervention, setIsIntervention] = useState(false);
   const [isAstreinteSans, setIsAstreinteSans] = useState(false);
@@ -51,7 +51,6 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
       date,
       startTime,
       endTime,
-      habillage,
       isFormation,
       isInterventionAstreinte: isIntervention,
       isAstreinteSansIntervention: isAstreinteSans,
@@ -59,7 +58,6 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
     });
     setStartTime('08:00');
     setEndTime('16:45');
-    setHabillage(0);
     setIsFormation(false);
     setIsIntervention(false);
     setIsAstreinteSans(false);
@@ -90,6 +88,11 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
           <DialogTitle className="capitalize text-sm">{dayLabel}</DialogTitle>
         </DialogHeader>
 
+        {/* Info habillage fixe */}
+        <p className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+          Habillage : 1h automatique par jour travaillé
+        </p>
+
         {/* Existing entries */}
         {entries.length > 0 && (
           <div className="space-y-2">
@@ -99,7 +102,6 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
                 <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <span className="font-mono font-medium">{entry.startTime} – {entry.endTime}</span>
-                    {entry.habillage > 0 && <span className="ml-1 text-muted-foreground">+{entry.habillage}min hab.</span>}
                     {entry.suppressionMidi && <span className="ml-1 text-muted-foreground">(-45min midi)</span>}
                   </div>
                   <button
@@ -183,19 +185,8 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-8 text-xs" />
             </div>
           </div>
-          <div>
-            <Label className="text-xs">Temps habillage (minutes, max 60)</Label>
-            <Input
-              type="number"
-              min={0}
-              max={60}
-              value={habillage}
-              onChange={e => setHabillage(Math.min(60, Math.max(0, parseInt(e.target.value) || 0)))}
-              className="h-8 text-xs w-24"
-            />
-          </div>
 
-          {/* Suppression midi - visible only if range covers 12:00-12:45 */}
+          {/* Suppression midi */}
           {showMidiOption && (
             <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
               <Checkbox
@@ -211,7 +202,7 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
           {showMidiOption && !suppressionMidi && (
             <p className="text-[10px] text-amber-700 flex items-center gap-1">
               <Utensils className="w-3 h-3" />
-              Prime repas sans déplacement activée automatiquement
+              Repas sans déplacement
             </p>
           )}
 

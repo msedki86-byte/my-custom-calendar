@@ -188,16 +188,16 @@ export function UnifiedToolbar({
               <ClipboardCheck className="h-3 w-3" />
               Pointage
             </TabsTrigger>
-            <TabsTrigger value="events" className="gap-1 text-xs px-2 sm:px-3 h-7">
-              <List className="h-3 w-3" />
-              Gestion
-            </TabsTrigger>
             {showConflitsTab && (
               <TabsTrigger value="conflicts" className="gap-1 text-xs px-2 sm:px-3 h-7">
                 <AlertTriangle className="h-3 w-3" />
                 Conflits
               </TabsTrigger>
             )}
+            <TabsTrigger value="events" className="gap-1 text-xs px-2 sm:px-3 h-7">
+              <List className="h-3 w-3" />
+              Gestion
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

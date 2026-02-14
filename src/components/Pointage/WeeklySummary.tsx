@@ -1,6 +1,6 @@
 /**
  * Module 2 – Weekly Summary (CNPE Bugey)
- * Badge hebdo, carte heures restantes, alertes, conformité.
+ * Badge hebdo, carte heures restantes, alertes, HS, conformité.
  */
 
 import { WeekSummary, AlertLevel, PointageSettings } from '@/types/pointage';
@@ -52,7 +52,7 @@ export function WeeklySummaryTable({ summary, pointageSettings }: WeeklySummaryP
         </div>
         {/* Badge hebdo */}
         <Badge variant="outline" className="font-mono text-sm px-3 py-1 border-current">
-          {summary.totalHours.toFixed(1)}h / {summary.plafondAutorise}h
+          {summary.totalHours.toFixed(2)}h / {summary.plafondAutorise}h
         </Badge>
       </div>
 
@@ -60,7 +60,7 @@ export function WeeklySummaryTable({ summary, pointageSettings }: WeeklySummaryP
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <MetricCard
           label="Heures restantes"
-          value={`${summary.heuresRestantes.toFixed(1)}h`}
+          value={`${summary.heuresRestantes.toFixed(2)}h`}
           icon={<TrendingDown className={`w-4 h-4 ${hrColor}`} />}
           valueClass={hrColor}
         />
@@ -76,16 +76,6 @@ export function WeeklySummaryTable({ summary, pointageSettings }: WeeklySummaryP
           icon={<StatusIcon ok={summary.reposHebdoOk} />}
         />
       </div>
-
-      {/* RE pot info */}
-      {pointageSettings && (
-        <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-card text-xs">
-          <span className="text-muted-foreground">Pot RE :</span>
-          <span className={`font-semibold ${pointageSettings.soldeRE <= pointageSettings.seuilAlerteRE ? 'text-red-600' : 'text-foreground'}`}>
-            {pointageSettings.soldeRE.toFixed(1)}h / {pointageSettings.potREAnnuel}h
-          </span>
-        </div>
-      )}
 
       {/* Alerts */}
       {summary.alerts.length > 0 && (

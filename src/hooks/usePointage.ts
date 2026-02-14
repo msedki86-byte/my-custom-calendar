@@ -1,6 +1,7 @@
 /**
  * Hook for Module 2 – Conformité & Pointage (CNPE Bugey)
  * Manages time entries + pointage settings with localStorage persistence.
+ * Habillage fixe = 1h/jour travaillé (auto, not per-entry).
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
@@ -66,6 +67,10 @@ export function usePointage() {
     setEntries(prev => prev.filter(e => e.id !== id));
   }, []);
 
+  const deleteWeekEntries = useCallback((weekDates: string[]) => {
+    setEntries(prev => prev.filter(e => !weekDates.includes(e.date)));
+  }, []);
+
   const getEntriesForDate = useCallback((date: string) => {
     return entries.filter(e => e.date === date);
   }, [entries]);
@@ -90,6 +95,7 @@ export function usePointage() {
     addEntry,
     updateEntry,
     deleteEntry,
+    deleteWeekEntries,
     getEntriesForDate,
     goToNextWeek,
     goToPrevWeek,

@@ -1,6 +1,6 @@
 /**
  * Module 2 – Conformité & Pointage CNPE Bugey
- * Vue calendrier hebdomadaire dimanche–samedi avec saisie, conformité et notes.
+ * Vue calendrier hebdomadaire dimanche–samedi avec saisie, conformité, HS et notes.
  */
 
 import { useState, useCallback } from 'react';
@@ -8,7 +8,8 @@ import { usePointage } from '@/hooks/usePointage';
 import { WeeklySummaryTable } from './WeeklySummary';
 import { DayEntryForm } from './DayEntryForm';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Check, Clock, Utensils, Car } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ChevronLeft, ChevronRight, Check, Clock, Utensils, Car, RotateCcw } from 'lucide-react';
 import { format, parseISO, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getWeekDates } from '@/lib/complianceEngine';
@@ -22,6 +23,7 @@ export function PointageModule() {
     addEntry,
     updateEntry,
     deleteEntry,
+    deleteWeekEntries,
     getEntriesForDate,
     goToNextWeek,
     goToPrevWeek,
@@ -29,13 +31,20 @@ export function PointageModule() {
   } = usePointage();
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showRAZConfirm, setShowRAZConfirm] = useState(false);
   const weekDates = getWeekDates(currentWeekStart);
 
   const handleDayClick = useCallback((date: string) => {
     setSelectedDate(date);
   }, []);
 
+  const handleRAZ = () => {
+    deleteWeekEntries(weekDates);
+    setShowRAZConfirm(false);
+  };
+
   const weekLabel = `${format(currentWeekStart, 'd MMM', { locale: fr })} – ${format(addDays(currentWeekStart, 6), 'd MMM yyyy', { locale: fr })}`;
+  const weekHasEntries = weekDates.some(d => getEntriesForDate(d).length > 0);
 
   return (
     <div className="space-y-4">
@@ -52,7 +61,14 @@ export function PointageModule() {
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
-        <span className="text-xs sm:text-sm font-medium text-muted-foreground">{weekLabel}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm font-medium text-muted-foreground">{weekLabel}</span>
+          {weekHasEntries && (
+            <Button variant="ghost" size="icon" onClick={() => setShowRAZConfirm(true)} className="h-7 w-7 text-destructive" title="RAZ semaine">
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Weekly Summary */}
@@ -91,7 +107,7 @@ export function PointageModule() {
               {daySummary.totalHours > 0 ? (
                 <div className="flex items-center gap-1 mt-1">
                   <Clock className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs font-mono font-semibold">{daySummary.totalHours.toFixed(1)}h</span>
+                  <span className="text-xs font-mono font-semibold">{daySummary.totalHours.toFixed(2)}h</span>
                 </div>
               ) : (
                 <p className="text-[10px] text-muted-foreground mt-1">—</p>
@@ -141,11 +157,25 @@ export function PointageModule() {
 
       {/* Real-time counters */}
       <div className="flex items-center gap-3 text-xs text-muted-foreground p-2 rounded-lg bg-muted/50 border border-border flex-wrap">
-        <span>Effectif : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.hoursWorked, 0).toFixed(1)}h</strong></span>
-        <span>Habillage : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.habillageHours, 0).toFixed(1)}h</strong></span>
-        <span>Total pointé : <strong className="text-foreground">{weekSummary.totalHours.toFixed(1)}h</strong></span>
-        <span>Restant : <strong className={weekSummary.heuresRestantes <= 8 ? 'text-red-600' : weekSummary.heuresRestantes <= 16 ? 'text-amber-600' : 'text-emerald-600'}>{weekSummary.heuresRestantes.toFixed(1)}h</strong></span>
+        <span>Effectif : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.hoursWorked, 0).toFixed(2)}h</strong></span>
+        <span>Habillage : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.habillageHours, 0).toFixed(2)}h</strong></span>
+        <span>Total pointé : <strong className="text-foreground">{weekSummary.totalHours.toFixed(2)}h</strong></span>
+        <span>Restant : <strong className={weekSummary.heuresRestantes <= 8 ? 'text-red-600' : weekSummary.heuresRestantes <= 16 ? 'text-amber-600' : 'text-emerald-600'}>{weekSummary.heuresRestantes.toFixed(2)}h</strong></span>
       </div>
+
+      {/* Overtime details */}
+      {weekSummary.overtimeDetails.length > 0 && (
+        <div className="space-y-1 p-2 rounded-lg border border-border bg-card">
+          <p className="text-xs font-medium text-muted-foreground">Heures supplémentaires</p>
+          {weekSummary.overtimeDetails.map((ot, i) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">{format(parseISO(ot.date), 'EEE d', { locale: fr })}</span>
+              <span className="font-mono">{ot.hours.toFixed(2)}h</span>
+              <span className="font-medium text-amber-700">{ot.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Day Entry Dialog */}
       {selectedDate && (
@@ -159,6 +189,22 @@ export function PointageModule() {
           onClose={() => setSelectedDate(null)}
         />
       )}
+
+      {/* RAZ Confirmation */}
+      <Dialog open={showRAZConfirm} onOpenChange={setShowRAZConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Réinitialiser la semaine ?</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Toutes les saisies de la semaine ({weekLabel}) seront supprimées définitivement.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowRAZConfirm(false)}>Annuler</Button>
+            <Button variant="destructive" size="sm" onClick={handleRAZ}>Supprimer tout</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
