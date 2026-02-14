@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { isWeekend, eachDayOfInterval } from 'date-fns';
 import { useCalendar } from '@/hooks/useCalendar';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
-import { usePointage } from '@/hooks/usePointage';
 import { UnifiedToolbar } from '@/components/Calendar/UnifiedToolbar';
 import { UnifiedCalendarGrid } from '@/components/Calendar/UnifiedCalendarGrid';
 import { UnifiedYearView } from '@/components/Calendar/UnifiedYearView';
@@ -78,7 +77,6 @@ const Index = () => {
   } = useCalendar();
 
   const isMobile = useIsMobile();
-  const { pointageSettings, updatePointageSettings } = usePointage();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -453,8 +451,6 @@ const Index = () => {
       <SettingsPanel
         settings={settings}
         onUpdateSettings={updateSettings}
-        pointageSettings={pointageSettings}
-        onUpdatePointageSettings={updatePointageSettings}
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />

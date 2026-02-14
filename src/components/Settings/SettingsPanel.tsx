@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CalendarSettings } from '@/types/calendar';
 import { PointageSettings, defaultPointageSettings } from '@/types/pointage';
+import { usePointage } from '@/hooks/usePointage';
 import { ColorPicker } from './ColorPicker';
 import { PatternPicker } from './PatternPicker';
 import { Button } from '@/components/ui/button';
@@ -15,13 +16,12 @@ import { fr } from 'date-fns/locale';
 interface SettingsPanelProps {
   settings: CalendarSettings;
   onUpdateSettings: (settings: Partial<CalendarSettings>) => void;
-  pointageSettings?: PointageSettings;
-  onUpdatePointageSettings?: (patch: Partial<PointageSettings>) => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function SettingsPanel({ settings, onUpdateSettings, pointageSettings, onUpdatePointageSettings, isOpen, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: SettingsPanelProps) {
+  const { pointageSettings, updatePointageSettings: onUpdatePointageSettings } = usePointage();
   const [pinInput, setPinInput] = useState('');
   const [pinUnlocked, setPinUnlocked] = useState(false);
   const [pinError, setPinError] = useState(false);
