@@ -1,5 +1,5 @@
 /**
- * Types for Module 2 – Conformité & Pointage (EDF / IEG)
+ * Types for Module 2 – Conformité & Pointage (EDF CNPE Bugey)
  */
 
 export interface TimeEntry {
@@ -11,8 +11,10 @@ export interface TimeEntry {
   isFormation: boolean;
   isInterventionAstreinte: boolean;
   isAstreinteSansIntervention: boolean;
+  suppressionMidi: boolean; // default true if covers 12:00-12:45
   note?: string;
   noteTags?: NoteTag[];
+  autoComments?: string[]; // auto-generated comments (IK, prime repas, etc.)
 }
 
 export type NoteTag = 'prime' | 'ecart' | 'observation' | 'validation-n1';
@@ -35,18 +37,21 @@ export interface ComplianceAlert {
 
 export interface DaySummary {
   date: string;
-  hoursWorked: number; // effective work hours
+  hoursWorked: number; // effective work hours (after midi deduction)
   habillageHours: number;
   totalHours: number; // worked + habillage
   hasNote: boolean;
   alerts: ComplianceAlert[];
+  primeRepas: boolean; // prime repas sans déplacement
+  ikAlert: boolean; // IK à vérifier
 }
 
 export interface WeekSummary {
-  weekStart: string; // ISO date (Sunday)
-  weekEnd: string; // ISO date (Saturday)
+  weekStart: string;
+  weekEnd: string;
   totalHours: number;
   plafondAutorise: number;
+  heuresRestantes: number;
   reposQuotidienOk: boolean;
   reposHebdoOk: boolean;
   overallStatus: AlertLevel;
@@ -54,3 +59,33 @@ export interface WeekSummary {
   alerts: ComplianceAlert[];
   daysWorkedCount: number;
 }
+
+export interface PointageSettings {
+  /** Seuil orange: alerte si heures restantes <= ce seuil */
+  seuilOrangeHeures: number;
+  /** Seuil rouge: alerte si heures restantes <= ce seuil */
+  seuilRougeHeures: number;
+  /** Pot RE annuel (heures) */
+  potREAnnuel: number;
+  /** Solde RE courant (heures) */
+  soldeRE: number;
+  /** Date activation pot RE (ISO string) */
+  dateActivationRE: string;
+  /** Seuil alerte RE (heures restantes) */
+  seuilAlerteRE: number;
+  /** Prime repas valeur € */
+  primeRepasValeur: number;
+  /** Alertes activées */
+  alertesActives: boolean;
+}
+
+export const defaultPointageSettings: PointageSettings = {
+  seuilOrangeHeures: 16,
+  seuilRougeHeures: 8,
+  potREAnnuel: 312,
+  soldeRE: 312,
+  dateActivationRE: '2026-02-05',
+  seuilAlerteRE: 14,
+  primeRepasValeur: 9.26,
+  alertesActives: true,
+};

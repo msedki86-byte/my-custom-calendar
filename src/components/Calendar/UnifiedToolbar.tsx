@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Plus, Settings, LayoutGrid, Calendar as CalendarIcon, List, AlertTriangle, MoreVertical, FileText, Sheet, CalendarPlus, CalendarMinus, ClipboardCheck } from 'lucide-react';
+import { useOrientation } from '@/hooks/useOrientation';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,9 +48,13 @@ export function UnifiedToolbar({
   onICSImport,
   onICSExport,
 }: UnifiedToolbarProps) {
+  const { isLandscape } = useOrientation();
   const weekNumberStart = getWeek(currentDate, { locale: fr, weekStartsOn: 1 });
   const monthEnd = endOfMonth(currentDate);
   const weekNumberEnd = getWeek(monthEnd, { locale: fr, weekStartsOn: 1 });
+
+  // Landscape: 4 tabs, Portrait: 3 tabs (no Conflits)
+  const showConflitsTab = isLandscape || typeof window !== 'undefined' && window.innerWidth >= 640;
 
   return (
     <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border pb-2 space-y-1.5">
@@ -174,23 +179,25 @@ export function UnifiedToolbar({
       {/* Tabs - Desktop */}
       <div className="hidden sm:block overflow-x-auto -mx-3 px-3">
         <Tabs value={activeTab} onValueChange={onTabChange}>
-          <TabsList className="h-9 w-full grid grid-cols-4 sm:w-auto sm:inline-flex">
+          <TabsList className={`h-9 w-full grid ${showConflitsTab ? 'grid-cols-4' : 'grid-cols-3'} sm:w-auto sm:inline-flex`}>
             <TabsTrigger value="calendar" className="gap-1 text-xs px-2 sm:px-3 h-7">
               <CalendarIcon className="h-3 w-3" />
               Calendrier
-            </TabsTrigger>
-            <TabsTrigger value="events" className="gap-1 text-xs px-2 sm:px-3 h-7">
-              <List className="h-3 w-3" />
-              Gestion
-            </TabsTrigger>
-            <TabsTrigger value="conflicts" className="gap-1 text-xs px-2 sm:px-3 h-7">
-              <AlertTriangle className="h-3 w-3" />
-              Conflits
             </TabsTrigger>
             <TabsTrigger value="pointage" className="gap-1 text-xs px-2 sm:px-3 h-7">
               <ClipboardCheck className="h-3 w-3" />
               Pointage
             </TabsTrigger>
+            <TabsTrigger value="events" className="gap-1 text-xs px-2 sm:px-3 h-7">
+              <List className="h-3 w-3" />
+              Gestion
+            </TabsTrigger>
+            {showConflitsTab && (
+              <TabsTrigger value="conflicts" className="gap-1 text-xs px-2 sm:px-3 h-7">
+                <AlertTriangle className="h-3 w-3" />
+                Conflits
+              </TabsTrigger>
+            )}
           </TabsList>
         </Tabs>
       </div>
@@ -208,6 +215,28 @@ export function UnifiedToolbar({
           >
             <CalendarIcon className="h-3 w-3 inline mr-1" />
             Calendrier
+          </button>
+          <button
+            onClick={() => onTabChange('pointage')}
+            className={`px-3 py-1.5 rounded-full transition-colors ${
+              activeTab === 'pointage' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            <ClipboardCheck className="h-3 w-3 inline mr-1" />
+            Pointage
+          </button>
+          <button
+            onClick={() => onTabChange('events')}
+            className={`px-3 py-1.5 rounded-full transition-colors ${
+              activeTab === 'events' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            <List className="h-3 w-3 inline mr-1" />
+            Gestion
           </button>
         </div>
       </div>

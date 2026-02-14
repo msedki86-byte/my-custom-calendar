@@ -1,17 +1,18 @@
 /**
- * Module 2 – Weekly Summary Table
- * Displays compliance status, totals, and alerts for the week.
+ * Module 2 – Weekly Summary (CNPE Bugey)
+ * Badge hebdo, carte heures restantes, alertes, conformité.
  */
 
-import { WeekSummary, AlertLevel } from '@/types/pointage';
+import { WeekSummary, AlertLevel, PointageSettings } from '@/types/pointage';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock, TrendingDown } from 'lucide-react';
 
 interface WeeklySummaryProps {
   summary: WeekSummary;
+  pointageSettings?: PointageSettings;
 }
 
-const statusColors: Record<AlertLevel, string> = {
+const statusBg: Record<AlertLevel, string> = {
   vert: 'bg-emerald-100 text-emerald-800 border-emerald-300',
   orange: 'bg-amber-100 text-amber-800 border-amber-300',
   rouge: 'bg-red-100 text-red-800 border-red-300',
@@ -24,40 +25,67 @@ const statusLabels: Record<AlertLevel, string> = {
 };
 
 function StatusIcon({ ok }: { ok: boolean }) {
-  return ok 
+  return ok
     ? <CheckCircle className="w-4 h-4 text-emerald-600" />
     : <XCircle className="w-4 h-4 text-red-600" />;
 }
 
-export function WeeklySummaryTable({ summary }: WeeklySummaryProps) {
+function getHeuresRestantesColor(heuresRestantes: number, plafond: number): string {
+  const ratio = heuresRestantes / plafond;
+  if (ratio <= 0.15) return 'text-red-600';
+  if (ratio <= 0.3) return 'text-amber-600';
+  return 'text-emerald-600';
+}
+
+export function WeeklySummaryTable({ summary, pointageSettings }: WeeklySummaryProps) {
+  const hrColor = getHeuresRestantesColor(summary.heuresRestantes, summary.plafondAutorise);
+
   return (
     <div className="space-y-3">
-      {/* Status banner */}
-      <div className={`flex items-center justify-between p-3 rounded-lg border ${statusColors[summary.overallStatus]}`}>
+      {/* Status banner with badge */}
+      <div className={`flex items-center justify-between p-3 rounded-lg border ${statusBg[summary.overallStatus]}`}>
         <div className="flex items-center gap-2">
           {summary.overallStatus === 'rouge' && <XCircle className="w-5 h-5" />}
           {summary.overallStatus === 'orange' && <AlertTriangle className="w-5 h-5" />}
           {summary.overallStatus === 'vert' && <CheckCircle className="w-5 h-5" />}
           <span className="font-semibold text-sm">{statusLabels[summary.overallStatus]}</span>
         </div>
-        <span className="text-xs font-mono">{summary.totalHours.toFixed(1)}h / {summary.plafondAutorise}h</span>
+        {/* Badge hebdo */}
+        <Badge variant="outline" className="font-mono text-sm px-3 py-1 border-current">
+          {summary.totalHours.toFixed(1)}h / {summary.plafondAutorise}h
+        </Badge>
       </div>
 
       {/* Key metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <MetricCard label="Heures totales" value={`${summary.totalHours.toFixed(1)}h`} />
-        <MetricCard label="Plafond autorisé" value={`${summary.plafondAutorise}h`} />
-        <MetricCard 
-          label="Repos quotidien" 
+        <MetricCard
+          label="Heures restantes"
+          value={`${summary.heuresRestantes.toFixed(1)}h`}
+          icon={<TrendingDown className={`w-4 h-4 ${hrColor}`} />}
+          valueClass={hrColor}
+        />
+        <MetricCard label="Jours travaillés" value={`${summary.daysWorkedCount}`} icon={<Clock className="w-4 h-4 text-muted-foreground" />} />
+        <MetricCard
+          label="Repos quotidien"
           value={summary.reposQuotidienOk ? '✓' : '✗'}
           icon={<StatusIcon ok={summary.reposQuotidienOk} />}
         />
-        <MetricCard 
-          label="Repos hebdo" 
+        <MetricCard
+          label="Repos hebdo"
           value={summary.reposHebdoOk ? '✓' : '✗'}
           icon={<StatusIcon ok={summary.reposHebdoOk} />}
         />
       </div>
+
+      {/* RE pot info */}
+      {pointageSettings && (
+        <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-card text-xs">
+          <span className="text-muted-foreground">Pot RE :</span>
+          <span className={`font-semibold ${pointageSettings.soldeRE <= pointageSettings.seuilAlerteRE ? 'text-red-600' : 'text-foreground'}`}>
+            {pointageSettings.soldeRE.toFixed(1)}h / {pointageSettings.potREAnnuel}h
+          </span>
+        </div>
+      )}
 
       {/* Alerts */}
       {summary.alerts.length > 0 && (
@@ -80,13 +108,13 @@ export function WeeklySummaryTable({ summary }: WeeklySummaryProps) {
   );
 }
 
-function MetricCard({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+function MetricCard({ label, value, icon, valueClass }: { label: string; value: string; icon?: React.ReactNode; valueClass?: string }) {
   return (
     <div className="p-2 rounded-lg border border-border bg-card text-center">
       <p className="text-[10px] text-muted-foreground">{label}</p>
       <div className="flex items-center justify-center gap-1 mt-0.5">
         {icon}
-        <span className="text-sm font-semibold">{icon ? '' : value}</span>
+        <span className={`text-sm font-semibold ${valueClass || ''}`}>{icon && !valueClass ? '' : value}</span>
       </div>
     </div>
   );

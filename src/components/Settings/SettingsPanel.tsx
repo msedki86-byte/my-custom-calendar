@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { CalendarSettings } from '@/types/calendar';
+import { PointageSettings, defaultPointageSettings } from '@/types/pointage';
 import { ColorPicker } from './ColorPicker';
 import { PatternPicker } from './PatternPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import { Settings, X, Lock, Unlock, KeyRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -13,11 +15,13 @@ import { fr } from 'date-fns/locale';
 interface SettingsPanelProps {
   settings: CalendarSettings;
   onUpdateSettings: (settings: Partial<CalendarSettings>) => void;
+  pointageSettings?: PointageSettings;
+  onUpdatePointageSettings?: (patch: Partial<PointageSettings>) => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ settings, onUpdateSettings, pointageSettings, onUpdatePointageSettings, isOpen, onClose }: SettingsPanelProps) {
   const [pinInput, setPinInput] = useState('');
   const [pinUnlocked, setPinUnlocked] = useState(false);
   const [pinError, setPinError] = useState(false);
@@ -238,6 +242,97 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                     </div>
                   </div>
 
+                  {/* Paramètres Conformité & Pointage */}
+                  {pointageSettings && onUpdatePointageSettings && (
+                    <div className="space-y-2 mb-4">
+                      <Label className="text-sm font-semibold">Conformité & Pointage</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Alertes activées</Label>
+                        <Switch
+                          checked={pointageSettings.alertesActives}
+                          onCheckedChange={v => onUpdatePointageSettings({ alertesActives: v })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px]">Seuil orange (h)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={30}
+                            value={pointageSettings.seuilOrangeHeures}
+                            onChange={e => onUpdatePointageSettings({ seuilOrangeHeures: parseInt(e.target.value) || 16 })}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Seuil rouge (h)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={20}
+                            value={pointageSettings.seuilRougeHeures}
+                            onChange={e => onUpdatePointageSettings({ seuilRougeHeures: parseInt(e.target.value) || 8 })}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px]">Pot RE annuel (h)</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={pointageSettings.potREAnnuel}
+                            onChange={e => onUpdatePointageSettings({ potREAnnuel: parseInt(e.target.value) || 312 })}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Solde RE (h)</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={pointageSettings.soldeRE}
+                            onChange={e => onUpdatePointageSettings({ soldeRE: parseFloat(e.target.value) || 0 })}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px]">Date activation RE</Label>
+                          <Input
+                            type="date"
+                            value={pointageSettings.dateActivationRE}
+                            onChange={e => onUpdatePointageSettings({ dateActivationRE: e.target.value })}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Seuil alerte RE (h)</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={pointageSettings.seuilAlerteRE}
+                            onChange={e => onUpdatePointageSettings({ seuilAlerteRE: parseInt(e.target.value) || 14 })}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Prime repas (€)</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={pointageSettings.primeRepasValeur}
+                          onChange={e => onUpdatePointageSettings({ primeRepasValeur: parseFloat(e.target.value) || 9.26 })}
+                          className="h-7 text-xs w-24"
+                        />
+                      </div>
+                    </div>
+                  )}
                   {/* Changer le PIN */}
                   {!showPinChange ? (
                     <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={() => setShowPinChange(true)}>
