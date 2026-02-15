@@ -16,6 +16,7 @@ import { ConflictsList } from '@/components/Conflicts/ConflictsList';
 import { PointageModule } from '@/components/Pointage/PointageModule';
 import { SoldesCounters } from '@/components/Dashboard/SoldesCounters';
 import { usePointage } from '@/hooks/usePointage';
+import { useRHStore } from '@/stores/rhStore';
 import { exportPDF, exportAnnualPDF, exportMonthlyPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
 import { ICSImportDialog } from '@/components/Import/ICSImportDialog';
@@ -80,6 +81,7 @@ const Index = () => {
 
   const isMobile = useIsMobile();
   const { pointageSettings } = usePointage();
+  const { rhState } = useRHStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -294,7 +296,7 @@ const Index = () => {
 
         {/* Compteurs permanents */}
         <div className="mt-1.5 sm:mt-2">
-          <SoldesCounters pointageSettings={pointageSettings} />
+          <SoldesCounters rhState={rhState} />
         </div>
 
         {activeTab === 'calendar' && (
