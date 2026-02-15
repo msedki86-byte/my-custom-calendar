@@ -237,7 +237,7 @@ const Index = () => {
     <div className="min-h-screen bg-background relative">
       {/* Background watermark logo - full page at 15% opacity */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <img src="/images/logo-calendar.png" alt="" className="w-full h-full object-contain opacity-[0.15]" />
+        <img src="/images/logo-wplanner.png" alt="" className="w-full h-full object-contain opacity-[0.15]" />
       </div>
       <div className="px-2 sm:px-4 lg:px-6 py-2 sm:py-4 max-w-7xl mx-auto relative z-10">
         <UnifiedToolbar

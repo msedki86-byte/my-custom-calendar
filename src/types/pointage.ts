@@ -2,6 +2,8 @@
  * Types for Module 2 – Conformité & Pointage (EDF CNPE Bugey)
  */
 
+export type AstreinteType = 'PROGRAMMEE' | 'NON_PROGRAMMEE' | null;
+
 export interface TimeEntry {
   id: string;
   date: string; // ISO date YYYY-MM-DD
@@ -14,6 +16,12 @@ export interface TimeEntry {
   note?: string;
   noteTags?: NoteTag[];
   autoComments?: string[]; // auto-generated comments (IK, prime repas, HS, etc.)
+  // Astreinte differentiation
+  estAstreinte?: boolean;
+  typeAstreinte?: AstreinteType;
+  // FPC (Formation Professionnelle Continue)
+  isFPC?: boolean;
+  fpcHeures?: 7 | 8; // 7h or 8h daily
   // Legacy field - no longer used (habillage is now fixed 1h/worked day)
   habillage?: number;
 }
@@ -81,6 +89,9 @@ export interface PointageSettings {
   communeDepart: string;
   soldeCongesAnnuels: number; // 21 (Congés annuels) - dotation 189h
   regime: 'HABA' | 'NORMAL';
+  // RC counters (grouped)
+  soldeRC011: number; // RC-HS (compte 011)
+  soldeRC012: number; // RC-Autres + RCO (compte 012)
 }
 
 export const defaultPointageSettings: PointageSettings = {
@@ -94,4 +105,6 @@ export const defaultPointageSettings: PointageSettings = {
   communeDepart: 'DECINES CHARPIEU',
   soldeCongesAnnuels: 173, // 189h - 16h (situation au 5 février)
   regime: 'HABA',
+  soldeRC011: 0,
+  soldeRC012: 0,
 };

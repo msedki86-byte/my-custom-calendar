@@ -61,9 +61,7 @@ export function UnifiedToolbar({
       {/* Title Row with Year Selector */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-          </div>
+          <img src="/images/logo-wplanner.png" alt="W Planner" className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain flex-shrink-0" />
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-bold text-foreground capitalize truncate">
               {viewMode === 'year' 
@@ -90,7 +88,7 @@ export function UnifiedToolbar({
             value={currentYear.toString()} 
             onValueChange={(v) => onYearChange(parseInt(v))}
           >
-            <SelectTrigger className="w-16 sm:w-20 h-8 text-xs">
+            <SelectTrigger className="w-20 sm:w-24 h-8 text-sm font-semibold">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
