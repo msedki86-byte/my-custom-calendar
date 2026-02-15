@@ -118,8 +118,13 @@ export function PointageModule() {
                   {dayEntries.slice(0, 2).map(e => (
                     <p key={e.id} className="text-[9px] sm:text-[10px] text-muted-foreground font-mono truncate">
                       {e.startTime}–{e.endTime}
-                      {e.isFormation && ' 📚'}
-                      {e.isInterventionAstreinte && ' ⚡'}
+                      {e.isFPC && ` FPC${e.fpcHeures}h`}
+                      {e.isFormation && !e.isFPC && ' 📚'}
+                      {e.typeAstreinte === 'PLANIFIEE_SANS' && ' 🔵'}
+                      {e.typeAstreinte === 'INTERVENTION_PLANIFIEE' && ' 🟠'}
+                      {e.typeAstreinte === 'INTERVENTION_APPEL' && ' 🟣'}
+                      {e.typeAstreinte === 'HORS_TOUR' && ' ⚫'}
+                      {!e.typeAstreinte && e.isInterventionAstreinte && ' ⚡'}
                     </p>
                   ))}
                   {dayEntries.length > 2 && (
@@ -161,7 +166,7 @@ export function PointageModule() {
         <span>Habillage : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.habillageHours, 0).toFixed(2)}h</strong></span>
         <span>Trajet : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.trajetHeures, 0).toFixed(2)}h</strong></span>
         <span>Total pointé : <strong className="text-foreground">{weekSummary.totalHours.toFixed(2)}h</strong></span>
-        <span>Restant : <strong className={weekSummary.heuresRestantes <= 8 ? 'text-red-600' : weekSummary.heuresRestantes <= 16 ? 'text-amber-600' : 'text-emerald-600'}>{weekSummary.heuresRestantes.toFixed(2)}h</strong></span>
+        <span>Restant : <strong className={weekSummary.heuresRestantes <= 8 ? 'text-destructive' : weekSummary.heuresRestantes <= 16 ? 'text-amber-600' : 'text-emerald-600'}>{weekSummary.heuresRestantes.toFixed(2)}h</strong></span>
       </div>
 
       {/* Overtime details */}
@@ -188,6 +193,10 @@ export function PointageModule() {
           onDelete={deleteEntry}
           isOpen={!!selectedDate}
           onClose={() => setSelectedDate(null)}
+          posteMatinDebut={pointageSettings.posteMatinDebut}
+          posteMatinFin={pointageSettings.posteMatinFin}
+          posteAMDebut={pointageSettings.posteAMDebut}
+          posteAMFin={pointageSettings.posteAMFin}
         />
       )}
 

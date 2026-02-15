@@ -1,7 +1,7 @@
 /**
  * Compteurs permanents RH — W Planner
  * Visibles en haut de l'application, mobile inclus.
- * Affichage daté obligatoire.
+ * RC total avec ventilation RC-HS / RC-Autres / RCO.
  */
 
 import { RHState } from '@/stores/rhStore';
@@ -21,12 +21,13 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function CounterCard({ icon, label, soldeH, dateStr, colorClass }: {
+function CounterCard({ icon, label, soldeH, dateStr, colorClass, children }: {
   icon: React.ReactNode;
   label: string;
   soldeH: number;
   dateStr: string;
   colorClass?: string;
+  children?: React.ReactNode;
 }) {
   const soldeJ = (soldeH / 8).toFixed(1);
   return (
@@ -39,12 +40,16 @@ function CounterCard({ icon, label, soldeH, dateStr, colorClass }: {
           <span className="text-muted-foreground font-normal"> ({soldeJ}j)</span>
         </span>
         <span className="text-[9px] text-muted-foreground block leading-tight">au {formatDate(dateStr)}</span>
+        {children}
       </div>
     </div>
   );
 }
 
 export function SoldesCounters({ rhState }: SoldesCountersProps) {
+  const rcTotal = rhState.soldeRC011 + rhState.soldeRC012;
+  const latestRCDate = rhState.dateSoldeRC011 > rhState.dateSoldeRC012 ? rhState.dateSoldeRC011 : rhState.dateSoldeRC012;
+
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs">
       <CounterCard
@@ -63,18 +68,16 @@ export function SoldesCounters({ rhState }: SoldesCountersProps) {
       />
       <CounterCard
         icon={<Hash className="w-3.5 h-3.5" />}
-        label="RC 011"
-        soldeH={rhState.soldeRC011}
-        dateStr={rhState.dateSoldeRC011}
+        label="RC"
+        soldeH={rcTotal}
+        dateStr={latestRCDate}
         colorClass="text-muted-foreground"
-      />
-      <CounterCard
-        icon={<Hash className="w-3.5 h-3.5" />}
-        label="RC 012"
-        soldeH={rhState.soldeRC012}
-        dateStr={rhState.dateSoldeRC012}
-        colorClass="text-muted-foreground"
-      />
+      >
+        <div className="flex gap-1.5 text-[8px] text-muted-foreground leading-tight">
+          <span>HS:{rhState.soldeRC011.toFixed(0)}h</span>
+          <span>Autres:{rhState.soldeRC012.toFixed(0)}h</span>
+        </div>
+      </CounterCard>
     </div>
   );
 }
