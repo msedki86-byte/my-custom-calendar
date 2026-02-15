@@ -185,16 +185,37 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                   </div>
                 </div>
 
-                {/* RC 011 / RC 012 / RCO - Placeholder */}
+                {/* RC 011 */}
                 <div>
                   <Label className="text-xs font-semibold">RC 011 (RC-HS)</Label>
                   <p className="text-[10px] text-muted-foreground">926 (RC-HS 25%), 935 (RC-HS 50%)</p>
-                  <p className="text-[10px] text-muted-foreground italic">Compteur à venir (Phase 2)</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Label className="text-[10px] w-16">Solde (h)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={pointageSettings.soldeRC011 ?? 0}
+                      onChange={e => onUpdatePointageSettings({ soldeRC011: parseFloat(e.target.value) || 0 })}
+                      className="h-7 text-xs w-20"
+                    />
+                    <span className="text-[10px] text-muted-foreground">= {((pointageSettings.soldeRC011 ?? 0) / 8).toFixed(1)}j</span>
+                  </div>
                 </div>
+                {/* RC 012 + RCO */}
                 <div>
-                  <Label className="text-xs font-semibold">RC 012 (RC-Autres)</Label>
-                  <p className="text-[10px] text-muted-foreground">817, 934, 980, 968 · RCO inclus</p>
-                  <p className="text-[10px] text-muted-foreground italic">Compteur à venir (Phase 2)</p>
+                  <Label className="text-xs font-semibold">RC 012 (RC-Autres + RCO)</Label>
+                  <p className="text-[10px] text-muted-foreground">817, 934, 980, 968 · RCO inclus (obligatoire, non perdable)</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Label className="text-[10px] w-16">Solde (h)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={pointageSettings.soldeRC012 ?? 0}
+                      onChange={e => onUpdatePointageSettings({ soldeRC012: parseFloat(e.target.value) || 0 })}
+                      className="h-7 text-xs w-20"
+                    />
+                    <span className="text-[10px] text-muted-foreground">= {((pointageSettings.soldeRC012 ?? 0) / 8).toFixed(1)}j</span>
+                  </div>
                 </div>
               </div>
             </CollapsibleContent>
