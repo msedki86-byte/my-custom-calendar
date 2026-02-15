@@ -14,6 +14,8 @@ import { AddEventDialog } from '@/components/Dialogs/AddEventDialog';
 import { EventsManager } from '@/components/Events/EventsManager';
 import { ConflictsList } from '@/components/Conflicts/ConflictsList';
 import { PointageModule } from '@/components/Pointage/PointageModule';
+import { SoldesCounters } from '@/components/Dashboard/SoldesCounters';
+import { usePointage } from '@/hooks/usePointage';
 import { exportPDF, exportAnnualPDF, exportMonthlyPDF } from '@/components/Export/ExportPDF';
 import { ExcelImport } from '@/components/Import/ExcelImport';
 import { ICSImportDialog } from '@/components/Import/ICSImportDialog';
@@ -77,6 +79,7 @@ const Index = () => {
   } = useCalendar();
 
   const isMobile = useIsMobile();
+  const { pointageSettings } = usePointage();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -288,6 +291,11 @@ const Index = () => {
           onICSImport={() => setIcsImportOpen(true)}
           onICSExport={() => setIcsExportOpen(true)}
         />
+
+        {/* Compteurs permanents */}
+        <div className="mt-1.5 sm:mt-2">
+          <SoldesCounters pointageSettings={pointageSettings} />
+        </div>
 
         {activeTab === 'calendar' && (
           <div className="mt-2 sm:mt-3">

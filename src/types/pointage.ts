@@ -79,6 +79,8 @@ export interface PointageSettings {
   primeRepasValeur: number;
   alertesActives: boolean;
   communeDepart: string;
+  soldeCongesAnnuels: number; // 21 (Congés annuels) - dotation 189h
+  regime: 'HABA' | 'NORMAL';
 }
 
 export const defaultPointageSettings: PointageSettings = {
@@ -90,4 +92,6 @@ export const defaultPointageSettings: PointageSettings = {
   primeRepasValeur: 9.26,
   alertesActives: true,
   communeDepart: 'DECINES CHARPIEU',
+  soldeCongesAnnuels: 173, // 189h - 16h (situation au 5 février)
+  regime: 'HABA',
 };
