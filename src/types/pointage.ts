@@ -40,7 +40,8 @@ export interface DaySummary {
   date: string;
   hoursWorked: number; // effective work hours (after midi deduction)
   habillageHours: number; // fixed 1h if worked, 0 otherwise
-  totalHours: number; // worked + habillage
+  trajetHeures: number; // travel valorisation hours
+  totalHours: number; // worked + habillage + trajet
   hasNote: boolean;
   alerts: ComplianceAlert[];
   primeRepas: boolean;
@@ -78,6 +79,7 @@ export interface PointageSettings {
   seuilAlerteRE: number;
   primeRepasValeur: number;
   alertesActives: boolean;
+  communeDepart: string;
 }
 
 export const defaultPointageSettings: PointageSettings = {
@@ -89,4 +91,5 @@ export const defaultPointageSettings: PointageSettings = {
   seuilAlerteRE: 14,
   primeRepasValeur: 9.26,
   alertesActives: true,
+  communeDepart: 'DECINES CHARPIEU',
 };

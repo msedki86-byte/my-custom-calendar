@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalendarSettings } from '@/types/calendar';
 import { PointageSettings, defaultPointageSettings } from '@/types/pointage';
 import { usePointage } from '@/hooks/usePointage';
+import { getAllCommuneNames } from '@/lib/communeService';
 import { ColorPicker } from './ColorPicker';
 import { PatternPicker } from './PatternPicker';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings, X, Lock, Unlock, KeyRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -330,6 +332,23 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                           onChange={e => onUpdatePointageSettings({ primeRepasValeur: parseFloat(e.target.value) || 9.26 })}
                           className="h-7 text-xs w-24"
                         />
+                      </div>
+                      {/* Commune de départ */}
+                      <div>
+                        <Label className="text-[10px]">Commune de départ (IK)</Label>
+                        <Select
+                          value={pointageSettings.communeDepart}
+                          onValueChange={v => onUpdatePointageSettings({ communeDepart: v })}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue placeholder="Sélectionner" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 bg-popover z-50">
+                            {getAllCommuneNames().map(name => (
+                              <SelectItem key={name} value={name} className="text-xs">{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   )}
