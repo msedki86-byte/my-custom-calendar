@@ -53,8 +53,8 @@ export function UnifiedToolbar({
   const monthEnd = endOfMonth(currentDate);
   const weekNumberEnd = getWeek(monthEnd, { locale: fr, weekStartsOn: 1 });
 
-  // Landscape: 4 tabs, Portrait: 3 tabs (no Conflits)
-  const showConflitsTab = isLandscape || typeof window !== 'undefined' && window.innerWidth >= 640;
+  // Always show all 4 tabs
+  const showConflitsTab = true;
 
   return (
     <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border pb-2 space-y-1.5">
@@ -202,40 +202,51 @@ export function UnifiedToolbar({
         </Tabs>
       </div>
 
-      {/* Mobile: Simple tab indicator */}
+      {/* Mobile: 4 tabs always visible */}
       <div className="sm:hidden flex items-center justify-center">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-1.5 text-xs">
           <button
             onClick={() => onTabChange('calendar')}
-            className={`px-3 py-1.5 rounded-full transition-colors ${
+            className={`px-2.5 py-1.5 rounded-full transition-colors ${
               activeTab === 'calendar' 
                 ? 'bg-primary text-primary-foreground' 
                 : 'bg-muted text-muted-foreground'
             }`}
           >
-            <CalendarIcon className="h-3 w-3 inline mr-1" />
-            Calendrier
+            <CalendarIcon className="h-3 w-3 inline mr-0.5" />
+            <span translate="no">Calendrier</span>
           </button>
           <button
             onClick={() => onTabChange('pointage')}
-            className={`px-3 py-1.5 rounded-full transition-colors ${
+            className={`px-2.5 py-1.5 rounded-full transition-colors ${
               activeTab === 'pointage' 
                 ? 'bg-primary text-primary-foreground' 
                 : 'bg-muted text-muted-foreground'
             }`}
           >
-            <ClipboardCheck className="h-3 w-3 inline mr-1" />
+            <ClipboardCheck className="h-3 w-3 inline mr-0.5" />
             Pointage
           </button>
           <button
+            onClick={() => onTabChange('conflicts')}
+            className={`px-2.5 py-1.5 rounded-full transition-colors ${
+              activeTab === 'conflicts' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            <AlertTriangle className="h-3 w-3 inline mr-0.5" />
+            Conflits
+          </button>
+          <button
             onClick={() => onTabChange('events')}
-            className={`px-3 py-1.5 rounded-full transition-colors ${
+            className={`px-2.5 py-1.5 rounded-full transition-colors ${
               activeTab === 'events' 
                 ? 'bg-primary text-primary-foreground' 
                 : 'bg-muted text-muted-foreground'
             }`}
           >
-            <List className="h-3 w-3 inline mr-1" />
+            <List className="h-3 w-3 inline mr-0.5" />
             Gestion
           </button>
         </div>
