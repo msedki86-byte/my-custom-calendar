@@ -479,7 +479,7 @@ export function computeWeekSummary(
     allAlerts.push({
       rule: 'RE',
       level: 'rouge',
-      message: `Pot RE critique : ${ps.soldeRE.toFixed(2)}h restantes (seuil : ${ps.seuilAlerteRE}h)`,
+      message: `RE critique : ${ps.soldeRE.toFixed(2)}h restantes sur 312h (seuil : ${ps.seuilAlerteRE}h)`,
     });
   }
 

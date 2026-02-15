@@ -251,7 +251,7 @@ function drawLegend(pdf: jsPDF, data: PDFExportData, cx: number, y: number) {
   const items: { label: string; color: string }[] = [
     { label: 'Astreinte', color: s.astreinteColor },
     { label: 'RE', color: s.reColor },
-    { label: 'CP', color: s.cpColor },
+    { label: '21 (Congés)', color: s.cpColor },
   ];
   if (data.vacations.length > 0) items.push({ label: 'Vacances scolaires', color: s.vacationColor });
 
@@ -483,7 +483,7 @@ function drawMonthlyTable(pdf: jsPDF, data: PDFExportData, year: number, month: 
       if (cpEvt) {
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('CP', dx + dayW/2, ry + rowH/2 + 1, { align: 'center', baseline: 'middle' });
+        pdf.text('21', dx + dayW/2, ry + rowH/2 + 1, { align: 'center', baseline: 'middle' });
       } else if (reEvt) {
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'bold');

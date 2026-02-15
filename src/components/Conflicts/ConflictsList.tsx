@@ -51,7 +51,7 @@ export function ConflictsList({
         events.forEach(event => {
           
           if (day >= event.startDate && day <= event.endDate) {
-            const label = event.type === 'cp' ? 'CP' : event.type === 're' ? 'RE' : event.name;
+            const label = event.type === 'cp' ? '21 (Congés annuels)' : event.type === 're' ? 'RE' : event.name;
             result.push({
               date: day,
               astreinte,

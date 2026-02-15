@@ -8,7 +8,7 @@ export type EventType =
   | 'arret'
   | 'arret-prepa'
   | 're'  // Repos / Récupération
-  | 'cp'; // Congés Payés
+  | 'cp'; // 21 (Congés annuels)
 
 // Source of an event (for future external calendar sync)
 export type EventSource = 'internal' | 'outlook' | 'ios' | 'ics';
@@ -122,9 +122,9 @@ export interface CalendarSettings {
   // Vacances scolaires
   vacationColor: string;
   vacationTextColor: string;
-  // RE / CP
+  // RE / 21 (Congés annuels)
   reColor: string;
-  cpColor: string;
+  cpColor: string; // 21 (Congés annuels)
   // Couleurs par tranche - Arrêts
   arretTr2Color: string;
   arretTr3Color: string;
@@ -174,9 +174,9 @@ export const defaultSettings: CalendarSettings = {
   // Vacances
   vacationColor: '#4CAF50',
   vacationTextColor: '#2D2A00',
-  // RE / CP
+  // RE / 21 (Congés annuels)
   reColor: '#E6E6E6',
-  cpColor: '#4A4A4A',
+  cpColor: '#4A4A4A', // 21 (Congés annuels)
   // Tranches
   arretTr2Color: TRANCHE_COLORS.Tr2,
   arretTr3Color: TRANCHE_COLORS.Tr3,

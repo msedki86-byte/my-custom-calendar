@@ -78,7 +78,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
     if (type === 're' && name === '') {
       setName('RE');
     } else if (type === 'cp' && name === '') {
-      setName('CP');
+      setName('21 (Congés annuels)');
     }
     // Default times for cancellations
     if (type === 'astreinte-cancelled') {
@@ -141,7 +141,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
       case 're':
         return 'Marquez les jours comme RE (Repos/Récupération). La case sera grisée.';
       case 'cp':
-        return 'Marquez les jours comme CP (Congés Payés). La case sera grisée (plus foncée que RE).';
+        return 'Marquez les jours comme 21 (Congés annuels). La case sera grisée (plus foncée que RE).';
     }
   };
 
@@ -173,7 +173,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
               <SelectContent className="bg-background z-50" position="popper" sideOffset={4}>
                 <SelectItem value="event">Événement</SelectItem>
                 <SelectItem value="re">RE (Repos/Récupération)</SelectItem>
-                <SelectItem value="cp">CP (Congés Payés)</SelectItem>
+                <SelectItem value="cp">21 (Congés annuels)</SelectItem>
                 <SelectItem value="astreinte-ponctuelle">Astreinte ponctuelle</SelectItem>
                 <SelectItem value="astreinte-cancelled">Annulation d'astreinte (jours spécifiques)</SelectItem>
               </SelectContent>
@@ -194,7 +194,7 @@ export function AddEventDialog({ isOpen, onClose, onAdd, initialDate, existingEv
                   : type === 're' 
                     ? 'RE' 
                     : type === 'cp' 
-                      ? 'CP' 
+                      ? '21 (Congés annuels)' 
                       : "Nom de l'événement"
               }
             />

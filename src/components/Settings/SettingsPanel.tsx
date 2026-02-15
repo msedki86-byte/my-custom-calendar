@@ -161,7 +161,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
             <h3 className="text-sm font-semibold text-foreground mb-3">Événements & états</h3>
             <div className="space-y-3">
               <ColorPicker label="RE (Repos)" value={settings.reColor} onChange={(v) => onUpdateSettings({ reColor: v })} />
-              <ColorPicker label="CP (Congés Payés)" value={settings.cpColor} onChange={(v) => onUpdateSettings({ cpColor: v })} />
+              <ColorPicker label="21 (Congés annuels)" value={settings.cpColor} onChange={(v) => onUpdateSettings({ cpColor: v })} />
               <ColorPicker label="Vacances scolaires (fond)" value={settings.vacationColor} onChange={(v) => onUpdateSettings({ vacationColor: v })} />
               <ColorPicker label="Vacances scolaires (texte)" value={settings.vacationTextColor} onChange={(v) => onUpdateSettings({ vacationTextColor: v })} />
             </div>
@@ -281,14 +281,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <Label className="text-[10px]">Pot RE annuel (h)</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={pointageSettings.potREAnnuel}
-                            onChange={e => onUpdatePointageSettings({ potREAnnuel: parseInt(e.target.value) || 312 })}
-                            className="h-7 text-xs"
-                          />
+                          <Label className="text-[10px]">RE fixe annuel : 312h (39j)</Label>
                         </div>
                         <div>
                           <Label className="text-[10px]">Solde RE (h)</Label>
