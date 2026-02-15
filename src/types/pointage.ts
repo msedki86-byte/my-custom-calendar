@@ -4,6 +4,8 @@
 
 export type AstreinteType = 'PLANIFIEE_SANS' | 'INTERVENTION_PLANIFIEE' | 'INTERVENTION_APPEL' | 'HORS_TOUR' | null;
 
+export type PosteType = 'AUCUN' | 'MATIN' | 'APRES_MIDI';
+
 export interface TimeEntry {
   id: string;
   date: string; // ISO date YYYY-MM-DD
@@ -24,8 +26,11 @@ export interface TimeEntry {
   // FPC (Formation Professionnelle Continue)
   isFPC?: boolean;
   fpcHeures?: 7 | 8; // 7h or 8h daily
-  // Legacy field - no longer used (habillage is now fixed 1h/worked day)
-  habillage?: number;
+  // Habillage manuel optionnel (en minutes)
+  habillageManuel?: boolean;
+  habillageMinutes?: number;
+  // Poste (matin / après-midi)
+  poste?: PosteType;
 }
 
 export type NoteTag = 'prime' | 'ecart' | 'observation' | 'validation-n1';
@@ -83,35 +88,42 @@ export interface WeekSummary {
 export interface PointageSettings {
   seuilOrangeHeures: number;
   seuilRougeHeures: number;
-  soldeRE: number; // RE fixe annuel 312h (39j x 8h) — kept for backward compat, rhStore is source of truth
+  soldeRE: number;
   dateActivationRE: string;
   seuilAlerteRE: number;
   primeRepasValeur: number;
   alertesActives: boolean;
   communeDepart: string;
-  soldeCongesAnnuels: number; // 21 (Congés annuels) — kept for backward compat
+  soldeCongesAnnuels: number;
   regime: 'HABA' | 'NORMAL';
-  // RC counters (grouped) — kept for backward compat
-  soldeRC011: number; // RC-HS (compte 011)
-  soldeRC012: number; // RC-Autres + RCO (compte 012)
-  // Stage long primes
+  soldeRC011: number;
+  soldeRC012: number;
   montantPrimeHebdo: number;
   montantPrimeMensuelle: number;
+  // Postes paramétrables
+  posteMatinDebut: string;
+  posteMatinFin: string;
+  posteAMDebut: string;
+  posteAMFin: string;
 }
 
 export const defaultPointageSettings: PointageSettings = {
   seuilOrangeHeures: 16,
   seuilRougeHeures: 8,
-  soldeRE: 312, // 39 jours x 8h
+  soldeRE: 312,
   dateActivationRE: '2026-02-05',
   seuilAlerteRE: 14,
   primeRepasValeur: 9.26,
   alertesActives: true,
   communeDepart: 'DECINES CHARPIEU',
-  soldeCongesAnnuels: 173, // 189h - 16h (situation au 5 février)
+  soldeCongesAnnuels: 173,
   regime: 'HABA',
   soldeRC011: 0,
   soldeRC012: 0,
   montantPrimeHebdo: 0,
   montantPrimeMensuelle: 0,
+  posteMatinDebut: '05:00',
+  posteMatinFin: '13:00',
+  posteAMDebut: '13:00',
+  posteAMFin: '21:00',
 };

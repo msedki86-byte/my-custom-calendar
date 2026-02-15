@@ -1,7 +1,7 @@
 /**
- * Moteur de conformité EDF CNPE Bugey – Refonte Phase 1
+ * Moteur de conformité EDF CNPE Bugey – Refonte Phase 2
  * Semaine : Dimanche 00h00 → Samedi 24h00
- * Habillage fixe = 1h / jour travaillé
+ * Habillage = optionnel manuel (plus automatique)
  * Heures supplémentaires avec majorations IEG
  */
 
@@ -226,7 +226,7 @@ export function computeDaySummary(entries: TimeEntry[], date: string, communeDep
   let primeRepas = false;
   let ikAlert = false;
   let trajetHeures = 0;
-  let trajetApplied = false;
+  let habillageMinutesTotal = 0;
 
   for (const entry of dayEntries) {
     effectiveMinutes += getEffectiveMinutes(entry);
@@ -238,29 +238,30 @@ export function computeDaySummary(entries: TimeEntry[], date: string, communeDep
     if (!entry.isAstreinteSansIntervention && (start < 8 * 60 || end > 16 * 60 + 45)) {
       ikAlert = true;
     }
+    // Habillage manuel optionnel
+    if (entry.habillageManuel && entry.habillageMinutes && entry.habillageMinutes > 0) {
+      habillageMinutesTotal += entry.habillageMinutes;
+    }
   }
 
   const hoursWorked = effectiveMinutes / 60;
+  const habillageHours = habillageMinutesTotal / 60;
 
-  // Travel valorisation: apply once per worked day (use first non-astreinte entry for time context)
+  // Travel valorisation: apply once per worked day
   if (hoursWorked > 0 && communeDepart) {
     const firstEntry = dayEntries.find(e => !e.isAstreinteSansIntervention);
     if (firstEntry) {
       const trajet = computeTrajetValorisation(communeDepart, date, firstEntry.startTime);
       if (trajet && !trajet.isZoneImmediate) {
         trajetHeures = trajet.valorisationHeures;
-        trajetApplied = true;
       }
     }
   }
 
-  // Habillage fixe = 1h si jour travaillé
-  const habillageHours = hoursWorked > 0 ? 1 : 0;
   const totalHours = hoursWorked + habillageHours + trajetHeures;
   const hasNote = dayEntries.some(e => !!e.note);
   const alerts: ComplianceAlert[] = [];
 
-  // Rule: 10h effective max per day
   if (hoursWorked > 10) {
     alerts.push({
       rule: 'R_JOUR',

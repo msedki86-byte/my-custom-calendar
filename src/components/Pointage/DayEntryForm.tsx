@@ -1,11 +1,11 @@
 /**
  * Module 2 – Day Entry Form (CNPE Bugey)
- * Saisie journée : heures, suppression midi, formation, FPC, astreinte 4 types, notes.
- * Habillage fixe 1h/jour travaillé (automatique, pas de saisie).
+ * Saisie journée : heures, habillage manuel optionnel, poste matin/AM,
+ * FPC, astreinte 4 types, suppression midi, notes.
  */
 
 import { useState } from 'react';
-import { TimeEntry, NoteTag, NOTE_TAG_LABELS, AstreinteType } from '@/types/pointage';
+import { TimeEntry, NoteTag, NOTE_TAG_LABELS, AstreinteType, PosteType } from '@/types/pointage';
 import { coversMidi } from '@/lib/complianceEngine';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,10 @@ interface DayEntryFormProps {
   onDelete: (id: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  posteMatinDebut?: string;
+  posteMatinFin?: string;
+  posteAMDebut?: string;
+  posteAMFin?: string;
 }
 
 const ASTREINTE_OPTIONS: { value: AstreinteType; label: string; badge: string }[] = [
@@ -36,7 +40,7 @@ const ASTREINTE_OPTIONS: { value: AstreinteType; label: string; badge: string }[
   { value: 'HORS_TOUR', label: 'Intervention hors tour d\'astreinte', badge: '⚫' },
 ];
 
-export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen, onClose }: DayEntryFormProps) {
+export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen, onClose, posteMatinDebut = '05:00', posteMatinFin = '13:00', posteAMDebut = '13:00', posteAMFin = '21:00' }: DayEntryFormProps) {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('16:45');
   const [isFormation, setIsFormation] = useState(false);
@@ -46,6 +50,9 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
   const [isJourFerie, setIsJourFerie] = useState(false);
   const [astreinteCompensee, setAstreinteCompensee] = useState(false);
   const [suppressionMidi, setSuppressionMidi] = useState(true);
+  const [habillageManuel, setHabillageManuel] = useState(false);
+  const [habillageMinutes, setHabillageMinutes] = useState(60);
+  const [poste, setPoste] = useState<PosteType>('AUCUN');
   const [noteEntryId, setNoteEntryId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
   const [noteTags, setNoteTags] = useState<NoteTag[]>([]);
@@ -54,6 +61,13 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
     try { return format(parseISO(date), 'EEEE d MMMM yyyy', { locale: fr }); }
     catch { return date; }
   })();
+
+  // Apply poste times
+  const applyPoste = (p: PosteType) => {
+    setPoste(p);
+    if (p === 'MATIN') { setStartTime(posteMatinDebut); setEndTime(posteMatinFin); }
+    else if (p === 'APRES_MIDI') { setStartTime(posteAMDebut); setEndTime(posteAMFin); }
+  };
 
   const showMidiOption = !isFPC && coversMidi(startTime, endTime);
   const isAstreinte = typeAstreinte !== null;
@@ -68,13 +82,16 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
       isFormation: isFormation || isFPC,
       isInterventionAstreinte: isIntervention,
       isAstreinteSansIntervention: isSansIntervention,
-      suppressionMidi: isFPC ? true : (showMidiOption ? suppressionMidi : false),
+      suppressionMidi: isFPC ? false : (showMidiOption ? suppressionMidi : false),
       isFPC,
       fpcHeures: isFPC ? fpcHeures : undefined,
       estAstreinte: isAstreinte,
       typeAstreinte,
       isJourFerie: isAstreinte ? isJourFerie : undefined,
       astreinteCompensee: isAstreinte && isJourFerie ? astreinteCompensee : undefined,
+      habillageManuel: isFPC ? false : habillageManuel,
+      habillageMinutes: isFPC ? undefined : (habillageManuel ? habillageMinutes : undefined),
+      poste: poste !== 'AUCUN' ? poste : undefined,
     });
     // Reset
     setStartTime('08:00');
@@ -85,6 +102,9 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
     setIsJourFerie(false);
     setAstreinteCompensee(false);
     setSuppressionMidi(true);
+    setHabillageManuel(false);
+    setHabillageMinutes(60);
+    setPoste('AUCUN');
   };
 
   const openNote = (entry: TimeEntry) => {
@@ -106,7 +126,6 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
 
   const getAstreinteBadge = (entry: TimeEntry) => {
     if (!entry.estAstreinte && !entry.isAstreinteSansIntervention && !entry.isInterventionAstreinte) return null;
-    
     const t = entry.typeAstreinte;
     if (t === 'PLANIFIEE_SANS' || entry.isAstreinteSansIntervention) {
       return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-700 bg-blue-50">🔵 Planifiée</Badge>;
@@ -120,7 +139,6 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
     if (t === 'HORS_TOUR') {
       return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-gray-200 text-gray-800">⚫ Hors tour</Badge>;
     }
-    // Legacy fallback
     if (entry.isInterventionAstreinte) {
       return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-800">🟠 Intervention</Badge>;
     }
@@ -134,11 +152,6 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
           <DialogTitle className="capitalize text-sm">{dayLabel}</DialogTitle>
         </DialogHeader>
 
-        {/* Info habillage fixe */}
-        <p className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-          Habillage : 1h automatique par jour travaillé
-        </p>
-
         {/* Existing entries */}
         {entries.length > 0 && (
           <div className="space-y-2">
@@ -149,6 +162,9 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
                   <div className="flex-1 min-w-0">
                     <span className="font-mono font-medium">{entry.startTime} – {entry.endTime}</span>
                     {entry.suppressionMidi && <span className="ml-1 text-muted-foreground">(-45min midi)</span>}
+                    {entry.habillageManuel && entry.habillageMinutes && (
+                      <span className="ml-1 text-muted-foreground">(hab. {entry.habillageMinutes}min)</span>
+                    )}
                   </div>
                   <button
                     onClick={() => openNote(entry)}
@@ -168,6 +184,8 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
                 <div className="flex gap-1 flex-wrap">
                   {entry.isFPC && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-100 text-indigo-800">FPC {entry.fpcHeures}h</Badge>}
                   {entry.isFormation && !entry.isFPC && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Formation</Badge>}
+                  {entry.poste === 'MATIN' && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Poste matin</Badge>}
+                  {entry.poste === 'APRES_MIDI' && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Poste AM</Badge>}
                   {getAstreinteBadge(entry)}
                   {entry.isJourFerie && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-red-300 text-red-700">Jour férié</Badge>}
                   {entry.astreinteCompensee && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-400 text-green-700">RCA → RCO 012</Badge>}
@@ -175,7 +193,6 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
                     <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{NOTE_TAG_LABELS[tag]}</Badge>
                   ))}
                 </div>
-                {/* Auto-comments */}
                 {entry.autoComments && entry.autoComments.length > 0 && (
                   <div className="flex gap-1 flex-wrap">
                     {entry.autoComments.map((c, i) => (
@@ -223,7 +240,24 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
         {/* New entry form */}
         <div className="space-y-3 pt-2 border-t border-border">
           <p className="text-xs font-medium text-muted-foreground">Nouvelle saisie</p>
-          
+
+          {/* Poste selection */}
+          {!isFPC && (
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Type de poste</Label>
+              <Select value={poste} onValueChange={(v) => applyPoste(v as PosteType)}>
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="AUCUN" className="text-xs">Aucun (horaires libres)</SelectItem>
+                  <SelectItem value="MATIN" className="text-xs">Poste matin ({posteMatinDebut}–{posteMatinFin})</SelectItem>
+                  <SelectItem value="APRES_MIDI" className="text-xs">Poste après-midi ({posteAMDebut}–{posteAMFin})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {!isFPC && (
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -257,12 +291,35 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
             </p>
           )}
 
+          {/* Habillage manuel */}
+          {!isFPC && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Checkbox id="habillage" checked={habillageManuel} onCheckedChange={v => setHabillageManuel(!!v)} />
+                <Label htmlFor="habillage" className="text-xs cursor-pointer">Habillage (durée libre)</Label>
+              </div>
+              {habillageManuel && (
+                <div className="ml-6 flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={habillageMinutes}
+                    onChange={e => setHabillageMinutes(parseInt(e.target.value) || 60)}
+                    className="h-7 text-xs w-20"
+                  />
+                  <span className="text-[10px] text-muted-foreground">minutes</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             {/* FPC */}
             <div className="flex items-center gap-2">
-              <Checkbox id="fpc" checked={isFPC} onCheckedChange={v => { 
-                setIsFPC(!!v); 
-                if (v) { setIsFormation(false); setTypeAstreinte(null); }
+              <Checkbox id="fpc" checked={isFPC} onCheckedChange={v => {
+                setIsFPC(!!v);
+                if (v) { setIsFormation(false); setTypeAstreinte(null); setHabillageManuel(false); setPoste('AUCUN'); }
               }} />
               <Label htmlFor="fpc" className="text-xs cursor-pointer">FPC (Formation Professionnelle Continue)</Label>
             </div>
@@ -277,7 +334,7 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
                     <SelectItem value="8" className="text-xs">8h / jour</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-[10px] text-muted-foreground mt-1">Travail effectif, pas de HS, pas de RE généré</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Travail effectif, pas de HS, pas de RE généré, pas d'habillage</p>
               </div>
             )}
 
@@ -287,7 +344,7 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
                   <Checkbox id="formation" checked={isFormation} onCheckedChange={v => { setIsFormation(!!v); if (v) setTypeAstreinte(null); }} />
                   <Label htmlFor="formation" className="text-xs cursor-pointer">Formation (= travail effectif)</Label>
                 </div>
-                
+
                 {/* Type d'astreinte — 4 options */}
                 <div className="space-y-1">
                   <Label className="text-xs font-medium">Type d'astreinte</Label>
