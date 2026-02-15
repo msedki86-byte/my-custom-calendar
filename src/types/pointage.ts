@@ -73,8 +73,7 @@ export interface WeekSummary {
 export interface PointageSettings {
   seuilOrangeHeures: number;
   seuilRougeHeures: number;
-  potREAnnuel: number;
-  soldeRE: number;
+  soldeRE: number; // RE fixe annuel 312h (39j x 8h)
   dateActivationRE: string;
   seuilAlerteRE: number;
   primeRepasValeur: number;
@@ -85,8 +84,7 @@ export interface PointageSettings {
 export const defaultPointageSettings: PointageSettings = {
   seuilOrangeHeures: 16,
   seuilRougeHeures: 8,
-  potREAnnuel: 312,
-  soldeRE: 312,
+  soldeRE: 312, // 39 jours x 8h
   dateActivationRE: '2026-02-05',
   seuilAlerteRE: 14,
   primeRepasValeur: 9.26,

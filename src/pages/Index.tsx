@@ -178,7 +178,7 @@ const Index = () => {
     if (eventData.type === 'event' || eventData.type === 're' || eventData.type === 'cp') {
       const eventColor = eventData.type === 're' ? settings.reColor : eventData.type === 'cp' ? settings.cpColor : eventData.color;
       const eventType = eventData.type;
-      const eventName = eventData.type === 're' ? (eventData.name || 'RE') : eventData.type === 'cp' ? (eventData.name || 'CP') : eventData.name;
+      const eventName = eventData.type === 're' ? (eventData.name || 'RE') : eventData.type === 'cp' ? (eventData.name || '21 (Congés annuels)') : eventData.name;
       
       if (shouldExcludeWeekends) {
         // Create individual events for each non-weekend day

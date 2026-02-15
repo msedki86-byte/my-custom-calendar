@@ -340,7 +340,7 @@ export function EventsManager({
                   <SelectContent className="z-50 bg-background">
                     <SelectItem value="event">{"Événement"}</SelectItem>
                     <SelectItem value="re">RE</SelectItem>
-                    <SelectItem value="cp">CP</SelectItem>
+                    <SelectItem value="cp">21 (Congés annuels)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -568,7 +568,7 @@ export function EventsManager({
                   </SelectTrigger>
                   <SelectContent className="z-50 bg-background">
                     <SelectItem value="re">RE (Repos)</SelectItem>
-                    <SelectItem value="cp">CP (Congés)</SelectItem>
+                    <SelectItem value="cp">21 (Congés annuels)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -613,7 +613,7 @@ export function EventsManager({
                 <Button size="sm" onClick={() => {
                   if (onAddEvent) {
                     const type = (newItem.absenceType || 're') as 're' | 'cp';
-                    const name = newItem.name || (type === 're' ? 'RE' : 'CP');
+                    const name = newItem.name || (type === 're' ? 'RE' : '21 (Congés annuels)');
                     const startDate = newItem.startDate || new Date();
                     const endDate = newItem.endDate || new Date();
                     const color = type === 're' ? '#d1d5db' : '#9ca3af';
@@ -662,7 +662,7 @@ export function EventsManager({
                 <TableRow key={absence.id}>
                   <TableCell>
                     <Badge variant={absence.type === 'cp' ? 'default' : 'secondary'}>
-                      {absence.type === 'cp' ? 'CP' : 'RE'}
+                      {absence.type === 'cp' ? '21 (Congés)' : 'RE'}
                     </Badge>
                   </TableCell>
                   <TableCell>

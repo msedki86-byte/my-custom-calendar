@@ -219,7 +219,7 @@ function buildLegendHTML(data: MonthlyPrintData): string {
   const items: { label: string; bg: string; border?: string }[] = [
     { label: 'Astreinte', bg: s.astreinteColor },
     { label: 'RE', bg: s.reColor, border: '#999' },
-    { label: 'CP', bg: s.cpColor },
+    { label: '21 (Congés)', bg: s.cpColor },
   ];
   if (data.vacations.length > 0) {
     items.push({ label: 'Vacances scolaires', bg: s.vacationColor });
