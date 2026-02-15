@@ -85,38 +85,51 @@ export function useCalendar() {
     parseStoredData('calendar-cancelled-dates', [])
   );
 
+  // Safe localStorage write with quota error handling
+  const safeLocalStorageSet = useCallback((key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) {
+        console.warn(`[storage] Quota exceeded writing "${key}"`);
+        // Notify user via a custom event (toast can listen for it)
+        window.dispatchEvent(new CustomEvent('storage-quota-exceeded', { detail: { key } }));
+      }
+    }
+  }, []);
+
   // Auto-save to localStorage
   useEffect(() => {
-    localStorage.setItem('calendar-current-date', currentDate.toISOString());
-  }, [currentDate]);
+    safeLocalStorageSet('calendar-current-date', currentDate.toISOString());
+  }, [currentDate, safeLocalStorageSet]);
   
   useEffect(() => {
-    localStorage.setItem('calendar-settings', JSON.stringify(settings));
-  }, [settings]);
+    safeLocalStorageSet('calendar-settings', JSON.stringify(settings));
+  }, [settings, safeLocalStorageSet]);
   
   useEffect(() => {
-    localStorage.setItem('calendar-events', JSON.stringify(events));
-  }, [events]);
+    safeLocalStorageSet('calendar-events', JSON.stringify(events));
+  }, [events, safeLocalStorageSet]);
   
   useEffect(() => {
-    localStorage.setItem('calendar-vacations', JSON.stringify(vacations));
-  }, [vacations]);
+    safeLocalStorageSet('calendar-vacations', JSON.stringify(vacations));
+  }, [vacations, safeLocalStorageSet]);
   
   useEffect(() => {
-    localStorage.setItem('calendar-holidays', JSON.stringify(holidays));
-  }, [holidays]);
+    safeLocalStorageSet('calendar-holidays', JSON.stringify(holidays));
+  }, [holidays, safeLocalStorageSet]);
   
   useEffect(() => {
-    localStorage.setItem('calendar-arrets', JSON.stringify(arrets));
-  }, [arrets]);
+    safeLocalStorageSet('calendar-arrets', JSON.stringify(arrets));
+  }, [arrets, safeLocalStorageSet]);
   
   useEffect(() => {
-    localStorage.setItem('calendar-ponctual-astreintes', JSON.stringify(ponctualAstreintes));
-  }, [ponctualAstreintes]);
+    safeLocalStorageSet('calendar-ponctual-astreintes', JSON.stringify(ponctualAstreintes));
+  }, [ponctualAstreintes, safeLocalStorageSet]);
   
   useEffect(() => {
-    localStorage.setItem('calendar-cancelled-dates', JSON.stringify(cancelledAstreinteDates));
-  }, [cancelledAstreinteDates]);
+    safeLocalStorageSet('calendar-cancelled-dates', JSON.stringify(cancelledAstreinteDates));
+  }, [cancelledAstreinteDates, safeLocalStorageSet]);
 
   /* 🔒 Sécurisation centrale des dates */
   const safeSetDate = useCallback((date: Date) => {

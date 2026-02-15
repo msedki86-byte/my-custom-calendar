@@ -74,10 +74,26 @@ export function ExcelImport({
     setError(null);
     setSuccess(null);
 
+    // File size limit: 5 MB
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      setError('Fichier trop volumineux (max 5 Mo).');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     try {
       // Read file as text (CSV) or use FileReader for Excel
       const text = await file.text();
       const lines = text.split('\n').filter(line => line.trim());
+
+      // Row count limit
+      const MAX_ROWS = 1000;
+      if (lines.length > MAX_ROWS) {
+        setError(`Trop de lignes (${lines.length}). Maximum : ${MAX_ROWS} lignes par import.`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
       
       if (lines.length < 2) {
         setError('Le fichier est vide ou ne contient pas de données.');

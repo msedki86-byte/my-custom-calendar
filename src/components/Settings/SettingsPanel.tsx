@@ -102,6 +102,7 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
         <Lock className="w-4 h-4 text-muted-foreground" />
         <span className="text-xs text-muted-foreground">Sections protégées par code PIN</span>
       </div>
+      <p className="text-xs text-muted-foreground">⚠️ Ce code PIN est stocké localement et sert uniquement à éviter les modifications accidentelles.</p>
       <div className="flex gap-2">
         <Input
           type="password"
