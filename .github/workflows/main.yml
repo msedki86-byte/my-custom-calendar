@@ -1,0 +1,33 @@
+name: Build flattened file
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+
+jobs:
+  flatten:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate flattened markdown
+        run: node tools/flatten.mjs
+
+      - name: Commit flattened file
+        run: |
+          if [ -n "$(git status --porcelain mon_projet_flattened.md)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add mon_projet_flattened.md
+            git commit -m "chore: generate flattened source"
+            git push
+          else
+            echo "No changes to commit."
+          fi
