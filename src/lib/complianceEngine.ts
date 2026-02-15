@@ -7,6 +7,7 @@
 
 import { TimeEntry, ComplianceAlert, DaySummary, WeekSummary, AlertLevel, PointageSettings, defaultPointageSettings, OvertimeDetail } from '@/types/pointage';
 import { format, addDays, parseISO, startOfWeek } from 'date-fns';
+import { computeTrajetValorisation } from '@/lib/communeService';
 
 // ---- Helpers ----
 
@@ -36,7 +37,7 @@ function getEffectiveMinutes(entry: TimeEntry): number {
 }
 
 /** Auto-comments for an entry */
-export function computeAutoComments(entry: TimeEntry, primeRepasValeur: number): string[] {
+export function computeAutoComments(entry: TimeEntry, primeRepasValeur: number, communeDepart?: string): string[] {
   const comments: string[] = [];
   if (entry.isAstreinteSansIntervention) return comments;
 
@@ -48,6 +49,21 @@ export function computeAutoComments(entry: TimeEntry, primeRepasValeur: number):
   const end = timeToMinutes(entry.endTime);
   if (start < 8 * 60 || end > 16 * 60 + 45) {
     comments.push('Prime IK à vérifier');
+  }
+
+  // Travel valorisation comment
+  if (communeDepart) {
+    const trajet = computeTrajetValorisation(communeDepart, entry.date, entry.startTime);
+    if (trajet) {
+      if (trajet.isZoneImmediate) {
+        comments.push(`⚠️ Zone immédiate CNPE — Pas de plafond trajet`);
+      } else {
+        comments.push(`🚗 Trajet : ${trajet.commune.localite}`);
+        comments.push(`Distance A/R : ${trajet.commune.distanceAR_km ?? '—'} km | Plaf : ${trajet.commune.trajetPlafonne_km ?? '—'} km`);
+        comments.push(`Temps simple : ${trajet.commune.tempsSimple_min ?? '—'} min`);
+        comments.push(`Valorisé (${trajet.valorisationLabel}) : ${trajet.valorisationHeures.toFixed(2)} h`);
+      }
+    }
   }
 
   return comments;
@@ -204,11 +220,13 @@ function getNightMinutes(entry: TimeEntry): number {
 
 // ---- Day Summary ----
 
-export function computeDaySummary(entries: TimeEntry[], date: string): DaySummary {
+export function computeDaySummary(entries: TimeEntry[], date: string, communeDepart?: string): DaySummary {
   const dayEntries = entries.filter(e => e.date === date);
   let effectiveMinutes = 0;
   let primeRepas = false;
   let ikAlert = false;
+  let trajetHeures = 0;
+  let trajetApplied = false;
 
   for (const entry of dayEntries) {
     effectiveMinutes += getEffectiveMinutes(entry);
@@ -223,9 +241,22 @@ export function computeDaySummary(entries: TimeEntry[], date: string): DaySummar
   }
 
   const hoursWorked = effectiveMinutes / 60;
+
+  // Travel valorisation: apply once per worked day (use first non-astreinte entry for time context)
+  if (hoursWorked > 0 && communeDepart) {
+    const firstEntry = dayEntries.find(e => !e.isAstreinteSansIntervention);
+    if (firstEntry) {
+      const trajet = computeTrajetValorisation(communeDepart, date, firstEntry.startTime);
+      if (trajet && !trajet.isZoneImmediate) {
+        trajetHeures = trajet.valorisationHeures;
+        trajetApplied = true;
+      }
+    }
+  }
+
   // Habillage fixe = 1h si jour travaillé
   const habillageHours = hoursWorked > 0 ? 1 : 0;
-  const totalHours = hoursWorked + habillageHours;
+  const totalHours = hoursWorked + habillageHours + trajetHeures;
   const hasNote = dayEntries.some(e => !!e.note);
   const alerts: ComplianceAlert[] = [];
 
@@ -239,7 +270,7 @@ export function computeDaySummary(entries: TimeEntry[], date: string): DaySummar
     });
   }
 
-  return { date, hoursWorked, habillageHours, totalHours, hasNote, alerts, primeRepas, ikAlert };
+  return { date, hoursWorked, habillageHours, totalHours, hasNote, alerts, primeRepas, ikAlert, trajetHeures };
 }
 
 // ---- Week calculations ----
@@ -384,7 +415,7 @@ export function computeWeekSummary(
   const weekDates = getWeekDates(weekSunday);
   const allAlerts: ComplianceAlert[] = [];
 
-  const daySummaries = weekDates.map(d => computeDaySummary(entries, d));
+  const daySummaries = weekDates.map(d => computeDaySummary(entries, d, ps.communeDepart));
 
   const totalHours = daySummaries.reduce((sum, d) => sum + d.totalHours, 0);
   const daysWorked = daySummaries.filter(d => d.hoursWorked > 0).length;

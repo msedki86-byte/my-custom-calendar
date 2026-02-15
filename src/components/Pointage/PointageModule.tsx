@@ -159,6 +159,7 @@ export function PointageModule() {
       <div className="flex items-center gap-3 text-xs text-muted-foreground p-2 rounded-lg bg-muted/50 border border-border flex-wrap">
         <span>Effectif : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.hoursWorked, 0).toFixed(2)}h</strong></span>
         <span>Habillage : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.habillageHours, 0).toFixed(2)}h</strong></span>
+        <span>Trajet : <strong className="text-foreground">{weekSummary.days.reduce((s, d) => s + d.trajetHeures, 0).toFixed(2)}h</strong></span>
         <span>Total pointé : <strong className="text-foreground">{weekSummary.totalHours.toFixed(2)}h</strong></span>
         <span>Restant : <strong className={weekSummary.heuresRestantes <= 8 ? 'text-red-600' : weekSummary.heuresRestantes <= 16 ? 'text-amber-600' : 'text-emerald-600'}>{weekSummary.heuresRestantes.toFixed(2)}h</strong></span>
       </div>

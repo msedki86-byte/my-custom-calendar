@@ -50,18 +50,18 @@ export function usePointage() {
   useEffect(() => { savePointageSettings(pointageSettings); }, [pointageSettings]);
 
   const addEntry = useCallback((entry: Omit<TimeEntry, 'id' | 'autoComments'>) => {
-    const autoComments = computeAutoComments(entry as TimeEntry, pointageSettings.primeRepasValeur);
+    const autoComments = computeAutoComments(entry as TimeEntry, pointageSettings.primeRepasValeur, pointageSettings.communeDepart);
     setEntries(prev => [...prev, { ...entry, id: newId(), autoComments }]);
-  }, [pointageSettings.primeRepasValeur]);
+  }, [pointageSettings.primeRepasValeur, pointageSettings.communeDepart]);
 
   const updateEntry = useCallback((id: string, patch: Partial<TimeEntry>) => {
     setEntries(prev => prev.map(e => {
       if (e.id !== id) return e;
       const updated = { ...e, ...patch };
-      updated.autoComments = computeAutoComments(updated, pointageSettings.primeRepasValeur);
+      updated.autoComments = computeAutoComments(updated, pointageSettings.primeRepasValeur, pointageSettings.communeDepart);
       return updated;
     }));
-  }, [pointageSettings.primeRepasValeur]);
+  }, [pointageSettings.primeRepasValeur, pointageSettings.communeDepart]);
 
   const deleteEntry = useCallback((id: string) => {
     setEntries(prev => prev.filter(e => e.id !== id));
