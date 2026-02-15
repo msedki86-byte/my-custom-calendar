@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalendarSettings } from '@/types/calendar';
 import { PointageSettings, defaultPointageSettings } from '@/types/pointage';
 import { usePointage } from '@/hooks/usePointage';
+import { useRHStore, RHBalanceType } from '@/stores/rhStore';
 import { getAllCommuneNames } from '@/lib/communeService';
 import { ColorPicker } from './ColorPicker';
 import { PatternPicker } from './PatternPicker';
@@ -38,6 +39,7 @@ function SectionHeader({ icon, label, color, open, onToggle }: { icon: React.Rea
 
 export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: SettingsPanelProps) {
   const { pointageSettings, updatePointageSettings: onUpdatePointageSettings } = usePointage();
+  const { rhState, setRHBalance } = useRHStore();
   const [pinInput, setPinInput] = useState('');
   const [pinUnlocked, setPinUnlocked] = useState(false);
   const [pinError, setPinError] = useState(false);
@@ -45,10 +47,20 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
   const [showPinChange, setShowPinChange] = useState(false);
   const [newStartDate, setNewStartDate] = useState('');
   const [newCycleWeeks, setNewCycleWeeks] = useState<number>(6);
+  const [rhDates, setRhDates] = useState<Record<string, string>>({});
 
   // All sections collapsed by default
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const toggleSection = (key: string) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  const getRHDate = (type: RHBalanceType) => rhDates[type] || '';
+  const setRHDate = (type: RHBalanceType, date: string) => setRhDates(prev => ({ ...prev, [type]: date }));
+
+  const handleRHChange = (type: RHBalanceType, valeur: number) => {
+    const dateEffet = getRHDate(type);
+    if (!dateEffet) return; // Date mandatory
+    setRHBalance(type, valeur, dateEffet);
+  };
 
   if (!isOpen) return null;
 
@@ -143,35 +155,63 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                 {/* 21 (Congés annuels) */}
                 <div>
                   <Label className="text-xs font-semibold" translate="no">21 (Congés annuels)</Label>
-                  <p className="text-[10px] text-muted-foreground">Dotation annuelle : 189h</p>
+                  <p className="text-[10px] text-muted-foreground">Dotation annuelle : 189h · Actuel : {rhState.solde21.toFixed(0)}h ({(rhState.solde21 / 8).toFixed(1)}j)</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Label className="text-[10px] w-16">Date effet</Label>
+                    <Input
+                      type="date"
+                      value={getRHDate('21')}
+                      onChange={e => setRHDate('21', e.target.value)}
+                      className="h-7 text-xs flex-1"
+                    />
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
                     <Label className="text-[10px] w-16">Solde (h)</Label>
                     <Input
                       type="number"
                       min={0}
-                      value={pointageSettings.soldeCongesAnnuels ?? 173}
-                      onChange={e => onUpdatePointageSettings({ soldeCongesAnnuels: parseFloat(e.target.value) || 0 })}
+                      value={rhState.solde21}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value) || 0;
+                        if (getRHDate('21')) handleRHChange('21', v);
+                      }}
                       className="h-7 text-xs w-20"
+                      disabled={!getRHDate('21')}
                     />
-                    <span className="text-[10px] text-muted-foreground">= {((pointageSettings.soldeCongesAnnuels ?? 173) / 8).toFixed(1)}j</span>
+                    <span className="text-[10px] text-muted-foreground">= {(rhState.solde21 / 8).toFixed(1)}j</span>
                   </div>
+                  {!getRHDate('21') && <p className="text-[10px] text-destructive">Date d'effet obligatoire pour modifier</p>}
                 </div>
 
                 {/* RE */}
                 <div>
                   <Label className="text-xs font-semibold">RE (Repos Équivalent)</Label>
-                  <p className="text-[10px] text-muted-foreground">Dotation fixe : 312h (39j × 8h)</p>
+                  <p className="text-[10px] text-muted-foreground">Dotation fixe : 312h (39j × 8h) · Actuel : {rhState.soldeRE.toFixed(0)}h ({(rhState.soldeRE / 8).toFixed(1)}j)</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Label className="text-[10px] w-16">Date effet</Label>
+                    <Input
+                      type="date"
+                      value={getRHDate('RE')}
+                      onChange={e => setRHDate('RE', e.target.value)}
+                      className="h-7 text-xs flex-1"
+                    />
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
                     <Label className="text-[10px] w-16">Solde (h)</Label>
                     <Input
                       type="number"
                       min={0}
-                      value={pointageSettings.soldeRE}
-                      onChange={e => onUpdatePointageSettings({ soldeRE: parseFloat(e.target.value) || 0 })}
+                      value={rhState.soldeRE}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value) || 0;
+                        if (getRHDate('RE')) handleRHChange('RE', v);
+                      }}
                       className="h-7 text-xs w-20"
+                      disabled={!getRHDate('RE')}
                     />
-                    <span className="text-[10px] text-muted-foreground">= {(pointageSettings.soldeRE / 8).toFixed(1)}j</span>
+                    <span className="text-[10px] text-muted-foreground">= {(rhState.soldeRE / 8).toFixed(1)}j</span>
                   </div>
+                  {!getRHDate('RE') && <p className="text-[10px] text-destructive">Date d'effet obligatoire pour modifier</p>}
                   <div className="flex items-center gap-2 mt-1">
                     <Label className="text-[10px] w-16">Seuil alerte</Label>
                     <Input
@@ -188,34 +228,70 @@ export function SettingsPanel({ settings, onUpdateSettings, isOpen, onClose }: S
                 {/* RC 011 */}
                 <div>
                   <Label className="text-xs font-semibold">RC 011 (RC-HS)</Label>
-                  <p className="text-[10px] text-muted-foreground">926 (RC-HS 25%), 935 (RC-HS 50%)</p>
+                  <p className="text-[10px] text-muted-foreground">Actuel : {rhState.soldeRC011.toFixed(0)}h ({(rhState.soldeRC011 / 8).toFixed(1)}j)</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Label className="text-[10px] w-16">Date effet</Label>
+                    <Input type="date" value={getRHDate('RC011')} onChange={e => setRHDate('RC011', e.target.value)} className="h-7 text-xs flex-1" />
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
                     <Label className="text-[10px] w-16">Solde (h)</Label>
                     <Input
-                      type="number"
-                      min={0}
-                      value={pointageSettings.soldeRC011 ?? 0}
-                      onChange={e => onUpdatePointageSettings({ soldeRC011: parseFloat(e.target.value) || 0 })}
+                      type="number" min={0}
+                      value={rhState.soldeRC011}
+                      onChange={e => { const v = parseFloat(e.target.value) || 0; if (getRHDate('RC011')) handleRHChange('RC011', v); }}
                       className="h-7 text-xs w-20"
+                      disabled={!getRHDate('RC011')}
                     />
-                    <span className="text-[10px] text-muted-foreground">= {((pointageSettings.soldeRC011 ?? 0) / 8).toFixed(1)}j</span>
+                    <span className="text-[10px] text-muted-foreground">= {(rhState.soldeRC011 / 8).toFixed(1)}j</span>
                   </div>
+                  {!getRHDate('RC011') && <p className="text-[10px] text-destructive">Date d'effet obligatoire</p>}
                 </div>
                 {/* RC 012 + RCO */}
                 <div>
                   <Label className="text-xs font-semibold">RC 012 (RC-Autres + RCO)</Label>
-                  <p className="text-[10px] text-muted-foreground">817, 934, 980, 968 · RCO inclus (obligatoire, non perdable)</p>
+                  <p className="text-[10px] text-muted-foreground">RCO inclus (obligatoire JF, non perdable) · Actuel : {rhState.soldeRC012.toFixed(0)}h ({(rhState.soldeRC012 / 8).toFixed(1)}j)</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Label className="text-[10px] w-16">Date effet</Label>
+                    <Input type="date" value={getRHDate('RC012')} onChange={e => setRHDate('RC012', e.target.value)} className="h-7 text-xs flex-1" />
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
                     <Label className="text-[10px] w-16">Solde (h)</Label>
                     <Input
-                      type="number"
-                      min={0}
-                      value={pointageSettings.soldeRC012 ?? 0}
-                      onChange={e => onUpdatePointageSettings({ soldeRC012: parseFloat(e.target.value) || 0 })}
+                      type="number" min={0}
+                      value={rhState.soldeRC012}
+                      onChange={e => { const v = parseFloat(e.target.value) || 0; if (getRHDate('RC012')) handleRHChange('RC012', v); }}
                       className="h-7 text-xs w-20"
+                      disabled={!getRHDate('RC012')}
                     />
-                    <span className="text-[10px] text-muted-foreground">= {((pointageSettings.soldeRC012 ?? 0) / 8).toFixed(1)}j</span>
+                    <span className="text-[10px] text-muted-foreground">= {(rhState.soldeRC012 / 8).toFixed(1)}j</span>
                   </div>
+                  {!getRHDate('RC012') && <p className="text-[10px] text-destructive">Date d'effet obligatoire</p>}
+                </div>
+
+                {/* Stage long primes */}
+                <div>
+                  <Label className="text-xs font-semibold">Stage long (FPC multi-jours)</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <div>
+                      <Label className="text-[10px]">Prime hebdo (€)</Label>
+                      <Input
+                        type="number" min={0} step={0.01}
+                        value={pointageSettings.montantPrimeHebdo ?? 0}
+                        onChange={e => onUpdatePointageSettings({ montantPrimeHebdo: parseFloat(e.target.value) || 0 })}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Prime mensuelle (€)</Label>
+                      <Input
+                        type="number" min={0} step={0.01}
+                        value={pointageSettings.montantPrimeMensuelle ?? 0}
+                        onChange={e => onUpdatePointageSettings({ montantPrimeMensuelle: parseFloat(e.target.value) || 0 })}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">{'≤ 3 mois → prime hebdo · > 3 mois → prime mensuelle'}</p>
                 </div>
               </div>
             </CollapsibleContent>

@@ -2,7 +2,7 @@
  * Types for Module 2 – Conformité & Pointage (EDF CNPE Bugey)
  */
 
-export type AstreinteType = 'PROGRAMMEE' | 'NON_PROGRAMMEE' | null;
+export type AstreinteType = 'PLANIFIEE_SANS' | 'INTERVENTION_PLANIFIEE' | 'INTERVENTION_APPEL' | 'HORS_TOUR' | null;
 
 export interface TimeEntry {
   id: string;
@@ -19,6 +19,8 @@ export interface TimeEntry {
   // Astreinte differentiation
   estAstreinte?: boolean;
   typeAstreinte?: AstreinteType;
+  isJourFerie?: boolean; // pour RCO automatique JF
+  astreinteCompensee?: boolean; // RCA compensée → génère RCO
   // FPC (Formation Professionnelle Continue)
   isFPC?: boolean;
   fpcHeures?: 7 | 8; // 7h or 8h daily
@@ -81,17 +83,20 @@ export interface WeekSummary {
 export interface PointageSettings {
   seuilOrangeHeures: number;
   seuilRougeHeures: number;
-  soldeRE: number; // RE fixe annuel 312h (39j x 8h)
+  soldeRE: number; // RE fixe annuel 312h (39j x 8h) — kept for backward compat, rhStore is source of truth
   dateActivationRE: string;
   seuilAlerteRE: number;
   primeRepasValeur: number;
   alertesActives: boolean;
   communeDepart: string;
-  soldeCongesAnnuels: number; // 21 (Congés annuels) - dotation 189h
+  soldeCongesAnnuels: number; // 21 (Congés annuels) — kept for backward compat
   regime: 'HABA' | 'NORMAL';
-  // RC counters (grouped)
+  // RC counters (grouped) — kept for backward compat
   soldeRC011: number; // RC-HS (compte 011)
   soldeRC012: number; // RC-Autres + RCO (compte 012)
+  // Stage long primes
+  montantPrimeHebdo: number;
+  montantPrimeMensuelle: number;
 }
 
 export const defaultPointageSettings: PointageSettings = {
@@ -107,4 +112,6 @@ export const defaultPointageSettings: PointageSettings = {
   regime: 'HABA',
   soldeRC011: 0,
   soldeRC012: 0,
+  montantPrimeHebdo: 0,
+  montantPrimeMensuelle: 0,
 };

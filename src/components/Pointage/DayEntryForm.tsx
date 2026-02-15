@@ -1,6 +1,6 @@
 /**
  * Module 2 – Day Entry Form (CNPE Bugey)
- * Saisie journée : heures, suppression midi, formation, FPC, astreinte différenciée, notes.
+ * Saisie journée : heures, suppression midi, formation, FPC, astreinte 4 types, notes.
  * Habillage fixe 1h/jour travaillé (automatique, pas de saisie).
  */
 
@@ -29,15 +29,22 @@ interface DayEntryFormProps {
   onClose: () => void;
 }
 
+const ASTREINTE_OPTIONS: { value: AstreinteType; label: string; badge: string }[] = [
+  { value: 'PLANIFIEE_SANS', label: 'Astreinte planifiée sans intervention', badge: '🔵' },
+  { value: 'INTERVENTION_PLANIFIEE', label: 'Intervention astreinte planifiée', badge: '🟠' },
+  { value: 'INTERVENTION_APPEL', label: 'Intervention sur appel (pendant tour)', badge: '🟣' },
+  { value: 'HORS_TOUR', label: 'Intervention hors tour d\'astreinte', badge: '⚫' },
+];
+
 export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen, onClose }: DayEntryFormProps) {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('16:45');
   const [isFormation, setIsFormation] = useState(false);
   const [isFPC, setIsFPC] = useState(false);
   const [fpcHeures, setFpcHeures] = useState<7 | 8>(7);
-  const [isIntervention, setIsIntervention] = useState(false);
-  const [isAstreinteSans, setIsAstreinteSans] = useState(false);
   const [typeAstreinte, setTypeAstreinte] = useState<AstreinteType>(null);
+  const [isJourFerie, setIsJourFerie] = useState(false);
+  const [astreinteCompensee, setAstreinteCompensee] = useState(false);
   const [suppressionMidi, setSuppressionMidi] = useState(true);
   const [noteEntryId, setNoteEntryId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
@@ -48,7 +55,10 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
     catch { return date; }
   })();
 
-  const showMidiOption = coversMidi(startTime, endTime);
+  const showMidiOption = !isFPC && coversMidi(startTime, endTime);
+  const isAstreinte = typeAstreinte !== null;
+  const isIntervention = typeAstreinte === 'INTERVENTION_PLANIFIEE' || typeAstreinte === 'INTERVENTION_APPEL' || typeAstreinte === 'HORS_TOUR';
+  const isSansIntervention = typeAstreinte === 'PLANIFIEE_SANS';
 
   const handleAdd = () => {
     onAdd({
@@ -57,20 +67,23 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
       endTime: isFPC ? (fpcHeures === 7 ? '15:00' : '16:00') : endTime,
       isFormation: isFormation || isFPC,
       isInterventionAstreinte: isIntervention,
-      isAstreinteSansIntervention: isAstreinteSans,
+      isAstreinteSansIntervention: isSansIntervention,
       suppressionMidi: isFPC ? true : (showMidiOption ? suppressionMidi : false),
       isFPC,
       fpcHeures: isFPC ? fpcHeures : undefined,
-      estAstreinte: isIntervention || isAstreinteSans,
-      typeAstreinte: isIntervention ? (typeAstreinte || 'PROGRAMMEE') : null,
+      estAstreinte: isAstreinte,
+      typeAstreinte,
+      isJourFerie: isAstreinte ? isJourFerie : undefined,
+      astreinteCompensee: isAstreinte && isJourFerie ? astreinteCompensee : undefined,
     });
+    // Reset
     setStartTime('08:00');
     setEndTime('16:45');
     setIsFormation(false);
     setIsFPC(false);
-    setIsIntervention(false);
-    setIsAstreinteSans(false);
     setTypeAstreinte(null);
+    setIsJourFerie(false);
+    setAstreinteCompensee(false);
     setSuppressionMidi(true);
   };
 
@@ -92,14 +105,24 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
   };
 
   const getAstreinteBadge = (entry: TimeEntry) => {
-    if (entry.isAstreinteSansIntervention) {
-      return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-700 bg-blue-50">🔵 Astreinte seule</Badge>;
+    if (!entry.estAstreinte && !entry.isAstreinteSansIntervention && !entry.isInterventionAstreinte) return null;
+    
+    const t = entry.typeAstreinte;
+    if (t === 'PLANIFIEE_SANS' || entry.isAstreinteSansIntervention) {
+      return <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-700 bg-blue-50">🔵 Planifiée</Badge>;
     }
+    if (t === 'INTERVENTION_PLANIFIEE') {
+      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-800">🟠 Intervention planifiée</Badge>;
+    }
+    if (t === 'INTERVENTION_APPEL') {
+      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-purple-100 text-purple-800">🟣 Intervention sur appel</Badge>;
+    }
+    if (t === 'HORS_TOUR') {
+      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-gray-200 text-gray-800">⚫ Hors tour</Badge>;
+    }
+    // Legacy fallback
     if (entry.isInterventionAstreinte) {
-      if (entry.typeAstreinte === 'NON_PROGRAMMEE') {
-        return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-orange-200 text-orange-900">🟠 Intervention non programmée</Badge>;
-      }
-      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-800">🟠 Intervention programmée</Badge>;
+      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-800">🟠 Intervention</Badge>;
     }
     return null;
   };
@@ -146,6 +169,8 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
                   {entry.isFPC && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-100 text-indigo-800">FPC {entry.fpcHeures}h</Badge>}
                   {entry.isFormation && !entry.isFPC && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Formation</Badge>}
                   {getAstreinteBadge(entry)}
+                  {entry.isJourFerie && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-red-300 text-red-700">Jour férié</Badge>}
+                  {entry.astreinteCompensee && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-400 text-green-700">RCA → RCO 012</Badge>}
                   {entry.noteTags?.map(tag => (
                     <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{NOTE_TAG_LABELS[tag]}</Badge>
                   ))}
@@ -213,7 +238,7 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
           )}
 
           {/* Suppression midi */}
-          {!isFPC && showMidiOption && (
+          {showMidiOption && (
             <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
               <Checkbox
                 id="suppressionMidi"
@@ -225,7 +250,7 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
               </Label>
             </div>
           )}
-          {!isFPC && showMidiOption && !suppressionMidi && (
+          {showMidiOption && !suppressionMidi && (
             <p className="text-[10px] text-amber-700 flex items-center gap-1">
               <Utensils className="w-3 h-3" />
               Repas sans déplacement
@@ -237,7 +262,7 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
             <div className="flex items-center gap-2">
               <Checkbox id="fpc" checked={isFPC} onCheckedChange={v => { 
                 setIsFPC(!!v); 
-                if (v) { setIsFormation(false); setIsIntervention(false); setIsAstreinteSans(false); }
+                if (v) { setIsFormation(false); setTypeAstreinte(null); }
               }} />
               <Label htmlFor="fpc" className="text-xs cursor-pointer">FPC (Formation Professionnelle Continue)</Label>
             </div>
@@ -252,37 +277,60 @@ export function DayEntryForm({ date, entries, onAdd, onUpdate, onDelete, isOpen,
                     <SelectItem value="8" className="text-xs">8h / jour</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground mt-1">Travail effectif, pas de HS, pas de RE généré</p>
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <Checkbox id="formation" checked={isFormation} onCheckedChange={v => { setIsFormation(!!v); if (v) { setIsAstreinteSans(false); setIsFPC(false); } }} />
-              <Label htmlFor="formation" className="text-xs cursor-pointer">Formation (= travail effectif)</Label>
-            </div>
-            
-            {/* Intervention astreinte with type selection */}
-            <div className="flex items-center gap-2">
-              <Checkbox id="intervention" checked={isIntervention} onCheckedChange={v => { setIsIntervention(!!v); if (v) { setIsAstreinteSans(false); setIsFPC(false); } else { setTypeAstreinte(null); } }} />
-              <Label htmlFor="intervention" className="text-xs cursor-pointer">Intervention astreinte</Label>
-            </div>
-            {isIntervention && (
-              <div className="ml-6 space-y-1">
-                <Select value={typeAstreinte || 'PROGRAMMEE'} onValueChange={v => setTypeAstreinte(v as AstreinteType)}>
-                  <SelectTrigger className="h-7 text-xs w-56">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="PROGRAMMEE" className="text-xs">🟠 Programmée (période planifiée)</SelectItem>
-                    <SelectItem value="NON_PROGRAMMEE" className="text-xs">🟠 Non programmée (hors planning)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {!isFPC && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="formation" checked={isFormation} onCheckedChange={v => { setIsFormation(!!v); if (v) setTypeAstreinte(null); }} />
+                  <Label htmlFor="formation" className="text-xs cursor-pointer">Formation (= travail effectif)</Label>
+                </div>
+                
+                {/* Type d'astreinte — 4 options */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Type d'astreinte</Label>
+                  <Select value={typeAstreinte || 'AUCUNE'} onValueChange={v => {
+                    const val = v === 'AUCUNE' ? null : v as AstreinteType;
+                    setTypeAstreinte(val);
+                    if (val) { setIsFormation(false); setIsFPC(false); }
+                    if (!val) { setIsJourFerie(false); setAstreinteCompensee(false); }
+                  }}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Aucune" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="AUCUNE" className="text-xs">Aucune</SelectItem>
+                      {ASTREINTE_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value!} value={opt.value!} className="text-xs">
+                          {opt.badge} {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox id="astreinteSans" checked={isAstreinteSans} onCheckedChange={v => { setIsAstreinteSans(!!v); if (v) { setIsFormation(false); setIsIntervention(false); setIsFPC(false); setTypeAstreinte(null); } }} />
-              <Label htmlFor="astreinteSans" className="text-xs cursor-pointer">🔵 Astreinte sans intervention (indemnité seule)</Label>
-            </div>
+                {/* Jour férié + compensation (RCO) — uniquement si astreinte */}
+                {isAstreinte && (
+                  <div className="ml-4 space-y-2 p-2 rounded-lg border border-border bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="jourFerie" checked={isJourFerie} onCheckedChange={v => { setIsJourFerie(!!v); if (!v) setAstreinteCompensee(false); }} />
+                      <Label htmlFor="jourFerie" className="text-xs cursor-pointer">Jour férié</Label>
+                    </div>
+                    {isJourFerie && (
+                      <div className="flex items-center gap-2 ml-4">
+                        <Checkbox id="compensee" checked={astreinteCompensee} onCheckedChange={v => setAstreinteCompensee(!!v)} />
+                        <Label htmlFor="compensee" className="text-xs cursor-pointer">Astreinte compensée (RCA → RCO 012)</Label>
+                      </div>
+                    )}
+                    {!isJourFerie && (
+                      <p className="text-[10px] text-muted-foreground">Pas de RCO si repos 11h respecté (règle locale)</p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
           <Button onClick={handleAdd} size="sm" className="h-8 text-xs gap-1">
             <Plus className="w-3 h-3" />
